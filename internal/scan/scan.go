@@ -1,4 +1,4 @@
-package reflection
+package scan
 
 import (
 	"github.com/jackc/pgx/v4"
@@ -37,7 +37,11 @@ func ParseDst(dst interface{}, exactlyOneRow bool) (*Destination, error) {
 		dstElemVal.Set(dstElemVal.Slice(0, 0))
 	}
 
-	return &Destination{dstValue: dstElemVal}, nil
+	return NewDestination(dstElemVal), nil
+}
+
+func NewDestination(dstValue reflect.Value) *Destination {
+	return &Destination{dstValue: dstValue}
 }
 
 type RowsScanner interface {
@@ -114,7 +118,10 @@ func (d *Destination) FillStruct(elementValue reflect.Value, rows RowsScanner) e
 	for i, columnName := range rows.Columns() {
 		fieldIndex, ok := d.columnToFieldIndex[columnName]
 		if !ok {
-			return errors.Errorf("column: '%s': no corresponding field found in %v", columnName, elementValue.Type())
+			return errors.Errorf(
+				"column: '%s': no corresponding field found or it's unexported in %v",
+				columnName, elementValue.Type(),
+			)
 		}
 		fieldVal := elementValue.Field(fieldIndex)
 		if !fieldVal.IsValid() || !fieldVal.CanSet() || !fieldVal.Addr().CanInterface() {
@@ -136,11 +143,15 @@ func (d *Destination) FillMap(elementValue reflect.Value, rows RowsScanner) erro
 		dstType := elementValue.Type()
 		if dstType.Key().Kind() != reflect.String {
 			return errors.Errorf(
-				"invalid element type: %v: map must have string key, got: %v",
+				"invalid element type %v: map must have string key, got: %v",
 				dstType, dstType.Key(),
 			)
 		}
 		d.mapElementType = dstType.Elem()
+	}
+
+	if elementValue.IsNil() {
+		elementValue.Set(reflect.MakeMap(elementValue.Type()))
 	}
 
 	values, err := rows.Values()
@@ -154,7 +165,7 @@ func (d *Destination) FillMap(elementValue reflect.Value, rows RowsScanner) erro
 		elem := reflect.ValueOf(columnValue)
 		if !elem.Type().ConvertibleTo(d.mapElementType) {
 			return errors.Errorf(
-				"Column %s value of type %v that can'be set into %v",
+				"Column '%s' value of type %v can'be set into %v",
 				column, elem.Type(), elementValue.Type(),
 			)
 		}
@@ -196,7 +207,7 @@ func GetColumnToFieldIndexMap(structType reflect.Type) (map[string]int, error) {
 		if otherIndex, ok := result[columnName]; ok {
 			return nil, errors.Errorf(
 				"Column must have exactly one field pointing to it; "+
-					"found 2 fields with indexes %d and %d pointing to %s in %v",
+					"found 2 fields with indexes %d and %d pointing to '%s' in %v",
 				otherIndex, i, columnName, structType,
 			)
 		}
