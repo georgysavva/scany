@@ -10,7 +10,7 @@ import (
 
 type Destination struct {
 	dstValue           reflect.Value
-	columnToFieldIndex map[string]int
+	columnToFieldIndex map[string][]int
 	sliceElementType   reflect.Type
 	sliceElementByPtr  bool
 	mapElementType     reflect.Type
@@ -65,14 +65,42 @@ func (rw *RowsWrapper) Columns() []string {
 func (d *Destination) Fill(rows RowsScanner) error {
 	var err error
 	if d.dstValue.Kind() == reflect.Slice {
-		err = d.FillSlice(rows)
+		err = d.fillSlice(rows)
 	} else {
-		err = d.FillElement(d.dstValue, rows)
+		err = d.fillElement(d.dstValue, rows)
 	}
 	return errors.WithStack(err)
 }
 
-func (d *Destination) FillSlice(rows RowsScanner) error {
+var columnStructTagKey = "db"
+
+func GetColumnToFieldIndexMap(structType reflect.Type) (map[string][]int, error) {
+	result := make(map[string][]int, structType.NumField())
+	for i := 0; i < structType.NumField(); i++ {
+		field := structType.Field(i)
+
+		// Field is unexported skip it.
+		if field.PkgPath != "" {
+			continue
+		}
+
+		columnName := field.Tag.Get(columnStructTagKey)
+		if columnName == "" {
+			columnName = toSnakeCase(field.Name)
+		}
+		if otherIndex, ok := result[columnName]; ok {
+			return nil, errors.Errorf(
+				"Column must have exactly one field pointing to it; "+
+					"found 2 fields with indexes %d and %d pointing to '%s' in %v",
+				otherIndex, field.Index, columnName, structType,
+			)
+		}
+		result[columnName] = field.Index
+	}
+	return result, nil
+}
+
+func (d *Destination) fillSlice(rows RowsScanner) error {
 	if d.sliceElementType == nil {
 		sliceElemType := d.dstValue.Type().Elem()
 		if sliceElemType.Kind() == reflect.Ptr {
@@ -83,7 +111,7 @@ func (d *Destination) FillSlice(rows RowsScanner) error {
 	}
 
 	elemVal := reflect.New(d.sliceElementType).Elem()
-	if err := d.FillElement(elemVal, rows); err != nil {
+	if err := d.fillElement(elemVal, rows); err != nil {
 		return errors.WithStack(err)
 	}
 	if d.sliceElementByPtr {
@@ -93,19 +121,19 @@ func (d *Destination) FillSlice(rows RowsScanner) error {
 	return nil
 }
 
-func (d *Destination) FillElement(elementValue reflect.Value, rows RowsScanner) error {
+func (d *Destination) fillElement(elementValue reflect.Value, rows RowsScanner) error {
 	var err error
 	if elementValue.Kind() == reflect.Struct {
-		err = d.FillStruct(elementValue, rows)
+		err = d.fillStruct(elementValue, rows)
 	} else if elementValue.Kind() == reflect.Map {
-		err = d.FillMap(elementValue, rows)
+		err = d.fillMap(elementValue, rows)
 	} else {
-		err = FillPrimitive(elementValue, rows)
+		err = fillPrimitive(elementValue, rows)
 	}
 	return errors.WithStack(err)
 }
 
-func (d *Destination) FillStruct(elementValue reflect.Value, rows RowsScanner) error {
+func (d *Destination) fillStruct(elementValue reflect.Value, rows RowsScanner) error {
 	if d.columnToFieldIndex == nil {
 		var err error
 		d.columnToFieldIndex, err = GetColumnToFieldIndexMap(elementValue.Type())
@@ -123,7 +151,7 @@ func (d *Destination) FillStruct(elementValue reflect.Value, rows RowsScanner) e
 				columnName, elementValue.Type(),
 			)
 		}
-		fieldVal := elementValue.Field(fieldIndex)
+		fieldVal := elementValue.FieldByIndex(fieldIndex)
 		if !fieldVal.IsValid() || !fieldVal.CanSet() || !fieldVal.Addr().CanInterface() {
 			return errors.Errorf(
 				"column: '%s': corresponding field with index %d is invalid or can't be set in %v",
@@ -138,7 +166,7 @@ func (d *Destination) FillStruct(elementValue reflect.Value, rows RowsScanner) e
 	return nil
 }
 
-func (d *Destination) FillMap(elementValue reflect.Value, rows RowsScanner) error {
+func (d *Destination) fillMap(elementValue reflect.Value, rows RowsScanner) error {
 	if d.mapElementType == nil {
 		dstType := elementValue.Type()
 		if dstType.Key().Kind() != reflect.String {
@@ -175,7 +203,7 @@ func (d *Destination) FillMap(elementValue reflect.Value, rows RowsScanner) erro
 	return nil
 }
 
-func FillPrimitive(elementValue reflect.Value, rows RowsScanner) error {
+func fillPrimitive(elementValue reflect.Value, rows RowsScanner) error {
 	if len(rows.Columns()) != 1 {
 		return errors.Errorf(
 			"to scan into a primitive type, columns number must be exactly 1, got: %d",
@@ -186,34 +214,6 @@ func FillPrimitive(elementValue reflect.Value, rows RowsScanner) error {
 		return errors.Wrap(err, "scan row value into primitive type")
 	}
 	return nil
-}
-
-var columnStructTagKey = "db"
-
-func GetColumnToFieldIndexMap(structType reflect.Type) (map[string]int, error) {
-	result := make(map[string]int, structType.NumField())
-	for i := 0; i < structType.NumField(); i++ {
-		field := structType.Field(i)
-
-		// Field is unexported skip it.
-		if field.PkgPath != "" {
-			continue
-		}
-
-		columnName := field.Tag.Get(columnStructTagKey)
-		if columnName == "" {
-			columnName = toSnakeCase(field.Name)
-		}
-		if otherIndex, ok := result[columnName]; ok {
-			return nil, errors.Errorf(
-				"Column must have exactly one field pointing to it; "+
-					"found 2 fields with indexes %d and %d pointing to '%s' in %v",
-				otherIndex, i, columnName, structType,
-			)
-		}
-		result[columnName] = i
-	}
-	return result, nil
 }
 
 var matchFirstCapRe = regexp.MustCompile("(.)([A-Z][a-z]+)")
