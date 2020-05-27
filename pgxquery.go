@@ -2,7 +2,6 @@ package pgxquery
 
 import (
 	"context"
-	"github.com/georgysavva/pgxquery/internal/reflection"
 
 	"github.com/jackc/pgx/v4"
 	"github.com/pkg/errors"
@@ -17,7 +16,7 @@ func QueryAll(ctx context.Context, q QueryI, dst interface{}, sql string, args .
 	if err != nil {
 		return errors.Wrap(err, "query rows")
 	}
-	err = Scan(dst, rows)
+	err = ScanAll(dst, rows)
 	return errors.WithStack(err)
 }
 
@@ -30,13 +29,13 @@ func QueryOne(ctx context.Context, q QueryI, dst interface{}, sql string, args .
 	return errors.WithStack(err)
 }
 
-func Scan(dst interface{}, rows pgx.Rows) error {
-	err := scanRows(dst, rows, false /* exactlyOneRow */)
+func ScanAll(dst interface{}, rows pgx.Rows) error {
+	err := processRows(dst, rows, false /* exactlyOneRow */)
 	return errors.WithStack(err)
 }
 
 func ScanOne(dst interface{}, rows pgx.Rows) error {
-	err := scanRows(dst, rows, true /* exactlyOneRow */)
+	err := processRows(dst, rows, true /* exactlyOneRow */)
 	return errors.WithStack(err)
 }
 
@@ -47,20 +46,16 @@ func NotFound(err error) bool {
 
 var notFoundErr = errors.New("no row was found")
 
-func scanRows(dst interface{}, rows pgx.Rows, exactlyOneRow bool) error {
+func processRows(dst interface{}, rows pgx.Rows, exactlyOneRow bool) error {
 	defer rows.Close()
-	dstRef, err := reflection.ParseDst(dst, exactlyOneRow)
+	dstValue, err := parseDst(dst, exactlyOneRow)
 	if err != nil {
 		return errors.WithStack(err)
 	}
-	scanner := &reflection.RowsWrapper{rows}
 
-	var rowsAffected int
-	for rows.Next() {
-		if err := dstRef.Fill(scanner); err != nil {
-			return errors.WithStack(err)
-		}
-		rowsAffected++
+	rowsAffected, err := fillDestination(dstValue, rows)
+	if err != nil {
+		return errors.WithStack(err)
 	}
 
 	if err := rows.Err(); err != nil {
