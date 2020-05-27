@@ -131,6 +131,17 @@ func TestDestination_Fill(t *testing.T) {
 			errString: "column: 'foo': no corresponding field found or it's unexported in struct { Bar string }",
 		},
 		{
+			name: "struct duplicated column",
+			rows: &fakeRows{
+				data:    []interface{}{4, "bb"},
+				columns: []string{"foo", "foo"},
+			},
+			expected: struct {
+				Foo string
+			}{},
+			errString: "row contains duplicated column 'foo'",
+		},
+		{
 			name: "struct field is unexported",
 			rows: &fakeRows{
 				data:    []interface{}{4, "bb"},
@@ -161,6 +172,15 @@ func TestDestination_Fill(t *testing.T) {
 			},
 			expected:  map[int]interface{}{},
 			errString: "invalid element type map[int]interface {}: map must have string key, got: int",
+		},
+		{
+			name: "map non string key",
+			rows: &fakeRows{
+				data:    []interface{}{4, "bb"},
+				columns: []string{"foo", "foo"},
+			},
+			expected:  map[string]interface{}{},
+			errString: "row contains duplicated column 'foo'",
 		},
 		{
 			name: "map invalid element type",

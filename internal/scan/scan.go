@@ -142,8 +142,14 @@ func (d *Destination) fillStruct(elementValue reflect.Value, rows RowsScanner) e
 		}
 	}
 
-	scans := make([]interface{}, len(rows.Columns()))
-	for i, columnName := range rows.Columns() {
+	columns := rows.Columns()
+
+	if err := ensureDistinctColumns(columns); err != nil {
+		return errors.WithStack(err)
+	}
+
+	scans := make([]interface{}, len(columns))
+	for i, columnName := range columns {
 		fieldIndex, ok := d.columnToFieldIndex[columnName]
 		if !ok {
 			return errors.Errorf(
@@ -187,7 +193,13 @@ func (d *Destination) fillMap(elementValue reflect.Value, rows RowsScanner) erro
 		return errors.Wrap(err, "get row values for map")
 	}
 
-	for i, column := range rows.Columns() {
+	columns := rows.Columns()
+
+	if err := ensureDistinctColumns(columns); err != nil {
+		return errors.WithStack(err)
+	}
+
+	for i, column := range columns {
 		columnValue := values[i]
 		key := reflect.ValueOf(column)
 		elem := reflect.ValueOf(columnValue)
@@ -204,14 +216,26 @@ func (d *Destination) fillMap(elementValue reflect.Value, rows RowsScanner) erro
 }
 
 func fillPrimitive(elementValue reflect.Value, rows RowsScanner) error {
-	if len(rows.Columns()) != 1 {
+	columnsNumber := len(rows.Columns())
+	if columnsNumber != 1 {
 		return errors.Errorf(
 			"to scan into a primitive type, columns number must be exactly 1, got: %d",
-			len(rows.Columns()),
+			columnsNumber,
 		)
 	}
 	if err := rows.Scan(elementValue.Addr().Interface()); err != nil {
 		return errors.Wrap(err, "scan row value into primitive type")
+	}
+	return nil
+}
+
+func ensureDistinctColumns(columns []string) error {
+	seen := make(map[string]bool, len(columns))
+	for _, column := range columns {
+		if _, ok := seen[column]; ok {
+			return errors.Errorf("row contains duplicated column '%s'", column)
+		}
+		seen[column] = true
 	}
 	return nil
 }
