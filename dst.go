@@ -10,6 +10,7 @@ import (
 
 type destination struct {
 	dstValue           reflect.Value
+	exactlyOneRow      bool
 	columnToFieldIndex map[string][]int
 	sliceElementType   reflect.Type
 	sliceElementByPtr  bool
@@ -18,14 +19,20 @@ type destination struct {
 
 func parseDestination(dst interface{}, exactlyOneRow bool) (*destination, error) {
 	dstVal := reflect.ValueOf(dst)
+
+	if !dstVal.IsValid() || (dstVal.Kind() == reflect.Ptr && dstVal.IsNil()) {
+		return nil, errors.Errorf("destination must be a non nil pointer")
+	}
 	if dstVal.Kind() != reflect.Ptr {
 		return nil, errors.Errorf("destination must be a pointer, got: %v", dstVal.Type())
 	}
+
 	dstElemVal := dstVal.Elem()
-	if !dstElemVal.IsValid() || !dstElemVal.CanSet() {
-		return nil, errors.Errorf("destination must be a valid non nil pointer")
+
+	d := &destination{
+		dstValue:      dstElemVal,
+		exactlyOneRow: exactlyOneRow,
 	}
-	d := &destination{dstValue: dstElemVal}
 	baseType := dstElemVal.Type()
 	if !exactlyOneRow {
 		if dstElemVal.Kind() != reflect.Slice {
@@ -33,13 +40,22 @@ func parseDestination(dst interface{}, exactlyOneRow bool) (*destination, error)
 				"destination must be a pointer to a slice, got: %v", dstVal.Type(),
 			)
 		}
-		sliceElemType := dstElemVal.Type().Elem()
-		if sliceElemType.Kind() == reflect.Ptr {
-			d.sliceElementByPtr = true
-			sliceElemType = sliceElemType.Elem()
+		d.sliceElementType = dstElemVal.Type().Elem()
+
+		// If it's a slice of structs or maps,
+		// we handle them the same way and dereference pointers to values,
+		// because eventually we works with fields or keys.
+		// But if it's a slice of primitive type e.g. or []string or []*string,
+		// we must leave and pass elements as is to Rows.Scan().
+		if d.sliceElementType.Kind() == reflect.Ptr {
+			if d.sliceElementType.Elem().Kind() == reflect.Struct ||
+				d.sliceElementType.Elem().Kind() == reflect.Map {
+
+				d.sliceElementByPtr = true
+				d.sliceElementType = d.sliceElementType.Elem()
+			}
 		}
-		d.sliceElementType = sliceElemType
-		baseType = sliceElemType
+		baseType = d.sliceElementType
 	}
 
 	if baseType.Kind() == reflect.Struct {
@@ -51,7 +67,7 @@ func parseDestination(dst interface{}, exactlyOneRow bool) (*destination, error)
 	} else if baseType.Kind() == reflect.Map {
 		if baseType.Key().Kind() != reflect.String {
 			return nil, errors.Errorf(
-				"invalid element type %v: map must have string key, got: %v",
+				"invalid type %v: map must have string key, got: %v",
 				baseType, baseType.Key(),
 			)
 		}
@@ -61,19 +77,18 @@ func parseDestination(dst interface{}, exactlyOneRow bool) (*destination, error)
 	return d, nil
 }
 
-func (d *destination) fill(rows pgx.Rows) (int, error) {
-	isSlice := d.dstValue.Kind() == reflect.Slice
-	if isSlice {
+func (d *destination) scanRows(rows pgx.Rows) (int, error) {
+	if !d.exactlyOneRow {
 		// Make sure that slice is empty.
 		d.dstValue.Set(d.dstValue.Slice(0, 0))
 	}
 	var rowsAffected int
 	for rows.Next() {
 		var err error
-		if isSlice {
-			err = d.fillSlice(rows)
-		} else {
+		if d.exactlyOneRow {
 			err = d.fillElement(d.dstValue, rows)
+		} else {
+			err = d.fillSlice(rows)
 		}
 		if err != nil {
 			return 0, errors.WithStack(err)
@@ -107,7 +122,7 @@ func (d *destination) fillElement(elementValue reflect.Value, rows pgx.Rows) err
 	return errors.WithStack(err)
 }
 
-func (d *destination) fillStruct(elementValue reflect.Value, rows pgx.Rows) error {
+func (d *destination) fillStruct(structValue reflect.Value, rows pgx.Rows) error {
 	if err := ensureDistinctColumns(rows); err != nil {
 		return errors.WithStack(err)
 	}
@@ -119,16 +134,19 @@ func (d *destination) fillStruct(elementValue reflect.Value, rows pgx.Rows) erro
 		if !ok {
 			return errors.Errorf(
 				"column: '%s': no corresponding field found or it's unexported in %v",
-				column, elementValue.Type(),
+				column, structValue.Type(),
 			)
 		}
-		initializeNested(elementValue, fieldIndex)
+		// Struct may contain embedded structs by ptr that defaults to nil.
+		// In order to scan values into a nested field,
+		// we need to initialize all nil structs on its way.
+		initializeNested(structValue, fieldIndex)
 
-		fieldVal := elementValue.FieldByIndex(fieldIndex)
-		if !fieldVal.IsValid() || !fieldVal.CanSet() || !fieldVal.Addr().CanInterface() {
+		fieldVal := structValue.FieldByIndex(fieldIndex)
+		if !fieldVal.Addr().CanInterface() {
 			return errors.Errorf(
 				"column: '%s': corresponding field with index %d is invalid or can't be set in %v",
-				column, fieldIndex, elementValue.Type(),
+				column, fieldIndex, structValue.Type(),
 			)
 		}
 		scans[i] = fieldVal.Addr().Interface()
@@ -139,9 +157,9 @@ func (d *destination) fillStruct(elementValue reflect.Value, rows pgx.Rows) erro
 	return nil
 }
 
-func (d *destination) fillMap(elementValue reflect.Value, rows pgx.Rows) error {
-	if elementValue.IsNil() {
-		elementValue.Set(reflect.MakeMap(elementValue.Type()))
+func (d *destination) fillMap(mapValue reflect.Value, rows pgx.Rows) error {
+	if mapValue.IsNil() {
+		mapValue.Set(reflect.MakeMap(mapValue.Type()))
 	}
 
 	values, err := rows.Values()
@@ -155,22 +173,24 @@ func (d *destination) fillMap(elementValue reflect.Value, rows pgx.Rows) error {
 
 	for i, columnDesc := range rows.FieldDescriptions() {
 		column := string(columnDesc.Name)
-		columnValue := values[i]
 		key := reflect.ValueOf(column)
-		elem := reflect.ValueOf(columnValue)
-		if !elem.Type().ConvertibleTo(d.mapElementType) {
+		value := reflect.ValueOf(values[i])
+
+		// If value type is different compared to map element type, try to convert it,
+		// if they aren't convertible there is nothing we can do to set it.
+		if !value.Type().ConvertibleTo(d.mapElementType) {
 			return errors.Errorf(
 				"Column '%s' value of type %v can'be set into %v",
-				column, elem.Type(), elementValue.Type(),
+				column, value.Type(), mapValue.Type(),
 			)
 		}
-		elementValue.SetMapIndex(key, elem.Convert(d.mapElementType))
+		mapValue.SetMapIndex(key, value.Convert(d.mapElementType))
 	}
 
 	return nil
 }
 
-func fillPrimitive(elementValue reflect.Value, rows pgx.Rows) error {
+func fillPrimitive(value reflect.Value, rows pgx.Rows) error {
 	columnsNumber := len(rows.FieldDescriptions())
 	if columnsNumber != 1 {
 		return errors.Errorf(
@@ -178,16 +198,18 @@ func fillPrimitive(elementValue reflect.Value, rows pgx.Rows) error {
 			columnsNumber,
 		)
 	}
-	if err := rows.Scan(elementValue.Addr().Interface()); err != nil {
+	if err := rows.Scan(value.Addr().Interface()); err != nil {
 		return errors.Wrap(err, "fill row value into primitive type")
 	}
 	return nil
 }
 
-func initializeNested(structVal reflect.Value, fieldIndex []int) {
+func initializeNested(structValue reflect.Value, fieldIndex []int) {
 	i := fieldIndex[0]
-	field := structVal.Field(i)
+	field := structValue.Field(i)
 
+	// Create a new instance of a struct and set it to field,
+	// if field is a nil pointer to a struct.
 	if field.Kind() == reflect.Ptr && field.Type().Elem().Kind() == reflect.Struct && field.IsNil() {
 		field.Set(reflect.New(field.Type().Elem()))
 	}
@@ -197,13 +219,13 @@ func initializeNested(structVal reflect.Value, fieldIndex []int) {
 }
 
 func ensureDistinctColumns(rows pgx.Rows) error {
-	seen := make(map[string]bool, len(rows.FieldDescriptions()))
+	seen := make(map[string]struct{}, len(rows.FieldDescriptions()))
 	for _, columnDesc := range rows.FieldDescriptions() {
 		column := string(columnDesc.Name)
 		if _, ok := seen[column]; ok {
 			return errors.Errorf("row contains duplicated column '%s'", column)
 		}
-		seen[column] = true
+		seen[column] = struct{}{}
 	}
 	return nil
 }
@@ -229,7 +251,7 @@ func getColumnToFieldIndexMap(structType reflect.Type) (map[string][]int, error)
 		field := structType.Field(i)
 
 		if field.PkgPath != "" {
-			// Field is unexported skip it.
+			// Field is unexported, skip it.
 			continue
 		}
 
@@ -240,19 +262,22 @@ func getColumnToFieldIndexMap(structType reflect.Type) (map[string][]int, error)
 			continue
 		}
 
-		// Field is embedded struct or pointer to struct.
 		if field.Anonymous {
 			childType := field.Type
 			if field.Type.Kind() == reflect.Ptr {
 				childType = field.Type.Elem()
 			}
 			if childType.Kind() == reflect.Struct {
+				// Field is embedded struct or pointer to struct.
 				childMap, err := getColumnToFieldIndexMap(childType)
 				if err != nil {
 					return nil, errors.WithStack(err)
 				}
 				for childColumn, childIndex := range childMap {
 					column := childColumn
+					// If "db" tag is present for embedded struct
+					// use it with "." to prefix all column from the embedded struct.
+					// the default behaviour is to propagate columns as is.
 					if dbTag != "" {
 						column = dbTag + "." + column
 					}

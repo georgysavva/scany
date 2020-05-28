@@ -53,7 +53,7 @@ func processRows(dst interface{}, rows pgx.Rows, exactlyOneRow bool) error {
 		return errors.WithStack(err)
 	}
 
-	rowsAffected, err := dstRef.fill(rows)
+	rowsAffected, err := dstRef.scanRows(rows)
 	if err != nil {
 		return errors.WithStack(err)
 	}
