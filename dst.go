@@ -16,41 +16,64 @@ type destination struct {
 	mapElementType     reflect.Type
 }
 
-func parseDst(dst interface{}, exactlyOneRow bool) (reflect.Value, error) {
+func parseDestination(dst interface{}, exactlyOneRow bool) (*destination, error) {
 	dstVal := reflect.ValueOf(dst)
 	if dstVal.Kind() != reflect.Ptr {
-		return reflect.Value{}, errors.Errorf("destination must be a pointer, got: %v", dstVal.Type())
+		return nil, errors.Errorf("destination must be a pointer, got: %v", dstVal.Type())
 	}
 	dstElemVal := dstVal.Elem()
 	if !dstElemVal.IsValid() || !dstElemVal.CanSet() {
-		return reflect.Value{}, errors.Errorf("destination must be a valid non nil pointer")
+		return nil, errors.Errorf("destination must be a valid non nil pointer")
 	}
-
+	d := &destination{dstValue: dstElemVal}
+	baseType := dstElemVal.Type()
 	if !exactlyOneRow {
 		if dstElemVal.Kind() != reflect.Slice {
-			return reflect.Value{}, errors.Errorf(
+			return nil, errors.Errorf(
 				"destination must be a pointer to a slice, got: %v", dstVal.Type(),
 			)
 		}
-
+		sliceElemType := dstElemVal.Type().Elem()
+		if sliceElemType.Kind() == reflect.Ptr {
+			d.sliceElementByPtr = true
+			sliceElemType = sliceElemType.Elem()
+		}
+		d.sliceElementType = sliceElemType
+		baseType = sliceElemType
 	}
-	return dstElemVal, nil
+
+	if baseType.Kind() == reflect.Struct {
+		var err error
+		d.columnToFieldIndex, err = getColumnToFieldIndexMap(baseType)
+		if err != nil {
+			return nil, errors.WithStack(err)
+		}
+	} else if baseType.Kind() == reflect.Map {
+		if baseType.Key().Kind() != reflect.String {
+			return nil, errors.Errorf(
+				"invalid element type %v: map must have string key, got: %v",
+				baseType, baseType.Key(),
+			)
+		}
+		d.mapElementType = baseType.Elem()
+	}
+
+	return d, nil
 }
 
-func fillDestination(dstValue reflect.Value, rows pgx.Rows) (int, error) {
-	isSlice := dstValue.Kind() == reflect.Slice
+func (d *destination) fill(rows pgx.Rows) (int, error) {
+	isSlice := d.dstValue.Kind() == reflect.Slice
 	if isSlice {
 		// Make sure that slice is empty.
-		dstValue.Set(dstValue.Slice(0, 0))
+		d.dstValue.Set(d.dstValue.Slice(0, 0))
 	}
-	dst := &destination{dstValue: dstValue}
 	var rowsAffected int
 	for rows.Next() {
 		var err error
 		if isSlice {
-			err = dst.fillSlice(rows)
+			err = d.fillSlice(rows)
 		} else {
-			err = dst.fillElement(dstValue, rows)
+			err = d.fillElement(d.dstValue, rows)
 		}
 		if err != nil {
 			return 0, errors.WithStack(err)
@@ -61,15 +84,6 @@ func fillDestination(dstValue reflect.Value, rows pgx.Rows) (int, error) {
 }
 
 func (d *destination) fillSlice(rows pgx.Rows) error {
-	if d.sliceElementType == nil {
-		sliceElemType := d.dstValue.Type().Elem()
-		if sliceElemType.Kind() == reflect.Ptr {
-			d.sliceElementByPtr = true
-			sliceElemType = sliceElemType.Elem()
-		}
-		d.sliceElementType = sliceElemType
-	}
-
 	elemVal := reflect.New(d.sliceElementType).Elem()
 	if err := d.fillElement(elemVal, rows); err != nil {
 		return errors.WithStack(err)
@@ -94,14 +108,6 @@ func (d *destination) fillElement(elementValue reflect.Value, rows pgx.Rows) err
 }
 
 func (d *destination) fillStruct(elementValue reflect.Value, rows pgx.Rows) error {
-	if d.columnToFieldIndex == nil {
-		var err error
-		d.columnToFieldIndex, err = getColumnToFieldIndexMap(elementValue.Type())
-		if err != nil {
-			return errors.WithStack(err)
-		}
-	}
-
 	if err := ensureDistinctColumns(rows); err != nil {
 		return errors.WithStack(err)
 	}
@@ -116,6 +122,8 @@ func (d *destination) fillStruct(elementValue reflect.Value, rows pgx.Rows) erro
 				column, elementValue.Type(),
 			)
 		}
+		initializeNested(elementValue, fieldIndex)
+
 		fieldVal := elementValue.FieldByIndex(fieldIndex)
 		if !fieldVal.IsValid() || !fieldVal.CanSet() || !fieldVal.Addr().CanInterface() {
 			return errors.Errorf(
@@ -126,23 +134,12 @@ func (d *destination) fillStruct(elementValue reflect.Value, rows pgx.Rows) erro
 		scans[i] = fieldVal.Addr().Interface()
 	}
 	if err := rows.Scan(scans...); err != nil {
-		return errors.Wrap(err, "fillDestination row into struct fields")
+		return errors.Wrap(err, "fill row into struct fields")
 	}
 	return nil
 }
 
 func (d *destination) fillMap(elementValue reflect.Value, rows pgx.Rows) error {
-	if d.mapElementType == nil {
-		dstType := elementValue.Type()
-		if dstType.Key().Kind() != reflect.String {
-			return errors.Errorf(
-				"invalid element type %v: map must have string key, got: %v",
-				dstType, dstType.Key(),
-			)
-		}
-		d.mapElementType = dstType.Elem()
-	}
-
 	if elementValue.IsNil() {
 		elementValue.Set(reflect.MakeMap(elementValue.Type()))
 	}
@@ -177,14 +174,26 @@ func fillPrimitive(elementValue reflect.Value, rows pgx.Rows) error {
 	columnsNumber := len(rows.FieldDescriptions())
 	if columnsNumber != 1 {
 		return errors.Errorf(
-			"to fillDestination into a primitive type, columns number must be exactly 1, got: %d",
+			"to fill into a primitive type, columns number must be exactly 1, got: %d",
 			columnsNumber,
 		)
 	}
 	if err := rows.Scan(elementValue.Addr().Interface()); err != nil {
-		return errors.Wrap(err, "fillDestination row value into primitive type")
+		return errors.Wrap(err, "fill row value into primitive type")
 	}
 	return nil
+}
+
+func initializeNested(structVal reflect.Value, fieldIndex []int) {
+	i := fieldIndex[0]
+	field := structVal.Field(i)
+
+	if field.Kind() == reflect.Ptr && field.Type().Elem().Kind() == reflect.Struct && field.IsNil() {
+		field.Set(reflect.New(field.Type().Elem()))
+	}
+	if len(fieldIndex) > 1 {
+		initializeNested(reflect.Indirect(field), fieldIndex[1:])
+	}
 }
 
 func ensureDistinctColumns(rows pgx.Rows) error {

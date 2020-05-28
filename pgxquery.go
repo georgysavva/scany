@@ -48,12 +48,12 @@ var notFoundErr = errors.New("no row was found")
 
 func processRows(dst interface{}, rows pgx.Rows, exactlyOneRow bool) error {
 	defer rows.Close()
-	dstValue, err := parseDst(dst, exactlyOneRow)
+	dstRef, err := parseDestination(dst, exactlyOneRow)
 	if err != nil {
 		return errors.WithStack(err)
 	}
 
-	rowsAffected, err := fillDestination(dstValue, rows)
+	rowsAffected, err := dstRef.fill(rows)
 	if err != nil {
 		return errors.WithStack(err)
 	}

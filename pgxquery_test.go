@@ -50,40 +50,14 @@ func (fr *fakeRows) Close() {}
 
 func (fr *fakeRows) Err() error { return nil }
 
-type ScanCase struct {
-	name          string
-	rows          *fakeRows
-	expected      interface{}
-	errString     string
-	exactlyOneRow bool
-}
-
-func (tc *ScanCase) test(t *testing.T) {
-	t.Parallel()
-
-	dstType := reflect.TypeOf(tc.expected)
-	dstValue := reflect.New(dstType)
-	dst := dstValue.Interface()
-
-	var err error
-	if tc.exactlyOneRow {
-		err = pgxquery.ScanOne(dst, tc.rows)
-	} else {
-		err = pgxquery.ScanAll(dst, tc.rows)
-	}
-
-	if tc.errString == "" {
-		require.NoError(t, err)
-		got := dstValue.Elem().Interface()
-		assert.Equal(t, tc.expected, got)
-	} else {
-		assert.EqualError(t, err, tc.errString)
-	}
-}
-
 func TestScanOne(t *testing.T) {
 	t.Parallel()
-	cases := []ScanCase{
+	cases := []struct {
+		name      string
+		rows      *fakeRows
+		expected  interface{}
+		errString string
+	}{
 		{
 			name: "struct smoke",
 			rows: &fakeRows{
@@ -218,7 +192,7 @@ func TestScanOne(t *testing.T) {
 				columns: []string{},
 			},
 			expected:  "",
-			errString: "to fillDestination into a primitive type, columns number must be exactly 1, got: 0",
+			errString: "to fill into a primitive type, columns number must be exactly 1, got: 0",
 		},
 		{
 			name: "primitive type more than 1 column",
@@ -229,21 +203,39 @@ func TestScanOne(t *testing.T) {
 				},
 			},
 			expected:  "",
-			errString: "to fillDestination into a primitive type, columns number must be exactly 1, got: 2",
+			errString: "to fill into a primitive type, columns number must be exactly 1, got: 2",
 		},
 	}
 	for _, tc := range cases {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
-			tc.exactlyOneRow = true
-			tc.test(t)
+			t.Parallel()
+
+			dstType := reflect.TypeOf(tc.expected)
+			dstValue := reflect.New(dstType)
+			dst := dstValue.Interface()
+
+			err := pgxquery.ScanOne(dst, tc.rows)
+
+			if tc.errString == "" {
+				require.NoError(t, err)
+				got := dstValue.Elem().Interface()
+				assert.Equal(t, tc.expected, got)
+			} else {
+				assert.EqualError(t, err, tc.errString)
+			}
 		})
 	}
 }
 
 func TestScanAll(t *testing.T) {
 	t.Parallel()
-	cases := []ScanCase{
+	cases := []struct {
+		name      string
+		rows      *fakeRows
+		expected  interface{}
+		errString string
+	}{
 		{
 			name: "slice of structs",
 			rows: &fakeRows{
@@ -309,8 +301,21 @@ func TestScanAll(t *testing.T) {
 	for _, tc := range cases {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
-			tc.exactlyOneRow = false
-			tc.test(t)
+			t.Parallel()
+
+			dstType := reflect.TypeOf(tc.expected)
+			dstValue := reflect.New(dstType)
+			dst := dstValue.Interface()
+
+			err := pgxquery.ScanAll(dst, tc.rows)
+
+			if tc.errString == "" {
+				require.NoError(t, err)
+				got := dstValue.Elem().Interface()
+				assert.Equal(t, tc.expected, got)
+			} else {
+				assert.EqualError(t, err, tc.errString)
+			}
 		})
 	}
 }
