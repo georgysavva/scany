@@ -470,7 +470,7 @@ func TestScanInvalidDestinations(t *testing.T) {
 				Foo string
 			}{},
 			exactlyOneRow: true,
-			errString:     "destination must be a pointer, got: struct { Foo string }",
+			errString:     "destinationMeta must be a pointer, got: struct { Foo string }",
 		},
 		{
 			name: "scan all: non pointer",
@@ -478,55 +478,55 @@ func TestScanInvalidDestinations(t *testing.T) {
 				Foo string
 			}{},
 			exactlyOneRow: false,
-			errString:     "destination must be a pointer, got: struct { Foo string }",
+			errString:     "destinationMeta must be a pointer, got: struct { Foo string }",
 		},
 		{
 			name:          "scan one: map",
 			dst:           map[string]interface{}{},
 			exactlyOneRow: true,
-			errString:     "destination must be a pointer, got: map[string]interface {}",
+			errString:     "destinationMeta must be a pointer, got: map[string]interface {}",
 		},
 		{
 			name:          "scan all: map",
 			dst:           map[string]interface{}{},
 			exactlyOneRow: false,
-			errString:     "destination must be a pointer, got: map[string]interface {}",
+			errString:     "destinationMeta must be a pointer, got: map[string]interface {}",
 		},
 		{
 			name:          "scan one: slice",
 			dst:           []struct{ Foo string }{},
 			exactlyOneRow: true,
-			errString:     "destination must be a pointer, got: []struct { Foo string }",
+			errString:     "destinationMeta must be a pointer, got: []struct { Foo string }",
 		},
 		{
 			name:          "scan all: slice",
 			dst:           []struct{ Foo string }{},
 			exactlyOneRow: false,
-			errString:     "destination must be a pointer, got: []struct { Foo string }",
+			errString:     "destinationMeta must be a pointer, got: []struct { Foo string }",
 		},
 		{
 			name:          "scan one: nil",
 			dst:           nil,
 			exactlyOneRow: true,
-			errString:     "destination must be a non nil pointer",
+			errString:     "destinationMeta must be a non nil pointer",
 		},
 		{
 			name:          "scan all: nil",
 			dst:           nil,
 			exactlyOneRow: false,
-			errString:     "destination must be a non nil pointer",
+			errString:     "destinationMeta must be a non nil pointer",
 		},
 		{
 			name:          "scan one: (*int)(nil)",
 			dst:           (*int)(nil),
 			exactlyOneRow: true,
-			errString:     "destination must be a non nil pointer",
+			errString:     "destinationMeta must be a non nil pointer",
 		},
 		{
 			name:          "scan all: (*int)(nil)",
 			dst:           (*int)(nil),
 			exactlyOneRow: false,
-			errString:     "destination must be a non nil pointer",
+			errString:     "destinationMeta must be a non nil pointer",
 		},
 		{
 			name: "scan all: not pointer to slice",
@@ -534,7 +534,7 @@ func TestScanInvalidDestinations(t *testing.T) {
 				A string
 			}{},
 			exactlyOneRow: false,
-			errString:     "destination must be a pointer to a slice, got: *struct { A string }",
+			errString:     "destinationMeta must be a pointer to a slice, got: *struct { A string }",
 		},
 	}
 	for _, tc := range cases {

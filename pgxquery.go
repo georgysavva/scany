@@ -30,12 +30,21 @@ func QueryOne(ctx context.Context, q QueryI, dst interface{}, sql string, args .
 }
 
 func ScanAll(dst interface{}, rows pgx.Rows) error {
-	err := processRows(dst, rows, false /* exactlyOneRow */)
+	err := processRows(dst, rows, true /* multipleRows */)
 	return errors.WithStack(err)
 }
 
 func ScanOne(dst interface{}, rows pgx.Rows) error {
-	err := processRows(dst, rows, true /* exactlyOneRow */)
+	err := processRows(dst, rows, false /* multipleRows */)
+	return errors.WithStack(err)
+}
+
+func ScanRow(dst interface{}, rows pgx.Rows) error {
+	dstValue, dstMeta, err := parseDestination(dst, false /* sliceExpected */)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+	err = dstMeta.fill(dstValue, rows)
 	return errors.WithStack(err)
 }
 
@@ -46,22 +55,36 @@ func NotFound(err error) bool {
 
 var notFoundErr = errors.New("no row was found")
 
-func processRows(dst interface{}, rows pgx.Rows, exactlyOneRow bool) error {
+func processRows(dst interface{}, rows pgx.Rows, multipleRows bool) error {
 	defer rows.Close()
-	dstRef, err := parseDestination(dst, exactlyOneRow)
+	dstValue, dstMeta, err := parseDestination(dst, multipleRows /* sliceExpected */)
 	if err != nil {
 		return errors.WithStack(err)
 	}
 
-	rowsAffected, err := dstRef.scanRows(rows)
-	if err != nil {
-		return errors.WithStack(err)
+	if multipleRows {
+		// Make sure that slice is empty.
+		dstValue.Set(dstValue.Slice(0, 0))
+	}
+	var rowsAffected int
+	for rows.Next() {
+		var err error
+		if multipleRows {
+			err = dstMeta.fillSliceElement(dstValue, rows)
+		} else {
+			err = dstMeta.fill(dstValue, rows)
+		}
+		if err != nil {
+			return errors.WithStack(err)
+		}
+		rowsAffected++
 	}
 
 	if err := rows.Err(); err != nil {
 		return errors.Wrap(err, "rows final error")
 	}
 
+	exactlyOneRow := !multipleRows
 	if exactlyOneRow {
 		if rowsAffected == 0 {
 			return errors.WithStack(notFoundErr)
