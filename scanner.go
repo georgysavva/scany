@@ -45,6 +45,11 @@ func parseDestination(dst interface{}) (reflect.Value, error) {
 }
 
 func (r *Rows) doScan(dstValue reflect.Value) error {
+	if !r.started {
+		if err := r.ensureDistinctColumns(); err != nil {
+			return errors.WithStack(err)
+		}
+	}
 	var err error
 	if dstValue.Kind() == reflect.Struct {
 		err = r.scanStruct(dstValue)
@@ -53,6 +58,9 @@ func (r *Rows) doScan(dstValue reflect.Value) error {
 	} else {
 		err = r.scanPrimitive(dstValue)
 	}
+	if r.started {
+		r.started = true
+	}
 	return errors.WithStack(err)
 }
 
@@ -60,10 +68,10 @@ func wrapRowsForSliceScan(rows pgx.Rows, sliceType reflect.Type) *Rows {
 	var sliceElementByPtr bool
 	sliceElementType := sliceType.Elem()
 
-	// If it'r a slice of structs or maps,
+	// If it's a slice of structs or maps,
 	// we handle them the same way and dereference pointers to values,
 	// because eventually we works with fields or keys.
-	// But if it'r a slice of primitive type e.g. or []string or []*string,
+	// But if it's a slice of primitive type e.g. or []string or []*string,
 	// we must leave and pass elements as is to Rows.Scan().
 	if sliceElementType.Kind() == reflect.Ptr {
 		if sliceElementType.Elem().Kind() == reflect.Struct ||
@@ -95,15 +103,11 @@ func (r *Rows) scanSliceElement(sliceValue reflect.Value) error {
 
 func (r *Rows) scanStruct(structValue reflect.Value) error {
 	if !r.started {
-		if err := r.ensureDistinctColumns(); err != nil {
-			return errors.WithStack(err)
-		}
 		var err error
 		r.columnToFieldIndex, err = getColumnToFieldIndexMap(structValue.Type())
 		if err != nil {
 			return errors.WithStack(err)
 		}
-		r.started = true
 	}
 
 	scans := make([]interface{}, len(r.Rows.FieldDescriptions()))
@@ -112,19 +116,19 @@ func (r *Rows) scanStruct(structValue reflect.Value) error {
 		fieldIndex, ok := r.columnToFieldIndex[column]
 		if !ok {
 			return errors.Errorf(
-				"column: '%r': no corresponding field found or it'r unexported in %v",
+				"column: '%s': no corresponding field found or it's unexported in %v",
 				column, structValue.Type(),
 			)
 		}
 		// Struct may contain embedded structs by ptr that defaults to nil.
-		// In order to doScan values into a nested field,
+		// In order to scan values into a nested field,
 		// we need to initialize all nil structs on its way.
 		initializeNested(structValue, fieldIndex)
 
 		fieldVal := structValue.FieldByIndex(fieldIndex)
 		if !fieldVal.Addr().CanInterface() {
 			return errors.Errorf(
-				"column: '%r': corresponding field with index %d is invalid or can't be set in %v",
+				"column: '%s': corresponding field with index %d is invalid or can't be set in %v",
 				column, fieldIndex, structValue.Type(),
 			)
 		}
@@ -146,7 +150,6 @@ func (r *Rows) scanMap(mapValue reflect.Value) error {
 			)
 		}
 		r.mapElementType = mapType.Elem()
-		r.started = true
 	}
 	if mapValue.IsNil() {
 		mapValue.Set(reflect.MakeMap(mapValue.Type()))
@@ -155,10 +158,6 @@ func (r *Rows) scanMap(mapValue reflect.Value) error {
 	values, err := r.Rows.Values()
 	if err != nil {
 		return errors.Wrap(err, "get row values for map")
-	}
-
-	if err := r.ensureDistinctColumns(); err != nil {
-		return errors.WithStack(err)
 	}
 
 	for i, columnDesc := range r.Rows.FieldDescriptions() {
@@ -170,7 +169,7 @@ func (r *Rows) scanMap(mapValue reflect.Value) error {
 		// if they aren't convertible there is nothing we can do to set it.
 		if !value.Type().ConvertibleTo(r.mapElementType) {
 			return errors.Errorf(
-				"Column '%r' value of type %v can'be set into %v",
+				"Column '%s' value of type %v can'be set into %v",
 				column, value.Type(), mapValue.Type(),
 			)
 		}
@@ -185,11 +184,10 @@ func (r *Rows) scanPrimitive(value reflect.Value) error {
 		columnsNumber := len(r.Rows.FieldDescriptions())
 		if columnsNumber != 1 {
 			return errors.Errorf(
-				"to doScan into a primitive type, columns number must be exactly 1, got: %d",
+				"to scan into a primitive type, columns number must be exactly 1, got: %d",
 				columnsNumber,
 			)
 		}
-		r.started = true
 	}
 	if err := r.Rows.Scan(value.Addr().Interface()); err != nil {
 		return errors.Wrap(err, "doScan row value into primitive type")

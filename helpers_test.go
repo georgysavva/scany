@@ -8,7 +8,6 @@ import (
 	"github.com/jackc/pgproto3/v2"
 	"github.com/jackc/pgx/v4"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func makePtr(v interface{}) interface{} {
@@ -65,33 +64,20 @@ func (fr *fakeRows) Close() {}
 
 func (fr *fakeRows) Err() error { return nil }
 
-type ScanCase struct {
-	name          string
-	rows          *fakeRows
-	expected      interface{}
-	errString     string
-	exactlyOneRow bool
+func doScan(dstValue reflect.Value, rows pgx.Rows) error {
+	r := pgxquery.WrapRows(rows)
+	rows.Next()
+	return r.DoScan(dstValue)
 }
 
-func (tc *ScanCase) test(t *testing.T) {
+func newDstValue(v interface{}) reflect.Value {
+	dstType := reflect.TypeOf(v)
+	dstValue := reflect.New(dstType).Elem()
+	return dstValue
+}
+
+func assertDstValueEqual(t *testing.T, expected interface{}, dstVal reflect.Value) {
 	t.Helper()
-
-	dstType := reflect.TypeOf(tc.expected)
-	dstValue := reflect.New(dstType)
-	dst := dstValue.Interface()
-
-	var err error
-	if tc.exactlyOneRow {
-		err = pgxquery.ScanOne(dst, tc.rows)
-	} else {
-		err = pgxquery.ScanAll(dst, tc.rows)
-	}
-
-	if tc.errString == "" {
-		require.NoError(t, err)
-		got := dstValue.Elem().Interface()
-		assert.Equal(t, tc.expected, got)
-	} else {
-		assert.EqualError(t, err, tc.errString)
-	}
+	got := dstVal.Interface()
+	assert.Equal(t, expected, got)
 }
