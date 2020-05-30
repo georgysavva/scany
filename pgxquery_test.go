@@ -488,19 +488,19 @@ func TestScan_InvalidDestination_ReturnsErr(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			t.Run("scan one", func(t *testing.T) {
+			t.Run("Scan one", func(t *testing.T) {
 				fr := &fakeRows{}
 				err := pgxquery.ScanOne(tc.dst, fr)
 				assert.EqualError(t, err, tc.expectedErr)
 			})
 
-			t.Run("scan row", func(t *testing.T) {
+			t.Run("Scan row", func(t *testing.T) {
 				fr := &fakeRows{}
 				err := pgxquery.ScanRow(tc.dst, fr)
 				assert.EqualError(t, err, tc.expectedErr)
 			})
 
-			t.Run("scan all", func(t *testing.T) {
+			t.Run("Scan all", func(t *testing.T) {
 				fr := &fakeRows{}
 				err := pgxquery.ScanAll(tc.dst, fr)
 				assert.EqualError(t, err, tc.expectedErr)

@@ -6,7 +6,8 @@ import (
 	"reflect"
 )
 
-type Scanner struct {
+type Rows struct {
+	pgx.Rows
 	started            bool
 	columnToFieldIndex map[string][]int
 	sliceElementType   reflect.Type
@@ -14,16 +15,16 @@ type Scanner struct {
 	mapElementType     reflect.Type
 }
 
-func NewScanner() *Scanner {
-	return &Scanner{}
+func WrapRows(rows pgx.Rows) *Rows {
+	return &Rows{Rows: rows}
 }
 
-func (s *Scanner) ScanRow(dst interface{}, rows pgx.Rows) error {
+func (r *Rows) Scanx(dst interface{}) error {
 	dstVal, err := parseDestination(dst)
 	if err != nil {
 		return errors.WithStack(err)
 	}
-	if err := s.scan(dstVal, rows); err != nil {
+	if err := r.doScan(dstVal); err != nil {
 		return errors.WithStack(err)
 	}
 	return nil
@@ -43,26 +44,26 @@ func parseDestination(dst interface{}) (reflect.Value, error) {
 	return dstVal, nil
 }
 
-func (s *Scanner) scan(dstValue reflect.Value, rows pgx.Rows) error {
+func (r *Rows) doScan(dstValue reflect.Value) error {
 	var err error
 	if dstValue.Kind() == reflect.Struct {
-		err = s.scanStruct(dstValue, rows)
+		err = r.scanStruct(dstValue)
 	} else if dstValue.Kind() == reflect.Map {
-		err = s.scanMap(dstValue, rows)
+		err = r.scanMap(dstValue)
 	} else {
-		err = s.scanPrimitive(dstValue, rows)
+		err = r.scanPrimitive(dstValue)
 	}
 	return errors.WithStack(err)
 }
 
-func newScannerForSlice(sliceType reflect.Type) *Scanner {
+func wrapRowsForSliceScan(rows pgx.Rows, sliceType reflect.Type) *Rows {
 	var sliceElementByPtr bool
 	sliceElementType := sliceType.Elem()
 
-	// If it's a slice of structs or maps,
+	// If it'r a slice of structs or maps,
 	// we handle them the same way and dereference pointers to values,
 	// because eventually we works with fields or keys.
-	// But if it's a slice of primitive type e.g. or []string or []*string,
+	// But if it'r a slice of primitive type e.g. or []string or []*string,
 	// we must leave and pass elements as is to Rows.Scan().
 	if sliceElementType.Kind() == reflect.Ptr {
 		if sliceElementType.Elem().Kind() == reflect.Struct ||
@@ -72,70 +73,71 @@ func newScannerForSlice(sliceType reflect.Type) *Scanner {
 			sliceElementType = sliceElementType.Elem()
 		}
 	}
-	s := &Scanner{
+	r := &Rows{
+		Rows:              rows,
 		sliceElementType:  sliceElementType,
 		sliceElementByPtr: sliceElementByPtr,
 	}
-	return s
+	return r
 }
 
-func (s *Scanner) scanSliceElement(sliceValue reflect.Value, rows pgx.Rows) error {
-	elemVal := reflect.New(s.sliceElementType).Elem()
-	if err := s.scan(elemVal, rows); err != nil {
+func (r *Rows) scanSliceElement(sliceValue reflect.Value) error {
+	elemVal := reflect.New(r.sliceElementType).Elem()
+	if err := r.doScan(elemVal); err != nil {
 		return errors.WithStack(err)
 	}
-	if s.sliceElementByPtr {
+	if r.sliceElementByPtr {
 		elemVal = elemVal.Addr()
 	}
 	sliceValue.Set(reflect.Append(sliceValue, elemVal))
 	return nil
 }
 
-func (s *Scanner) scanStruct(structValue reflect.Value, rows pgx.Rows) error {
-	if !s.started {
-		if err := ensureDistinctColumns(rows); err != nil {
+func (r *Rows) scanStruct(structValue reflect.Value) error {
+	if !r.started {
+		if err := r.ensureDistinctColumns(); err != nil {
 			return errors.WithStack(err)
 		}
 		var err error
-		s.columnToFieldIndex, err = getColumnToFieldIndexMap(structValue.Type())
+		r.columnToFieldIndex, err = getColumnToFieldIndexMap(structValue.Type())
 		if err != nil {
 			return errors.WithStack(err)
 		}
-		s.started = true
+		r.started = true
 	}
 
-	scans := make([]interface{}, len(rows.FieldDescriptions()))
-	for i, columnDesc := range rows.FieldDescriptions() {
+	scans := make([]interface{}, len(r.Rows.FieldDescriptions()))
+	for i, columnDesc := range r.Rows.FieldDescriptions() {
 		column := string(columnDesc.Name)
-		fieldIndex, ok := s.columnToFieldIndex[column]
+		fieldIndex, ok := r.columnToFieldIndex[column]
 		if !ok {
 			return errors.Errorf(
-				"column: '%s': no corresponding field found or it's unexported in %v",
+				"column: '%r': no corresponding field found or it'r unexported in %v",
 				column, structValue.Type(),
 			)
 		}
 		// Struct may contain embedded structs by ptr that defaults to nil.
-		// In order to scan values into a nested field,
+		// In order to doScan values into a nested field,
 		// we need to initialize all nil structs on its way.
 		initializeNested(structValue, fieldIndex)
 
 		fieldVal := structValue.FieldByIndex(fieldIndex)
 		if !fieldVal.Addr().CanInterface() {
 			return errors.Errorf(
-				"column: '%s': corresponding field with index %d is invalid or can't be set in %v",
+				"column: '%r': corresponding field with index %d is invalid or can't be set in %v",
 				column, fieldIndex, structValue.Type(),
 			)
 		}
 		scans[i] = fieldVal.Addr().Interface()
 	}
-	if err := rows.Scan(scans...); err != nil {
-		return errors.Wrap(err, "scan row into struct fields")
+	if err := r.Rows.Scan(scans...); err != nil {
+		return errors.Wrap(err, "doScan row into struct fields")
 	}
 	return nil
 }
 
-func (s *Scanner) scanMap(mapValue reflect.Value, rows pgx.Rows) error {
-	if !s.started {
+func (r *Rows) scanMap(mapValue reflect.Value) error {
+	if !r.started {
 		mapType := mapValue.Type()
 		if mapType.Key().Kind() != reflect.String {
 			return errors.Errorf(
@@ -143,61 +145,61 @@ func (s *Scanner) scanMap(mapValue reflect.Value, rows pgx.Rows) error {
 				mapType, mapType.Key(),
 			)
 		}
-		s.mapElementType = mapType.Elem()
-		s.started = true
+		r.mapElementType = mapType.Elem()
+		r.started = true
 	}
 	if mapValue.IsNil() {
 		mapValue.Set(reflect.MakeMap(mapValue.Type()))
 	}
 
-	values, err := rows.Values()
+	values, err := r.Rows.Values()
 	if err != nil {
 		return errors.Wrap(err, "get row values for map")
 	}
 
-	if err := ensureDistinctColumns(rows); err != nil {
+	if err := r.ensureDistinctColumns(); err != nil {
 		return errors.WithStack(err)
 	}
 
-	for i, columnDesc := range rows.FieldDescriptions() {
+	for i, columnDesc := range r.Rows.FieldDescriptions() {
 		column := string(columnDesc.Name)
 		key := reflect.ValueOf(column)
 		value := reflect.ValueOf(values[i])
 
 		// If value type is different compared to map element type, try to convert it,
 		// if they aren't convertible there is nothing we can do to set it.
-		if !value.Type().ConvertibleTo(s.mapElementType) {
+		if !value.Type().ConvertibleTo(r.mapElementType) {
 			return errors.Errorf(
-				"Column '%s' value of type %v can'be set into %v",
+				"Column '%r' value of type %v can'be set into %v",
 				column, value.Type(), mapValue.Type(),
 			)
 		}
-		mapValue.SetMapIndex(key, value.Convert(s.mapElementType))
+		mapValue.SetMapIndex(key, value.Convert(r.mapElementType))
 	}
 
 	return nil
 }
 
-func (s *Scanner) scanPrimitive(value reflect.Value, rows pgx.Rows) error {
-	if !s.started {
-		columnsNumber := len(rows.FieldDescriptions())
+func (r *Rows) scanPrimitive(value reflect.Value) error {
+	if !r.started {
+		columnsNumber := len(r.Rows.FieldDescriptions())
 		if columnsNumber != 1 {
 			return errors.Errorf(
-				"to scan into a primitive type, columns number must be exactly 1, got: %d",
+				"to doScan into a primitive type, columns number must be exactly 1, got: %d",
 				columnsNumber,
 			)
 		}
-		s.started = true
+		r.started = true
 	}
-	if err := rows.Scan(value.Addr().Interface()); err != nil {
-		return errors.Wrap(err, "scan row value into primitive type")
+	if err := r.Rows.Scan(value.Addr().Interface()); err != nil {
+		return errors.Wrap(err, "doScan row value into primitive type")
 	}
 	return nil
 }
 
-func ensureDistinctColumns(rows pgx.Rows) error {
-	seen := make(map[string]struct{}, len(rows.FieldDescriptions()))
-	for _, columnDesc := range rows.FieldDescriptions() {
+func (r *Rows) ensureDistinctColumns() error {
+	seen := make(map[string]struct{}, len(r.Rows.FieldDescriptions()))
+	for _, columnDesc := range r.Rows.FieldDescriptions() {
 		column := string(columnDesc.Name)
 		if _, ok := seen[column]; ok {
 			return errors.Errorf("row contains duplicated column '%s'", column)
