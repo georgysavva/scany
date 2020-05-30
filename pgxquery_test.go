@@ -1,7 +1,6 @@
 package pgxquery_test
 
 import (
-	"fmt"
 	"github.com/georgysavva/pgxquery"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -16,47 +15,47 @@ func TestScanOneStruct(t *testing.T) {
 			rows: &fakeRows{
 				columns: []string{"foo", "bar"},
 				data: [][]interface{}{
-					{4, "b"},
+					{"foo val", "bar val"},
 				},
 			},
 			expected: struct {
-				Foo int
+				Foo string
 				Bar string
 			}{
-				Foo: 4,
-				Bar: "b",
+				Foo: "foo val",
+				Bar: "bar val",
 			},
 		},
 		{
-			name: "fields automatically mapped to snake case",
-			rows: &fakeRows{
-				columns: []string{"foo_bar", "bar_foo"},
-				data: [][]interface{}{
-					{4, "b"},
-				},
-			},
-			expected: struct {
-				FooBar int
-				BarFoo string
-			}{
-				FooBar: 4,
-				BarFoo: "b",
-			},
-		},
-		{
-			name: "fields automatically mapped to snake case",
+			name: "fields without tags automatically mapped to snake case",
 			rows: &fakeRows{
 				columns: []string{"foo_column", "bar_column"},
 				data: [][]interface{}{
-					{4, "b"},
+					{"foo val", "bar val"},
 				},
 			},
 			expected: struct {
-				Foo int    `db:"foo_column"`
+				FooColumn string
+				BarColumn string
+			}{
+				FooColumn: "foo val",
+				BarColumn: "bar val",
+			},
+		},
+		{
+			name: "fields with tags",
+			rows: &fakeRows{
+				columns: []string{"foo_column", "bar_column"},
+				data: [][]interface{}{
+					{"foo val", "bar val"},
+				},
+			},
+			expected: struct {
+				Foo string `db:"foo_column"`
 				Bar string `db:"bar_column"`
 			}{
-				Foo: 4,
-				Bar: "b",
+				Foo: "foo val",
+				Bar: "bar val",
 			},
 		},
 		{
@@ -64,7 +63,7 @@ func TestScanOneStruct(t *testing.T) {
 			rows: &fakeRows{
 				columns: []string{"foo", "bar"},
 				data: [][]interface{}{
-					{4, "b"},
+					{"foo val", "bar val"},
 				},
 			},
 			expected: struct {
@@ -77,7 +76,7 @@ func TestScanOneStruct(t *testing.T) {
 			rows: &fakeRows{
 				columns: []string{"foo", "foo"},
 				data: [][]interface{}{
-					{4, "b"},
+					{"foo val", "bar val"},
 				},
 			},
 			expected: struct {
@@ -90,60 +89,60 @@ func TestScanOneStruct(t *testing.T) {
 			rows: &fakeRows{
 				columns: []string{"foo", "bar"},
 				data: [][]interface{}{
-					{4, "b"},
+					{"foo val", "bar val"},
 				},
 			},
 			expected: struct {
-				Foo int `db:"-"`
+				Foo string `db:"-"`
 				Bar string
 			}{},
 			errString: "column: 'foo': no corresponding field found or it's unexported in " +
-				"struct { Foo int \"db:\\\"-\\\"\"; Bar string }",
+				"struct { Foo string \"db:\\\"-\\\"\"; Bar string }",
 		},
 		{
 			name: "field is unexported",
 			rows: &fakeRows{
 				columns: []string{"foo", "bar"},
 				data: [][]interface{}{
-					{4, "b"},
+					{"foo val", "bar val"},
 				},
 			},
 			expected: struct {
-				foo int
+				foo string
 				Bar string
 			}{},
-			errString: "column: 'foo': no corresponding field found or it's unexported in struct { foo int; Bar string }",
+			errString: "column: 'foo': no corresponding field found or it's unexported in struct { foo string; Bar string }",
 		},
 		{
-			name: "field is unexported via tag",
+			name: "field with tag is unexported",
 			rows: &fakeRows{
 				columns: []string{"foo_column", "bar"},
 				data: [][]interface{}{
-					{4, "b"},
+					{"foo val", "bar val"},
 				},
 			},
 			expected: struct {
-				foo int `db:"foo_column"`
+				foo string `db:"foo_column"`
 				Bar string
 			}{},
 			errString: "column: 'foo_column': no corresponding field found or it's unexported in " +
-				"struct { foo int \"db:\\\"foo_column\\\"\"; Bar string }",
+				"struct { foo string \"db:\\\"foo_column\\\"\"; Bar string }",
 		},
 		{
-			name: "duplicated tag",
+			name: "fields contain duplicated tag",
 			rows: &fakeRows{
 				columns: []string{"foo_column", "bar"},
 				data: [][]interface{}{
-					{4, "b"},
+					{"foo val", "bar val"},
 				},
 			},
 			expected: struct {
-				Foo int    `db:"foo_column"`
+				Foo string `db:"foo_column"`
 				Bar string `db:"foo_column"`
 			}{},
 			errString: "Column must have exactly one field pointing to it; " +
 				"found 2 fields with indexes [0] and [1] pointing to 'foo_column' in " +
-				"struct { Foo int \"db:\\\"foo_column\\\"\"; Bar string \"db:\\\"foo_column\\\"\" }",
+				"struct { Foo string \"db:\\\"foo_column\\\"\"; Bar string \"db:\\\"foo_column\\\"\" }",
 		},
 	}
 	for _, tc := range cases {
@@ -164,12 +163,12 @@ func TestScanOneMap(t *testing.T) {
 			rows: &fakeRows{
 				columns: []string{"foo", "bar"},
 				data: [][]interface{}{
-					{4, "b"},
+					{"foo val", "bar val"},
 				},
 			},
 			expected: map[string]interface{}{
-				"foo": 4,
-				"bar": "b",
+				"foo": "foo val",
+				"bar": "bar val",
 			},
 		},
 		{
@@ -177,12 +176,12 @@ func TestScanOneMap(t *testing.T) {
 			rows: &fakeRows{
 				columns: []string{"foo", "bar"},
 				data: [][]interface{}{
-					{"f", "b"},
+					{"foo val", "bar val"},
 				},
 			},
 			expected: map[string]string{
-				"foo": "f",
-				"bar": "b",
+				"foo": "foo val",
+				"bar": "bar val",
 			},
 		},
 		{
@@ -190,12 +189,12 @@ func TestScanOneMap(t *testing.T) {
 			rows: &fakeRows{
 				columns: []string{"foo", "bar"},
 				data: [][]interface{}{
-					{int8(4), int8(5)},
+					{int8(1), int8(2)},
 				},
 			},
 			expected: map[string]int{
-				"foo": 4,
-				"bar": 5,
+				"foo": 1,
+				"bar": 2,
 			},
 		},
 		{
@@ -203,7 +202,7 @@ func TestScanOneMap(t *testing.T) {
 			rows: &fakeRows{
 				columns: []string{"foo", "bar"},
 				data: [][]interface{}{
-					{4, "b"},
+					{"foo val", "bar val"},
 				},
 			},
 			expected:  map[int]interface{}{},
@@ -214,7 +213,7 @@ func TestScanOneMap(t *testing.T) {
 			rows: &fakeRows{
 				columns: []string{"foo", "foo"},
 				data: [][]interface{}{
-					{4, "b"},
+					{"foo val", "bar val"},
 				},
 			},
 			expected:  map[string]interface{}{},
@@ -223,13 +222,13 @@ func TestScanOneMap(t *testing.T) {
 		{
 			name: "invalid element type",
 			rows: &fakeRows{
-				columns: []string{"foo", "bar"},
+				columns: []string{"foo"},
 				data: [][]interface{}{
-					{4, "b"},
+					{"foo val"},
 				},
 			},
 			expected:  map[string]int{},
-			errString: "Column 'bar' value of type string can'be set into map[string]int",
+			errString: "Column 'foo' value of type string can'be set into map[string]int",
 		},
 	}
 	for _, tc := range cases {
@@ -250,52 +249,52 @@ func TestScanOnePrimitiveType(t *testing.T) {
 			rows: &fakeRows{
 				columns: []string{"bar"},
 				data: [][]interface{}{
-					{"b"},
+					{"bar val"},
 				},
 			},
-			expected: "b",
+			expected: "bar val",
 		},
 		{
 			name: "string by ptr",
 			rows: &fakeRows{
 				columns: []string{"bar"},
 				data: [][]interface{}{
-					{"b"},
+					{"bar val"},
 				},
 			},
-			expected: "b",
+			expected: "bar val",
 		},
 		{
 			name: "slice as single column",
 			rows: &fakeRows{
 				columns: []string{"bar"},
 				data: [][]interface{}{
-					{[]string{"a", "b", "c"}},
+					{[]string{"bar val", "bar val 2", "bar val 3"}},
 				},
 			},
-			expected: []string{"a", "b", "c"},
+			expected: []string{"bar val", "bar val 2", "bar val 3"},
 		},
 		{
 			name: "0 columns",
 			rows: &fakeRows{
 				data: [][]interface{}{
-					{"b"},
+					{"bar val"},
 				},
 				columns: []string{},
 			},
 			expected:  "",
-			errString: "to fill into a primitive type, columns number must be exactly 1, got: 0",
+			errString: "to scan into a primitive type, columns number must be exactly 1, got: 0",
 		},
 		{
 			name: "more than 1 column",
 			rows: &fakeRows{
 				columns: []string{"foo", "bar"},
 				data: [][]interface{}{
-					{"f", "b"},
+					{"foo val", "bar val"},
 				},
 			},
 			expected:  "",
-			errString: "to fill into a primitive type, columns number must be exactly 1, got: 2",
+			errString: "to scan into a primitive type, columns number must be exactly 1, got: 2",
 		},
 	}
 	for _, tc := range cases {
@@ -316,18 +315,18 @@ func TestScanAll(t *testing.T) {
 			rows: &fakeRows{
 				columns: []string{"foo", "bar"},
 				data: [][]interface{}{
-					{4, "b"},
-					{44, "bb"},
-					{444, "bbb"},
+					{"foo val", "bar val"},
+					{"foo val 2", "bar val 2"},
+					{"foo val 3", "bar val 3"},
 				},
 			},
 			expected: []struct {
-				Foo int
+				Foo string
 				Bar string
 			}{
-				{Foo: 4, Bar: "b"},
-				{Foo: 44, Bar: "bb"},
-				{Foo: 444, Bar: "bbb"},
+				{Foo: "foo val", Bar: "bar val"},
+				{Foo: "foo val 2", Bar: "bar val 2"},
+				{Foo: "foo val 3", Bar: "bar val 3"},
 			},
 		},
 		{
@@ -335,18 +334,18 @@ func TestScanAll(t *testing.T) {
 			rows: &fakeRows{
 				columns: []string{"foo", "bar"},
 				data: [][]interface{}{
-					{4, "b"},
-					{44, "bb"},
-					{444, "bbb"},
+					{"foo val", "bar val"},
+					{"foo val 2", "bar val 2"},
+					{"foo val 3", "bar val 3"},
 				},
 			},
 			expected: []*struct {
-				Foo int
+				Foo string
 				Bar string
 			}{
-				{Foo: 4, Bar: "b"},
-				{Foo: 44, Bar: "bb"},
-				{Foo: 444, Bar: "bbb"},
+				{Foo: "foo val", Bar: "bar val"},
+				{Foo: "foo val 2", Bar: "bar val 2"},
+				{Foo: "foo val 3", Bar: "bar val 3"},
 			},
 		},
 		{
@@ -354,15 +353,15 @@ func TestScanAll(t *testing.T) {
 			rows: &fakeRows{
 				columns: []string{"foo", "bar"},
 				data: [][]interface{}{
-					{4, "b"},
-					{44, "bb"},
-					{444, "bbb"},
+					{"foo val", "bar val"},
+					{"foo val 2", "bar val 2"},
+					{"foo val 3", "bar val 3"},
 				},
 			},
 			expected: []map[string]interface{}{
-				{"foo": 4, "bar": "b"},
-				{"foo": 44, "bar": "bb"},
-				{"foo": 444, "bar": "bbb"},
+				{"foo": "foo val", "bar": "bar val"},
+				{"foo": "foo val 2", "bar": "bar val 2"},
+				{"foo": "foo val 3", "bar": "bar val 3"},
 			},
 		},
 		{
@@ -370,15 +369,15 @@ func TestScanAll(t *testing.T) {
 			rows: &fakeRows{
 				columns: []string{"foo", "bar"},
 				data: [][]interface{}{
-					{4, "b"},
-					{44, "bb"},
-					{444, "bbb"},
+					{"foo val", "bar val"},
+					{"foo val 2", "bar val 2"},
+					{"foo val 3", "bar val 3"},
 				},
 			},
 			expected: []*map[string]interface{}{
-				{"foo": 4, "bar": "b"},
-				{"foo": 44, "bar": "bb"},
-				{"foo": 444, "bar": "bbb"},
+				{"foo": "foo val", "bar": "bar val"},
+				{"foo": "foo val 2", "bar": "bar val 2"},
+				{"foo": "foo val 3", "bar": "bar val 3"},
 			},
 		},
 		{
@@ -386,39 +385,39 @@ func TestScanAll(t *testing.T) {
 			rows: &fakeRows{
 				columns: []string{"bar"},
 				data: [][]interface{}{
-					{"b"},
-					{"bb"},
-					{"bbb"},
+					{"bar val"},
+					{"bar val 2"},
+					{"bar val 3"},
 				},
 			},
-			expected: []string{"b", "bb", "bbb"},
+			expected: []string{"bar val", "bar val 2", "bar val 3"},
 		},
 		{
 			name: "slice of strings by ptr",
 			rows: &fakeRows{
 				columns: []string{"bar"},
 				data: [][]interface{}{
-					{makeStrPtr("b")},
+					{makeStrPtr("bar val")},
 					{nil},
-					{makeStrPtr("bbb")},
+					{makeStrPtr("bar val 3")},
 				},
 			},
-			expected: []*string{makeStrPtr("b"), nil, makeStrPtr("bbb")},
+			expected: []*string{makeStrPtr("bar val"), nil, makeStrPtr("bar val 3")},
 		},
 		{
 			name: "slice of slices",
 			rows: &fakeRows{
 				columns: []string{"bar"},
 				data: [][]interface{}{
-					{[]string{"a", "b"}},
-					{[]string{"aa", "bb"}},
-					{[]string{"aaa", "bbb"}},
+					{[]string{"bar val", "bar val 2"}},
+					{[]string{"bar val 3", "bar val 4"}},
+					{[]string{"bar val 5", "bar val 6"}},
 				},
 			},
 			expected: [][]string{
-				{"a", "b"},
-				{"aa", "bb"},
-				{"aaa", "bbb"},
+				{"bar val", "bar val 2"},
+				{"bar val 3", "bar val 4"},
+				{"bar val 5", "bar val 6"},
 			},
 		},
 	}
@@ -432,162 +431,107 @@ func TestScanAll(t *testing.T) {
 	}
 }
 
-func TestScanAllResetsDstSlice(t *testing.T) {
+func TestScanAll_NonEmptySlice_ResetsDstSlice(t *testing.T) {
 	t.Parallel()
 	fr := &fakeRows{
 		columns: []string{"bar"},
 		data: [][]interface{}{
-			{"b"},
-			{"bb"},
-			{"bbb"},
+			{"bar val"},
+			{"bar val 2"},
+			{"bar val 3"},
 		},
 	}
-	expected := []string{"b", "bb", "bbb"}
-	var got []string
-	var err error
-	for i := 0; i < 3; i++ {
-		t.Run(fmt.Sprintf("iteraction %d", i), func(t *testing.T) {
-			err = pgxquery.ScanAll(&got, fr)
-			require.NoError(t, err)
-			assert.Equal(t, expected, got)
-			fr.Reset()
-		})
-	}
+	expected := []string{"bar val", "bar val 2", "bar val 3"}
+	got := []string{"junk data", "junk data 2"}
+	err := pgxquery.ScanAll(&got, fr)
+	require.NoError(t, err)
+	assert.Equal(t, expected, got)
 }
 
-func TestScanInvalidDestinations(t *testing.T) {
+func TestScan_InvalidDestination_ReturnsErr(t *testing.T) {
 	t.Parallel()
-
 	cases := []struct {
-		name          string
-		exactlyOneRow bool
-		dst           interface{}
-		errString     string
+		name        string
+		dst         interface{}
+		expectedErr string
 	}{
 		{
-			name: "scan one: non pointer",
+			name: "non pointer",
 			dst: struct {
 				Foo string
 			}{},
-			exactlyOneRow: true,
-			errString:     "destinationMeta must be a pointer, got: struct { Foo string }",
+			expectedErr: "destination must be a pointer, got: struct { Foo string }",
 		},
 		{
-			name: "scan all: non pointer",
-			dst: struct {
-				Foo string
-			}{},
-			exactlyOneRow: false,
-			errString:     "destinationMeta must be a pointer, got: struct { Foo string }",
+			name:        "map",
+			dst:         map[string]interface{}{},
+			expectedErr: "destination must be a pointer, got: map[string]interface {}",
 		},
 		{
-			name:          "scan one: map",
-			dst:           map[string]interface{}{},
-			exactlyOneRow: true,
-			errString:     "destinationMeta must be a pointer, got: map[string]interface {}",
+			name:        "slice",
+			dst:         []struct{ Foo string }{},
+			expectedErr: "destination must be a pointer, got: []struct { Foo string }",
 		},
 		{
-			name:          "scan all: map",
-			dst:           map[string]interface{}{},
-			exactlyOneRow: false,
-			errString:     "destinationMeta must be a pointer, got: map[string]interface {}",
+			name:        "nil",
+			dst:         nil,
+			expectedErr: "destination must be a non nil pointer",
 		},
 		{
-			name:          "scan one: slice",
-			dst:           []struct{ Foo string }{},
-			exactlyOneRow: true,
-			errString:     "destinationMeta must be a pointer, got: []struct { Foo string }",
-		},
-		{
-			name:          "scan all: slice",
-			dst:           []struct{ Foo string }{},
-			exactlyOneRow: false,
-			errString:     "destinationMeta must be a pointer, got: []struct { Foo string }",
-		},
-		{
-			name:          "scan one: nil",
-			dst:           nil,
-			exactlyOneRow: true,
-			errString:     "destinationMeta must be a non nil pointer",
-		},
-		{
-			name:          "scan all: nil",
-			dst:           nil,
-			exactlyOneRow: false,
-			errString:     "destinationMeta must be a non nil pointer",
-		},
-		{
-			name:          "scan one: (*int)(nil)",
-			dst:           (*int)(nil),
-			exactlyOneRow: true,
-			errString:     "destinationMeta must be a non nil pointer",
-		},
-		{
-			name:          "scan all: (*int)(nil)",
-			dst:           (*int)(nil),
-			exactlyOneRow: false,
-			errString:     "destinationMeta must be a non nil pointer",
-		},
-		{
-			name: "scan all: not pointer to slice",
-			dst: &struct {
-				A string
-			}{},
-			exactlyOneRow: false,
-			errString:     "destinationMeta must be a pointer to a slice, got: *struct { A string }",
+			name:        "(*int)(nil)",
+			dst:         (*int)(nil),
+			expectedErr: "destination must be a non nil pointer",
 		},
 	}
 	for _, tc := range cases {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			fr := &fakeRows{}
-			var err error
-			if tc.exactlyOneRow {
-				err = pgxquery.ScanOne(tc.dst, fr)
-			} else {
-				err = pgxquery.ScanAll(tc.dst, fr)
-			}
-			assert.EqualError(t, err, tc.errString)
+
+			t.Run("scan one", func(t *testing.T) {
+				fr := &fakeRows{}
+				err := pgxquery.ScanOne(tc.dst, fr)
+				assert.EqualError(t, err, tc.expectedErr)
+			})
+
+			t.Run("scan row", func(t *testing.T) {
+				fr := &fakeRows{}
+				err := pgxquery.ScanRow(tc.dst, fr)
+				assert.EqualError(t, err, tc.expectedErr)
+			})
+
+			t.Run("scan all", func(t *testing.T) {
+				fr := &fakeRows{}
+				err := pgxquery.ScanAll(tc.dst, fr)
+				assert.EqualError(t, err, tc.expectedErr)
+			})
 		})
 	}
 }
 
-func TestScanOneRowsMismatch(t *testing.T) {
+func TestScanOne_ZeroRows_ReturnNotFoundErr(t *testing.T) {
 	t.Parallel()
-	cases := []struct {
-		name      string
-		rows      *fakeRows
-		errString string
-	}{
-		{
-			name: "0 rows",
-			rows: &fakeRows{
-				columns: []string{"foo"},
-				data:    [][]interface{}{},
-			},
-			errString: "no row was found",
-		},
-		{
-			name: "more than 1 row",
-			rows: &fakeRows{
-				columns: []string{"foo"},
-				data: [][]interface{}{
-					{"b"},
-					{"bb"},
-					{"bbb"},
-				},
-			},
-			errString: "expected 1 row, got: 3",
+	rows := &fakeRows{
+		columns: []string{"foo"},
+		data:    [][]interface{}{},
+	}
+	var dst string
+	err := pgxquery.ScanOne(&dst, rows)
+	assert.True(t, pgxquery.NotFound(err))
+}
+
+func TestScanOne_MultipleRows_ReturnErr(t *testing.T) {
+	t.Parallel()
+	rows := &fakeRows{
+		columns: []string{"foo"},
+		data: [][]interface{}{
+			{"bar val"},
+			{"bar val 2"},
+			{"bar val 3"},
 		},
 	}
-	for _, tc := range cases {
-		tc := tc
-		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
-			var dst string
-			err := pgxquery.ScanOne(&dst, tc.rows)
-			assert.EqualError(t, err, tc.errString)
-		})
-	}
+	var dst string
+	err := pgxquery.ScanOne(&dst, rows)
+	expectedErr := "expected 1 row, got: 3"
+	assert.EqualError(t, err, expectedErr)
 }

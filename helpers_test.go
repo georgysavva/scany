@@ -29,11 +29,6 @@ type fakeRows struct {
 	rowsProcessed int
 }
 
-func (fr *fakeRows) Reset() {
-	fr.rowsProcessed = 0
-	fr.currentRow = nil
-}
-
 func (fr *fakeRows) Scan(dest ...interface{}) error {
 	for i, data := range fr.currentRow {
 		dst := dest[i]
