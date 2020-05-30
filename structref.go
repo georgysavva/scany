@@ -78,6 +78,20 @@ func getColumnToFieldIndexMap(structType reflect.Type) (map[string][]int, error)
 	return result, nil
 }
 
+func initializeNested(structValue reflect.Value, fieldIndex []int) {
+	i := fieldIndex[0]
+	field := structValue.Field(i)
+
+	// Create a new instance of a struct and set it to field,
+	// if field is a nil pointer to a struct.
+	if field.Kind() == reflect.Ptr && field.Type().Elem().Kind() == reflect.Struct && field.IsNil() {
+		field.Set(reflect.New(field.Type().Elem()))
+	}
+	if len(fieldIndex) > 1 {
+		initializeNested(reflect.Indirect(field), fieldIndex[1:])
+	}
+}
+
 var matchFirstCapRe = regexp.MustCompile("(.)([A-Z][a-z]+)")
 var matchAllCapRe = regexp.MustCompile("([a-z0-9])([A-Z])")
 

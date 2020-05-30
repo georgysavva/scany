@@ -2,6 +2,7 @@ package pgxquery
 
 import (
 	"context"
+	"reflect"
 
 	"github.com/jackc/pgx/v4"
 	"github.com/pkg/errors"
@@ -40,11 +41,8 @@ func ScanOne(dst interface{}, rows pgx.Rows) error {
 }
 
 func ScanRow(dst interface{}, rows pgx.Rows) error {
-	dstValue, dstMeta, err := parseDestination(dst, false /* sliceExpected */)
-	if err != nil {
-		return errors.WithStack(err)
-	}
-	err = dstMeta.fill(dstValue, rows)
+	s := NewScanner()
+	err := s.ScanRow(dst, rows)
 	return errors.WithStack(err)
 }
 
@@ -57,22 +55,32 @@ var notFoundErr = errors.New("no row was found")
 
 func processRows(dst interface{}, rows pgx.Rows, multipleRows bool) error {
 	defer rows.Close()
-	dstValue, dstMeta, err := parseDestination(dst, multipleRows /* sliceExpected */)
+	dstValue, err := parseDestination(dst)
 	if err != nil {
 		return errors.WithStack(err)
 	}
-
+	var s *Scanner
 	if multipleRows {
+		dstType := dstValue.Type()
+		if dstValue.Kind() != reflect.Slice {
+			return errors.Errorf(
+				"destination must be a slice, got: %v", dstType,
+			)
+		}
 		// Make sure that slice is empty.
 		dstValue.Set(dstValue.Slice(0, 0))
+
+		s = newScannerForSlice(dstType)
+	} else {
+		s = NewScanner()
 	}
 	var rowsAffected int
 	for rows.Next() {
 		var err error
 		if multipleRows {
-			err = dstMeta.fillSliceElement(dstValue, rows)
+			err = s.scanSliceElement(dstValue, rows)
 		} else {
-			err = dstMeta.fill(dstValue, rows)
+			err = s.scan(dstValue, rows)
 		}
 		if err != nil {
 			return errors.WithStack(err)
