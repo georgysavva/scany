@@ -1,1 +1,1 @@
-# pgxquery
+# pgxscan

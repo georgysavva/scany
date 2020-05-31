@@ -1,24 +1,25 @@
-package pgxquery_test
+package pgxscan_test
 
 import (
+	"context"
 	"reflect"
 	"testing"
 
-	"github.com/georgysavva/pgxquery"
+	"github.com/georgysavva/pgxscan"
 	"github.com/jackc/pgproto3/v2"
 	"github.com/jackc/pgx/v4"
 	"github.com/stretchr/testify/assert"
 )
 
-func makePtr(v interface{}) interface{} {
-	p := reflect.New(reflect.TypeOf(v))
-	p.Elem().Set(reflect.ValueOf(v))
-	return p.Interface()
-}
-
 func makeStrPtr(v string) *string { return &v }
 
-func makeIntPtr(v int) *int { return &v }
+type fakeQuerier struct {
+	rows pgx.Rows
+}
+
+func (fq *fakeQuerier) Query(ctx context.Context, sql string, args ...interface{}) (pgx.Rows, error) {
+	return fq.rows, nil
+}
 
 type fakeRows struct {
 	pgx.Rows
@@ -65,7 +66,7 @@ func (fr *fakeRows) Close() {}
 func (fr *fakeRows) Err() error { return nil }
 
 func doScan(dstValue reflect.Value, rows pgx.Rows) error {
-	r := pgxquery.WrapRows(rows)
+	r := pgxscan.WrapRows(rows)
 	rows.Next()
 	return r.DoScan(dstValue)
 }

@@ -1,4 +1,4 @@
-package pgxquery
+package pgxscan
 
 import (
 	"context"
