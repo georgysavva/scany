@@ -126,12 +126,6 @@ func (r *Rows) scanStruct(structValue reflect.Value) error {
 		initializeNested(structValue, fieldIndex)
 
 		fieldVal := structValue.FieldByIndex(fieldIndex)
-		if !fieldVal.Addr().CanInterface() {
-			return errors.Errorf(
-				"column: '%s': corresponding field with index %d is invalid or can't be set in %v",
-				column, fieldIndex, structValue.Type(),
-			)
-		}
 		scans[i] = fieldVal.Addr().Interface()
 	}
 	if err := r.Rows.Scan(scans...); err != nil {
