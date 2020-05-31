@@ -23,6 +23,26 @@ type nestedUnexported struct {
 	BarNested string
 }
 
+func TestRows_Scanx_Succeeds(t *testing.T) {
+	t.Parallel()
+	rows := &fakeRows{
+		columns: []string{"foo"},
+		data: [][]interface{}{
+			{"foo val"},
+		},
+	}
+	type dst struct {
+		Foo string
+	}
+	r := pgxscan.WrapRows(rows)
+	rows.Next()
+	var got dst
+	err := r.Scanx(&got)
+	require.NoError(t, err)
+	expected := dst{Foo: "foo val"}
+	assert.Equal(t, expected, got)
+}
+
 func TestDoScan_StructDestination_Succeeds(t *testing.T) {
 	t.Parallel()
 	type jsonObj struct {
