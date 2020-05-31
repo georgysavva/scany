@@ -431,32 +431,32 @@ func TestDoScan_PrimitiveTypeDestination_Succeeds(t *testing.T) {
 		{
 			name: "string",
 			rows: &fakeRows{
-				columns: []string{"bar"},
+				columns: []string{"foo"},
 				data: [][]interface{}{
-					{"bar val"},
+					{"foo val"},
 				},
 			},
-			expected: "bar val",
+			expected: "foo val",
 		},
 		{
 			name: "string by ptr",
 			rows: &fakeRows{
-				columns: []string{"bar"},
+				columns: []string{"foo"},
 				data: [][]interface{}{
-					{"bar val"},
+					{"foo val"},
 				},
 			},
-			expected: "bar val",
+			expected: "foo val",
 		},
 		{
 			name: "slice",
 			rows: &fakeRows{
-				columns: []string{"bar"},
+				columns: []string{"foo"},
 				data: [][]interface{}{
-					{[]string{"bar val", "bar val 2", "bar val 3"}},
+					{[]string{"foo val", "foo val 2", "foo val 3"}},
 				},
 			},
-			expected: []string{"bar val", "bar val 2", "bar val 3"},
+			expected: []string{"foo val", "foo val 2", "foo val 3"},
 		},
 	}
 	for _, tc := range cases {
@@ -483,7 +483,7 @@ func TestDoScan_InvalidPrimitiveTypeDestination_ReturnsErr(t *testing.T) {
 			name: "rows contain 0 columns",
 			rows: &fakeRows{
 				data: [][]interface{}{
-					{"bar val"},
+					{"foo val"},
 				},
 				columns: []string{},
 			},

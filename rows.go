@@ -24,10 +24,8 @@ func (r *Rows) Scanx(dst interface{}) error {
 	if err != nil {
 		return errors.WithStack(err)
 	}
-	if err := r.doScan(dstVal); err != nil {
-		return errors.WithStack(err)
-	}
-	return nil
+	err = r.doScan(dstVal)
+	return errors.WithStack(err)
 }
 
 func parseDestination(dst interface{}) (reflect.Value, error) {
@@ -72,7 +70,7 @@ func wrapRowsForSliceScan(rows pgx.Rows, sliceType reflect.Type) *Rows {
 	// we handle them the same way and dereference pointers to values,
 	// because eventually we works with fields or keys.
 	// But if it's a slice of primitive type e.g. or []string or []*string,
-	// we must leave and pass elements as is to Rows.Scan().
+	// we must leave and pass elements as is to pgx.Rows.Scan().
 	if sliceElementType.Kind() == reflect.Ptr {
 		if sliceElementType.Elem().Kind() == reflect.Struct ||
 			sliceElementType.Elem().Kind() == reflect.Map {
@@ -128,10 +126,8 @@ func (r *Rows) scanStruct(structValue reflect.Value) error {
 		fieldVal := structValue.FieldByIndex(fieldIndex)
 		scans[i] = fieldVal.Addr().Interface()
 	}
-	if err := r.Rows.Scan(scans...); err != nil {
-		return errors.Wrap(err, "doScan row into struct fields")
-	}
-	return nil
+	err := r.Rows.Scan(scans...)
+	return errors.Wrap(err, "scan row into struct fields")
 }
 
 func (r *Rows) scanMap(mapValue reflect.Value) error {
@@ -183,10 +179,8 @@ func (r *Rows) scanPrimitive(value reflect.Value) error {
 			)
 		}
 	}
-	if err := r.Rows.Scan(value.Addr().Interface()); err != nil {
-		return errors.Wrap(err, "doScan row value into primitive type")
-	}
-	return nil
+	err := r.Rows.Scan(value.Addr().Interface())
+	return errors.Wrap(err, "scan row value into primitive type")
 }
 
 func (r *Rows) ensureDistinctColumns() error {

@@ -129,41 +129,41 @@ func TestScanAll_Succeeds(t *testing.T) {
 		{
 			name: "slice of strings",
 			rows: &fakeRows{
-				columns: []string{"bar"},
+				columns: []string{"foo"},
 				data: [][]interface{}{
-					{"bar val"},
-					{"bar val 2"},
-					{"bar val 3"},
+					{"foo val"},
+					{"foo val 2"},
+					{"foo val 3"},
 				},
 			},
-			expected: []string{"bar val", "bar val 2", "bar val 3"},
+			expected: []string{"foo val", "foo val 2", "foo val 3"},
 		},
 		{
 			name: "slice of strings by ptr",
 			rows: &fakeRows{
-				columns: []string{"bar"},
+				columns: []string{"foo"},
 				data: [][]interface{}{
-					{makeStrPtr("bar val")},
+					{makeStrPtr("foo val")},
 					{nil},
-					{makeStrPtr("bar val 3")},
+					{makeStrPtr("foo val 3")},
 				},
 			},
-			expected: []*string{makeStrPtr("bar val"), nil, makeStrPtr("bar val 3")},
+			expected: []*string{makeStrPtr("foo val"), nil, makeStrPtr("foo val 3")},
 		},
 		{
 			name: "slice of slices",
 			rows: &fakeRows{
-				columns: []string{"bar"},
+				columns: []string{"foo"},
 				data: [][]interface{}{
-					{[]string{"bar val", "bar val 2"}},
-					{[]string{"bar val 3", "bar val 4"}},
-					{[]string{"bar val 5", "bar val 6"}},
+					{[]string{"foo val", "foo val 2"}},
+					{[]string{"foo val 3", "foo val 4"}},
+					{[]string{"foo val 5", "foo val 6"}},
 				},
 			},
 			expected: [][]string{
-				{"bar val", "bar val 2"},
-				{"bar val 3", "bar val 4"},
-				{"bar val 5", "bar val 6"},
+				{"foo val", "foo val 2"},
+				{"foo val 3", "foo val 4"},
+				{"foo val 5", "foo val 6"},
 			},
 		},
 	}
@@ -182,14 +182,14 @@ func TestScanAll_Succeeds(t *testing.T) {
 func TestScanAll_NonEmptySlice_ResetsDstSlice(t *testing.T) {
 	t.Parallel()
 	fr := &fakeRows{
-		columns: []string{"bar"},
+		columns: []string{"foo"},
 		data: [][]interface{}{
-			{"bar val"},
-			{"bar val 2"},
-			{"bar val 3"},
+			{"foo val"},
+			{"foo val 2"},
+			{"foo val 3"},
 		},
 	}
-	expected := []string{"bar val", "bar val 2", "bar val 3"}
+	expected := []string{"foo val", "foo val 2", "foo val 3"}
 	got := []string{"junk data", "junk data 2"}
 	err := pgxscan.ScanAll(&got, fr)
 	require.NoError(t, err)
