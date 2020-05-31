@@ -58,7 +58,7 @@ func (r *Rows) doScan(dstValue reflect.Value) error {
 	} else {
 		err = r.scanPrimitive(dstValue)
 	}
-	if r.started {
+	if !r.started {
 		r.started = true
 	}
 	return errors.WithStack(err)
