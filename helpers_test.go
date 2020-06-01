@@ -13,15 +13,15 @@ import (
 
 func makeStrPtr(v string) *string { return &v }
 
-type fakeQuerier struct {
+type testQuerier struct {
 	rows pgx.Rows
 }
 
-func (fq *fakeQuerier) Query(ctx context.Context, sql string, args ...interface{}) (pgx.Rows, error) {
-	return fq.rows, nil
+func (tq *testQuerier) Query(ctx context.Context, sql string, args ...interface{}) (pgx.Rows, error) {
+	return tq.rows, nil
 }
 
-type fakeRows struct {
+type testRows struct {
 	pgx.Rows
 	columns       []string
 	data          [][]interface{}
@@ -29,8 +29,8 @@ type fakeRows struct {
 	rowsProcessed int
 }
 
-func (fr *fakeRows) Scan(dest ...interface{}) error {
-	for i, data := range fr.currentRow {
+func (tr *testRows) Scan(dest ...interface{}) error {
+	for i, data := range tr.currentRow {
 		dst := dest[i]
 		dstV := reflect.ValueOf(dst).Elem()
 		if data != nil {
@@ -42,28 +42,28 @@ func (fr *fakeRows) Scan(dest ...interface{}) error {
 	return nil
 }
 
-func (fr *fakeRows) Next() bool {
-	if fr.rowsProcessed >= len(fr.data) {
+func (tr *testRows) Next() bool {
+	if tr.rowsProcessed >= len(tr.data) {
 		return false
 	}
-	fr.currentRow = fr.data[fr.rowsProcessed]
-	fr.rowsProcessed++
+	tr.currentRow = tr.data[tr.rowsProcessed]
+	tr.rowsProcessed++
 	return true
 }
 
-func (fr *fakeRows) FieldDescriptions() []pgproto3.FieldDescription {
-	fields := make([]pgproto3.FieldDescription, len(fr.columns))
-	for i, column := range fr.columns {
+func (tr *testRows) FieldDescriptions() []pgproto3.FieldDescription {
+	fields := make([]pgproto3.FieldDescription, len(tr.columns))
+	for i, column := range tr.columns {
 		fields[i] = pgproto3.FieldDescription{Name: []byte(column)}
 	}
 	return fields
 }
 
-func (fr *fakeRows) Values() ([]interface{}, error) { return fr.currentRow, nil }
+func (tr *testRows) Values() ([]interface{}, error) { return tr.currentRow, nil }
 
-func (fr *fakeRows) Close() {}
+func (tr *testRows) Close() {}
 
-func (fr *fakeRows) Err() error { return nil }
+func (tr *testRows) Err() error { return nil }
 
 func doScan(dstValue reflect.Value, rows pgx.Rows) error {
 	r := pgxscan.WrapRows(rows)

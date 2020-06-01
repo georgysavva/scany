@@ -6,17 +6,22 @@ import (
 	"reflect"
 )
 
+type startRowsFunc func(dstValue reflect.Value) error
+
 type Rows struct {
 	pgx.Rows
-	started            bool
 	columnToFieldIndex map[string][]int
 	sliceElementType   reflect.Type
 	sliceElementByPtr  bool
 	mapElementType     reflect.Type
+	started            bool
+	startFn            startRowsFunc
 }
 
 func WrapRows(rows pgx.Rows) *Rows {
-	return &Rows{Rows: rows}
+	r := &Rows{Rows: rows}
+	r.startFn = r.start
+	return r
 }
 
 func (r *Rows) Scanx(dst interface{}) error {
@@ -44,9 +49,10 @@ func parseDestination(dst interface{}) (reflect.Value, error) {
 
 func (r *Rows) doScan(dstValue reflect.Value) error {
 	if !r.started {
-		if err := r.ensureDistinctColumns(); err != nil {
+		if err := r.startFn(dstValue); err != nil {
 			return errors.WithStack(err)
 		}
+		r.started = true
 	}
 	var err error
 	if dstValue.Kind() == reflect.Struct {
@@ -55,9 +61,6 @@ func (r *Rows) doScan(dstValue reflect.Value) error {
 		err = r.scanMap(dstValue)
 	} else {
 		err = r.scanPrimitive(dstValue)
-	}
-	if !r.started {
-		r.started = true
 	}
 	return errors.WithStack(err)
 }
@@ -79,12 +82,41 @@ func wrapRowsForSliceScan(rows pgx.Rows, sliceType reflect.Type) *Rows {
 			sliceElementType = sliceElementType.Elem()
 		}
 	}
-	r := &Rows{
-		Rows:              rows,
-		sliceElementType:  sliceElementType,
-		sliceElementByPtr: sliceElementByPtr,
-	}
+	r := WrapRows(rows)
+	r.sliceElementType = sliceElementType
+	r.sliceElementByPtr = sliceElementByPtr
 	return r
+}
+
+func (r *Rows) start(dstValue reflect.Value) error {
+	if err := r.ensureDistinctColumns(); err != nil {
+		return errors.WithStack(err)
+	}
+	if dstValue.Kind() == reflect.Struct {
+		var err error
+		r.columnToFieldIndex, err = getColumnToFieldIndexMap(dstValue.Type())
+		return errors.WithStack(err)
+	}
+	if dstValue.Kind() == reflect.Map {
+		mapType := dstValue.Type()
+		if mapType.Key().Kind() != reflect.String {
+			return errors.Errorf(
+				"invalid type %v: map must have string key, got: %v",
+				mapType, mapType.Key(),
+			)
+		}
+		r.mapElementType = mapType.Elem()
+		return nil
+	}
+	// It's the primitive type case.
+	columnsNumber := len(r.Rows.FieldDescriptions())
+	if columnsNumber != 1 {
+		return errors.Errorf(
+			"to scan into a primitive type, columns number must be exactly 1, got: %d",
+			columnsNumber,
+		)
+	}
+	return nil
 }
 
 func (r *Rows) scanSliceElement(sliceValue reflect.Value) error {
@@ -100,14 +132,6 @@ func (r *Rows) scanSliceElement(sliceValue reflect.Value) error {
 }
 
 func (r *Rows) scanStruct(structValue reflect.Value) error {
-	if !r.started {
-		var err error
-		r.columnToFieldIndex, err = getColumnToFieldIndexMap(structValue.Type())
-		if err != nil {
-			return errors.WithStack(err)
-		}
-	}
-
 	scans := make([]interface{}, len(r.Rows.FieldDescriptions()))
 	for i, columnDesc := range r.Rows.FieldDescriptions() {
 		column := string(columnDesc.Name)
@@ -131,16 +155,6 @@ func (r *Rows) scanStruct(structValue reflect.Value) error {
 }
 
 func (r *Rows) scanMap(mapValue reflect.Value) error {
-	if !r.started {
-		mapType := mapValue.Type()
-		if mapType.Key().Kind() != reflect.String {
-			return errors.Errorf(
-				"invalid type %v: map must have string key, got: %v",
-				mapType, mapType.Key(),
-			)
-		}
-		r.mapElementType = mapType.Elem()
-	}
 	if mapValue.IsNil() {
 		mapValue.Set(reflect.MakeMap(mapValue.Type()))
 	}
@@ -170,15 +184,6 @@ func (r *Rows) scanMap(mapValue reflect.Value) error {
 }
 
 func (r *Rows) scanPrimitive(value reflect.Value) error {
-	if !r.started {
-		columnsNumber := len(r.Rows.FieldDescriptions())
-		if columnsNumber != 1 {
-			return errors.Errorf(
-				"to scan into a primitive type, columns number must be exactly 1, got: %d",
-				columnsNumber,
-			)
-		}
-	}
 	err := r.Rows.Scan(value.Addr().Interface())
 	return errors.Wrap(err, "scan row value into primitive type")
 }

@@ -11,7 +11,7 @@ import (
 
 func TestQueryAll_Succeeds(t *testing.T) {
 	t.Parallel()
-	rows := &fakeRows{
+	rows := &testRows{
 		columns: []string{"foo"},
 		data: [][]interface{}{
 			{"foo val"},
@@ -19,33 +19,37 @@ func TestQueryAll_Succeeds(t *testing.T) {
 			{"foo val 3"},
 		},
 	}
-	q := &fakeQuerier{rows: rows}
+	q := &testQuerier{rows: rows}
 	type dst struct {
 		Foo string
 	}
+	expected := []dst{{Foo: "foo val"}, {Foo: "foo val 2"}, {Foo: "foo val 3"}}
+
 	var got []dst
 	err := pgxscan.QueryAll(context.Background(), q, &got, "" /* sql */)
 	require.NoError(t, err)
-	expected := []dst{{Foo: "foo val"}, {Foo: "foo val 2"}, {Foo: "foo val 3"}}
+
 	assert.Equal(t, expected, got)
 }
 
 func TestQueryOne_Succeeds(t *testing.T) {
 	t.Parallel()
-	rows := &fakeRows{
+	rows := &testRows{
 		columns: []string{"foo"},
 		data: [][]interface{}{
 			{"foo val"},
 		},
 	}
-	q := &fakeQuerier{rows: rows}
+	q := &testQuerier{rows: rows}
 	type dst struct {
 		Foo string
 	}
+	expected := dst{Foo: "foo val"}
+
 	var got dst
 	err := pgxscan.QueryOne(context.Background(), q, &got, "" /* sql */)
 	require.NoError(t, err)
-	expected := dst{Foo: "foo val"}
+
 	assert.Equal(t, expected, got)
 }
 
@@ -53,12 +57,12 @@ func TestScanAll_Succeeds(t *testing.T) {
 	t.Parallel()
 	cases := []struct {
 		name     string
-		rows     *fakeRows
+		rows     *testRows
 		expected interface{}
 	}{
 		{
 			name: "slice of structs",
-			rows: &fakeRows{
+			rows: &testRows{
 				columns: []string{"foo", "bar"},
 				data: [][]interface{}{
 					{"foo val", "bar val"},
@@ -77,7 +81,7 @@ func TestScanAll_Succeeds(t *testing.T) {
 		},
 		{
 			name: "slice of structs by ptr",
-			rows: &fakeRows{
+			rows: &testRows{
 				columns: []string{"foo", "bar"},
 				data: [][]interface{}{
 					{"foo val", "bar val"},
@@ -96,7 +100,7 @@ func TestScanAll_Succeeds(t *testing.T) {
 		},
 		{
 			name: "slice of maps",
-			rows: &fakeRows{
+			rows: &testRows{
 				columns: []string{"foo", "bar"},
 				data: [][]interface{}{
 					{"foo val", "bar val"},
@@ -112,7 +116,7 @@ func TestScanAll_Succeeds(t *testing.T) {
 		},
 		{
 			name: "slice of maps by ptr",
-			rows: &fakeRows{
+			rows: &testRows{
 				columns: []string{"foo", "bar"},
 				data: [][]interface{}{
 					{"foo val", "bar val"},
@@ -128,7 +132,7 @@ func TestScanAll_Succeeds(t *testing.T) {
 		},
 		{
 			name: "slice of strings",
-			rows: &fakeRows{
+			rows: &testRows{
 				columns: []string{"foo"},
 				data: [][]interface{}{
 					{"foo val"},
@@ -140,7 +144,7 @@ func TestScanAll_Succeeds(t *testing.T) {
 		},
 		{
 			name: "slice of strings by ptr",
-			rows: &fakeRows{
+			rows: &testRows{
 				columns: []string{"foo"},
 				data: [][]interface{}{
 					{makeStrPtr("foo val")},
@@ -152,7 +156,7 @@ func TestScanAll_Succeeds(t *testing.T) {
 		},
 		{
 			name: "slice of slices",
-			rows: &fakeRows{
+			rows: &testRows{
 				columns: []string{"foo"},
 				data: [][]interface{}{
 					{[]string{"foo val", "foo val 2"}},
@@ -181,7 +185,7 @@ func TestScanAll_Succeeds(t *testing.T) {
 
 func TestScanAll_NonEmptySlice_ResetsDstSlice(t *testing.T) {
 	t.Parallel()
-	fr := &fakeRows{
+	fr := &testRows{
 		columns: []string{"foo"},
 		data: [][]interface{}{
 			{"foo val"},
@@ -190,15 +194,17 @@ func TestScanAll_NonEmptySlice_ResetsDstSlice(t *testing.T) {
 		},
 	}
 	expected := []string{"foo val", "foo val 2", "foo val 3"}
+
 	got := []string{"junk data", "junk data 2"}
 	err := pgxscan.ScanAll(&got, fr)
 	require.NoError(t, err)
+
 	assert.Equal(t, expected, got)
 }
 
 func TestScanAll_NonSliceDestination_ReturnsErr(t *testing.T) {
 	t.Parallel()
-	rows := &fakeRows{
+	rows := &testRows{
 		columns: []string{"foo"},
 		data: [][]interface{}{
 			{"foo val"},
@@ -209,14 +215,16 @@ func TestScanAll_NonSliceDestination_ReturnsErr(t *testing.T) {
 	var dst struct {
 		Foo string
 	}
-	err := pgxscan.ScanAll(&dst, rows)
 	expectedErr := "destination must be a slice, got: struct { Foo string }"
+
+	err := pgxscan.ScanAll(&dst, rows)
+
 	assert.EqualError(t, err, expectedErr)
 }
 
 func TestScanOne_Succeeds(t *testing.T) {
 	t.Parallel()
-	rows := &fakeRows{
+	rows := &testRows{
 		columns: []string{"foo"},
 		data: [][]interface{}{
 			{"foo val"},
@@ -225,16 +233,18 @@ func TestScanOne_Succeeds(t *testing.T) {
 	type dst struct {
 		Foo string
 	}
+	expected := dst{Foo: "foo val"}
+
 	got := dst{}
 	err := pgxscan.ScanOne(&got, rows)
 	require.NoError(t, err)
-	expected := dst{Foo: "foo val"}
+
 	assert.Equal(t, expected, got)
 }
 
 func TestScanRow_Succeeds(t *testing.T) {
 	t.Parallel()
-	rows := &fakeRows{
+	rows := &testRows{
 		columns: []string{"foo"},
 		data: [][]interface{}{
 			{"foo val"},
@@ -244,27 +254,32 @@ func TestScanRow_Succeeds(t *testing.T) {
 		Foo string
 	}
 	rows.Next()
+	expected := dst{Foo: "foo val"}
+
 	var got dst
 	err := pgxscan.ScanRow(&got, rows)
 	require.NoError(t, err)
-	expected := dst{Foo: "foo val"}
+
 	assert.Equal(t, expected, got)
 }
 
 func TestScanOne_ZeroRows_ReturnsNotFoundErr(t *testing.T) {
 	t.Parallel()
-	rows := &fakeRows{
+	rows := &testRows{
 		columns: []string{"foo"},
 		data:    [][]interface{}{},
 	}
+
 	var dst string
 	err := pgxscan.ScanOne(&dst, rows)
-	assert.True(t, pgxscan.NotFound(err))
+	got := pgxscan.NotFound(err)
+
+	assert.True(t, got)
 }
 
 func TestScanOne_MultipleRows_ReturnsErr(t *testing.T) {
 	t.Parallel()
-	rows := &fakeRows{
+	rows := &testRows{
 		columns: []string{"foo"},
 		data: [][]interface{}{
 			{"foo val"},
@@ -272,8 +287,10 @@ func TestScanOne_MultipleRows_ReturnsErr(t *testing.T) {
 			{"foo val 3"},
 		},
 	}
+	expectedErr := "expected 1 row, got: 3"
+
 	var dst string
 	err := pgxscan.ScanOne(&dst, rows)
-	expectedErr := "expected 1 row, got: 3"
+
 	assert.EqualError(t, err, expectedErr)
 }
