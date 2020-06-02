@@ -1,4 +1,4 @@
-module github.com/georgysavva/pgxscan
+module github.com/georgysavva/sqlscan
 
 go 1.14
 

@@ -1,1 +1,1 @@
-# pgxscan
+# sqlscan

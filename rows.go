@@ -1,9 +1,10 @@
-package pgxscan
+package sqlscan
 
 import (
+	"reflect"
+
 	"github.com/jackc/pgx/v4"
 	"github.com/pkg/errors"
-	"reflect"
 )
 
 type startRowsFunc func(dstValue reflect.Value) error

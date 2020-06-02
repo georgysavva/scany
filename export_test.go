@@ -1,4 +1,4 @@
-package pgxscan
+package sqlscan
 
 import (
 	"reflect"

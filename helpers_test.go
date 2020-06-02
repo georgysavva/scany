@@ -1,11 +1,12 @@
-package pgxscan_test
+package sqlscan_test
 
 import (
 	"context"
 	"reflect"
 	"testing"
 
-	"github.com/georgysavva/pgxscan"
+	"github.com/georgysavva/sqlscan"
+
 	"github.com/jackc/pgproto3/v2"
 	"github.com/jackc/pgx/v4"
 	"github.com/stretchr/testify/assert"
@@ -66,7 +67,7 @@ func (tr *testRows) Close() {}
 func (tr *testRows) Err() error { return nil }
 
 func doScan(dstValue reflect.Value, rows pgx.Rows) error {
-	r := pgxscan.WrapRows(rows)
+	r := sqlscan.WrapRows(rows)
 	rows.Next()
 	return r.DoScan(dstValue)
 }

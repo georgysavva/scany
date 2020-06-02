@@ -1,10 +1,11 @@
-package pgxscan
+package sqlscan
 
 import (
-	"github.com/pkg/errors"
 	"reflect"
 	"regexp"
 	"strings"
+
+	"github.com/pkg/errors"
 )
 
 var dbStructTagKey = "db"

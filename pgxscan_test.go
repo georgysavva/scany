@@ -1,10 +1,10 @@
-package pgxscan_test
+package sqlscan_test
 
 import (
 	"context"
 	"testing"
 
-	"github.com/georgysavva/pgxscan"
+	"github.com/georgysavva/sqlscan"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -26,7 +26,7 @@ func TestQueryAll_Succeeds(t *testing.T) {
 	expected := []dst{{Foo: "foo val"}, {Foo: "foo val 2"}, {Foo: "foo val 3"}}
 
 	var got []dst
-	err := pgxscan.QueryAll(context.Background(), q, &got, "" /* sql */)
+	err := sqlscan.QueryAll(context.Background(), q, &got, "" /* sql */)
 	require.NoError(t, err)
 
 	assert.Equal(t, expected, got)
@@ -47,7 +47,7 @@ func TestQueryOne_Succeeds(t *testing.T) {
 	expected := dst{Foo: "foo val"}
 
 	var got dst
-	err := pgxscan.QueryOne(context.Background(), q, &got, "" /* sql */)
+	err := sqlscan.QueryOne(context.Background(), q, &got, "" /* sql */)
 	require.NoError(t, err)
 
 	assert.Equal(t, expected, got)
@@ -176,7 +176,7 @@ func TestScanAll_Succeeds(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			dstVal := newDstValue(tc.expected)
-			err := pgxscan.ScanAll(dstVal.Addr().Interface(), tc.rows)
+			err := sqlscan.ScanAll(dstVal.Addr().Interface(), tc.rows)
 			require.NoError(t, err)
 			assertDstValueEqual(t, tc.expected, dstVal)
 		})
@@ -196,7 +196,7 @@ func TestScanAll_NonEmptySlice_ResetsDstSlice(t *testing.T) {
 	expected := []string{"foo val", "foo val 2", "foo val 3"}
 
 	got := []string{"junk data", "junk data 2"}
-	err := pgxscan.ScanAll(&got, fr)
+	err := sqlscan.ScanAll(&got, fr)
 	require.NoError(t, err)
 
 	assert.Equal(t, expected, got)
@@ -217,7 +217,7 @@ func TestScanAll_NonSliceDestination_ReturnsErr(t *testing.T) {
 	}
 	expectedErr := "destination must be a slice, got: struct { Foo string }"
 
-	err := pgxscan.ScanAll(&dst, rows)
+	err := sqlscan.ScanAll(&dst, rows)
 
 	assert.EqualError(t, err, expectedErr)
 }
@@ -236,7 +236,7 @@ func TestScanOne_Succeeds(t *testing.T) {
 	expected := dst{Foo: "foo val"}
 
 	got := dst{}
-	err := pgxscan.ScanOne(&got, rows)
+	err := sqlscan.ScanOne(&got, rows)
 	require.NoError(t, err)
 
 	assert.Equal(t, expected, got)
@@ -257,7 +257,7 @@ func TestScanRow_Succeeds(t *testing.T) {
 	expected := dst{Foo: "foo val"}
 
 	var got dst
-	err := pgxscan.ScanRow(&got, rows)
+	err := sqlscan.ScanRow(&got, rows)
 	require.NoError(t, err)
 
 	assert.Equal(t, expected, got)
@@ -271,8 +271,8 @@ func TestScanOne_ZeroRows_ReturnsNotFoundErr(t *testing.T) {
 	}
 
 	var dst string
-	err := pgxscan.ScanOne(&dst, rows)
-	got := pgxscan.NotFound(err)
+	err := sqlscan.ScanOne(&dst, rows)
+	got := sqlscan.NotFound(err)
 
 	assert.True(t, got)
 }
@@ -290,7 +290,7 @@ func TestScanOne_MultipleRows_ReturnsErr(t *testing.T) {
 	expectedErr := "expected 1 row, got: 3"
 
 	var dst string
-	err := pgxscan.ScanOne(&dst, rows)
+	err := sqlscan.ScanOne(&dst, rows)
 
 	assert.EqualError(t, err, expectedErr)
 }

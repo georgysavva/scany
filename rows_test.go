@@ -1,11 +1,12 @@
-package pgxscan_test
+package sqlscan_test
 
 import (
-	"github.com/stretchr/testify/mock"
 	"reflect"
 	"testing"
 
-	"github.com/georgysavva/pgxscan"
+	"github.com/stretchr/testify/mock"
+
+	"github.com/georgysavva/sqlscan"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -35,7 +36,7 @@ func TestRowsScanx_Succeeds(t *testing.T) {
 	type dst struct {
 		Foo string
 	}
-	r := pgxscan.WrapRows(rows)
+	r := sqlscan.WrapRows(rows)
 	rows.Next()
 	expected := dst{Foo: "foo val"}
 
@@ -282,7 +283,7 @@ func TestRowsDoScan_InvalidStructDestination_ReturnsErr(t *testing.T) {
 				Bar string
 			}{},
 			expectedErr: "column: 'foo_nested': no corresponding field found or it's unexported in " +
-				"struct { pgxscan_test.nestedUnexported; Foo string; Bar string }",
+				"struct { sqlscan_test.nestedUnexported; Foo string; Bar string }",
 		},
 		{
 			name: "nested non embedded structs aren't allowed",
@@ -298,7 +299,7 @@ func TestRowsDoScan_InvalidStructDestination_ReturnsErr(t *testing.T) {
 				Bar    string
 			}{},
 			expectedErr: "column: 'foo_nested': no corresponding field found or it's unexported in " +
-				"struct { Nested pgxscan_test.FooNested; Foo string; Bar string }",
+				"struct { Nested sqlscan_test.FooNested; Foo string; Bar string }",
 		},
 		{
 			name: "the corresponding field is unexported",
@@ -579,7 +580,7 @@ func TestParseDestination_ValidDst_ReturnsElemReflectValue(t *testing.T) {
 	var dst struct{ Foo string }
 	expected := reflect.ValueOf(&dst).Elem()
 
-	got, err := pgxscan.ParseDestination(&dst)
+	got, err := sqlscan.ParseDestination(&dst)
 	require.NoError(t, err)
 
 	assert.Equal(t, expected, got)
@@ -624,7 +625,7 @@ func TestParseDestination_InvalidDst_ReturnsErr(t *testing.T) {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			_, err := pgxscan.ParseDestination(tc.dst)
+			_, err := sqlscan.ParseDestination(tc.dst)
 			assert.EqualError(t, err, tc.expectedErr)
 		})
 	}
@@ -638,7 +639,7 @@ func TestRowsDoScan_FirstScan_SetsStartedToTrue(t *testing.T) {
 			{"foo val"},
 		},
 	}
-	r := pgxscan.WrapRows(rows)
+	r := sqlscan.WrapRows(rows)
 	rows.Next()
 
 	var dst struct {
@@ -670,7 +671,7 @@ func TestRowsDoScan_AfterFirstScan_StartNotCalled(t *testing.T) {
 			{"foo val 2"},
 		},
 	}
-	r := pgxscan.WrapRows(rows)
+	r := sqlscan.WrapRows(rows)
 	var dst struct {
 		Foo string
 	}
