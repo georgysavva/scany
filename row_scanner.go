@@ -137,30 +137,48 @@ func (rs *RowScanner) scanSliceElement(sliceValue reflect.Value) error {
 	return nil
 }
 
+type valuesI interface {
+	Values() ([]interface{}, error)
+}
+
 func (rs *RowScanner) scanStruct(structValue reflect.Value) error {
 	scans := make([]interface{}, len(rs.columns))
+	var rowValues []interface{}
 	for i, column := range rs.columns {
 		fieldIndex, ok := rs.columnToFieldIndex[column]
-		if !ok {
-			return errors.Errorf(
-				"column: '%s': no corresponding field found or it's unexported in %v",
-				column, structValue.Type(),
-			)
-		}
-		// Struct may contain embedded structs by ptr that defaults to nil.
-		// In order to scan values into a nested field,
-		// we need to initialize all nil structs on its way.
-		initializeNested(structValue, fieldIndex)
+		if ok {
+			// Struct may contain embedded structs by ptr that defaults to nil.
+			// In order to scan values into a nested field,
+			// we need to initialize all nil structs on its way.
+			initializeNested(structValue, fieldIndex)
 
-		fieldVal := structValue.FieldByIndex(fieldIndex)
-		scans[i] = fieldVal.Addr().Interface()
+			fieldVal := structValue.FieldByIndex(fieldIndex)
+			scans[i] = fieldVal.Addr().Interface()
+		} else {
+			// If no corresponding field is found in struct,
+			// we need to create a fake scan destination to skip this column.
+			// pgx.Rows can't scan into *interface{}, but they expose whole row values vie .Values()
+			// so we can take the corresponding column value and scan into itself.
+			// for *sql.Rows we just create *interface{} destination and it will scan into it.
+			var skipScan interface{}
+			if rowsV, ok := rs.rows.(valuesI); ok {
+				if rowValues == nil {
+					var err error
+					rowValues, err = rowsV.Values()
+					if err != nil {
+						return errors.Wrap(err, "get row values to skip missing columns")
+					}
+				}
+				rowValue := rowValues[i]
+				skipScan = &rowValue
+			} else {
+				skipScan = new(interface{})
+			}
+			scans[i] = skipScan
+		}
 	}
 	err := rs.rows.Scan(scans...)
 	return errors.Wrap(err, "scan row into struct fields")
-}
-
-type valuesI interface {
-	Values() ([]interface{}, error)
 }
 
 func (rs *RowScanner) scanMap(mapValue reflect.Value) error {
@@ -177,12 +195,12 @@ func (rs *RowScanner) scanMap(mapValue reflect.Value) error {
 	// otherwise use rows.Scan().
 	if rs.mapElementType.Kind() == reflect.Interface {
 		if rowsV, ok := rs.rows.(valuesI); ok {
-			values, err := rowsV.Values()
+			rowValues, err := rowsV.Values()
 			if err != nil {
-				return errors.Wrap(err, "get row values for map")
+				return errors.Wrap(err, "get row values for map scan")
 			}
 			for i, column := range rs.columns {
-				value := reflect.ValueOf(values[i])
+				value := reflect.ValueOf(rowValues[i])
 
 				// If value type is different compared to map element type, try to convert it,
 				// if they aren't convertible there is nothing we can do to set it.
@@ -209,6 +227,9 @@ func (rs *RowScanner) scanMap(mapValue reflect.Value) error {
 	if err := rs.rows.Scan(scans...); err != nil {
 		return errors.Wrap(err, "scan rows into map")
 	}
+	// We can't set reflect values into destination map before scanning them,
+	// because reflect will set a copy, just like regular map behaves,
+	// and scan won't modify the map element.
 	for i, column := range rs.columns {
 		key := reflect.ValueOf(column)
 		value := values[i]
