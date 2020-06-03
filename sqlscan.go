@@ -2,18 +2,26 @@ package sqlscan
 
 import (
 	"context"
+	"database/sql"
 	"reflect"
 
-	"github.com/jackc/pgx/v4"
 	"github.com/pkg/errors"
 )
 
 type QueryI interface {
-	Query(ctx context.Context, sql string, args ...interface{}) (pgx.Rows, error)
+	QueryContext(ctx context.Context, sqlText string, args ...interface{}) (*sql.Rows, error)
 }
 
-func QueryAll(ctx context.Context, q QueryI, dst interface{}, sql string, args ...interface{}) error {
-	rows, err := q.Query(ctx, sql, args...)
+type Rows interface {
+	Close() error
+	Err() error
+	Next() bool
+	Columns() ([]string, error)
+	Scan(dest ...interface{}) error
+}
+
+func QueryAll(ctx context.Context, q QueryI, dst interface{}, sqlText string, args ...interface{}) error {
+	rows, err := q.QueryContext(ctx, sqlText, args...)
 	if err != nil {
 		return errors.Wrap(err, "query rows")
 	}
@@ -21,8 +29,8 @@ func QueryAll(ctx context.Context, q QueryI, dst interface{}, sql string, args .
 	return errors.WithStack(err)
 }
 
-func QueryOne(ctx context.Context, q QueryI, dst interface{}, sql string, args ...interface{}) error {
-	rows, err := q.Query(ctx, sql, args...)
+func QueryOne(ctx context.Context, q QueryI, dst interface{}, sqlText string, args ...interface{}) error {
+	rows, err := q.QueryContext(ctx, sqlText, args...)
 	if err != nil {
 		return errors.Wrap(err, "query rows")
 	}
@@ -30,19 +38,19 @@ func QueryOne(ctx context.Context, q QueryI, dst interface{}, sql string, args .
 	return errors.WithStack(err)
 }
 
-func ScanAll(dst interface{}, rows pgx.Rows) error {
+func ScanAll(dst interface{}, rows Rows) error {
 	err := processRows(dst, rows, true /* multipleRows */)
 	return errors.WithStack(err)
 }
 
-func ScanOne(dst interface{}, rows pgx.Rows) error {
+func ScanOne(dst interface{}, rows Rows) error {
 	err := processRows(dst, rows, false /* multipleRows */)
 	return errors.WithStack(err)
 }
 
-func ScanRow(dst interface{}, rows pgx.Rows) error {
-	r := WrapRows(rows)
-	err := r.Scanx(dst)
+func ScanRow(dst interface{}, rows Rows) error {
+	r := NewRowScanner(rows)
+	err := r.Scan(dst)
 	return errors.WithStack(err)
 }
 
@@ -53,13 +61,13 @@ func NotFound(err error) bool {
 
 var notFoundErr = errors.New("no row was found")
 
-func processRows(dst interface{}, rows pgx.Rows, multipleRows bool) error {
+func processRows(dst interface{}, rows Rows, multipleRows bool) error {
 	defer rows.Close()
 	dstValue, err := parseDestination(dst)
 	if err != nil {
 		return errors.WithStack(err)
 	}
-	var r *Rows
+	var r *RowScanner
 	if multipleRows {
 		dstType := dstValue.Type()
 		if dstValue.Kind() != reflect.Slice {
@@ -70,9 +78,9 @@ func processRows(dst interface{}, rows pgx.Rows, multipleRows bool) error {
 		// Make sure that slice is empty.
 		dstValue.Set(dstValue.Slice(0, 0))
 
-		r = wrapRowsForSliceScan(rows, dstType)
+		r = newRowScannerForSliceScan(rows, dstType)
 	} else {
-		r = WrapRows(rows)
+		r = NewRowScanner(rows)
 	}
 	var rowsAffected int
 	for rows.Next() {

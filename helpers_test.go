@@ -1,29 +1,18 @@
 package sqlscan_test
 
 import (
-	"context"
 	"reflect"
 	"testing"
 
 	"github.com/georgysavva/sqlscan"
 
-	"github.com/jackc/pgproto3/v2"
-	"github.com/jackc/pgx/v4"
 	"github.com/stretchr/testify/assert"
 )
 
 func makeStrPtr(v string) *string { return &v }
 
-type testQuerier struct {
-	rows pgx.Rows
-}
-
-func (tq *testQuerier) Query(ctx context.Context, sql string, args ...interface{}) (pgx.Rows, error) {
-	return tq.rows, nil
-}
-
 type testRows struct {
-	pgx.Rows
+	sqlscan.Rows
 	columns       []string
 	data          [][]interface{}
 	currentRow    []interface{}
@@ -52,22 +41,16 @@ func (tr *testRows) Next() bool {
 	return true
 }
 
-func (tr *testRows) FieldDescriptions() []pgproto3.FieldDescription {
-	fields := make([]pgproto3.FieldDescription, len(tr.columns))
-	for i, column := range tr.columns {
-		fields[i] = pgproto3.FieldDescription{Name: []byte(column)}
-	}
-	return fields
+func (tr *testRows) Columns() ([]string, error) {
+	return tr.columns, nil
 }
 
-func (tr *testRows) Values() ([]interface{}, error) { return tr.currentRow, nil }
-
-func (tr *testRows) Close() {}
+func (tr *testRows) Close() error { return nil }
 
 func (tr *testRows) Err() error { return nil }
 
-func doScan(dstValue reflect.Value, rows pgx.Rows) error {
-	r := sqlscan.WrapRows(rows)
+func doScan(dstValue reflect.Value, rows sqlscan.Rows) error {
+	r := sqlscan.NewRowScanner(rows)
 	rows.Next()
 	return r.DoScan(dstValue)
 }

@@ -25,7 +25,7 @@ type nestedUnexported struct {
 	BarNested string
 }
 
-func TestRowsScanx_Succeeds(t *testing.T) {
+func TestRowScannerScan_Succeeds(t *testing.T) {
 	t.Parallel()
 	rows := &testRows{
 		columns: []string{"foo"},
@@ -36,18 +36,18 @@ func TestRowsScanx_Succeeds(t *testing.T) {
 	type dst struct {
 		Foo string
 	}
-	r := sqlscan.WrapRows(rows)
+	r := sqlscan.NewRowScanner(rows)
 	rows.Next()
 	expected := dst{Foo: "foo val"}
 
 	var got dst
-	err := r.Scanx(&got)
+	err := r.Scan(&got)
 	require.NoError(t, err)
 
 	assert.Equal(t, expected, got)
 }
 
-func TestRowsDoScan_StructDestination_Succeeds(t *testing.T) {
+func TestRowScannerDoScan_StructDestination_Succeeds(t *testing.T) {
 	t.Parallel()
 	type jsonObj struct {
 		SomeField string
@@ -232,7 +232,7 @@ func TestRowsDoScan_StructDestination_Succeeds(t *testing.T) {
 	}
 }
 
-func TestRowsDoScan_InvalidStructDestination_ReturnsErr(t *testing.T) {
+func TestRowScannerDoScan_InvalidStructDestination_ReturnsErr(t *testing.T) {
 	t.Parallel()
 	cases := []struct {
 		name        string
@@ -344,7 +344,7 @@ func TestRowsDoScan_InvalidStructDestination_ReturnsErr(t *testing.T) {
 	}
 }
 
-func TestRowsDoScan_MapDestination_Succeeds(t *testing.T) {
+func TestRowScannerDoScan_MapDestination_Succeeds(t *testing.T) {
 	t.Parallel()
 	cases := []struct {
 		name     string
@@ -364,32 +364,19 @@ func TestRowsDoScan_MapDestination_Succeeds(t *testing.T) {
 				"bar": "bar val",
 			},
 		},
-		{
-			name: "non interface{} element types are allowed",
-			rows: &testRows{
-				columns: []string{"foo", "bar"},
-				data: [][]interface{}{
-					{"foo val", "bar val"},
-				},
-			},
-			expected: map[string]string{
-				"foo": "foo val",
-				"bar": "bar val",
-			},
-		},
-		{
-			name: "values with different type are converted to the map element type",
-			rows: &testRows{
-				columns: []string{"foo", "bar"},
-				data: [][]interface{}{
-					{int8(1), int8(2)},
-				},
-			},
-			expected: map[string]int{
-				"foo": 1,
-				"bar": 2,
-			},
-		},
+		//{
+		//	name: "non interface{} element types are allowed",
+		//	rows: &testRows{
+		//		columns: []string{"foo", "bar"},
+		//		data: [][]interface{}{
+		//			{"foo val", "bar val"},
+		//		},
+		//	},
+		//	expected: map[string]string{
+		//		"foo": "foo val",
+		//		"bar": "bar val",
+		//	},
+		//},
 	}
 	for _, tc := range cases {
 		tc := tc
@@ -403,7 +390,7 @@ func TestRowsDoScan_MapDestination_Succeeds(t *testing.T) {
 	}
 }
 
-func TestRowsDoScan_InvalidMapDestination_ReturnsErr(t *testing.T) {
+func TestRowScannerDoScan_InvalidMapDestination_ReturnsErr(t *testing.T) {
 	t.Parallel()
 	cases := []struct {
 		name        string
@@ -422,17 +409,6 @@ func TestRowsDoScan_InvalidMapDestination_ReturnsErr(t *testing.T) {
 			dst:         map[int]interface{}{},
 			expectedErr: "invalid type map[int]interface {}: map must have string key, got: int",
 		},
-		{
-			name: "value can't be converted to the element type",
-			rows: &testRows{
-				columns: []string{"foo"},
-				data: [][]interface{}{
-					{"foo val"},
-				},
-			},
-			dst:         map[string]int{},
-			expectedErr: "Column 'foo' value of type string can'be set into map[string]int",
-		},
 	}
 	for _, tc := range cases {
 		tc := tc
@@ -445,7 +421,7 @@ func TestRowsDoScan_InvalidMapDestination_ReturnsErr(t *testing.T) {
 	}
 }
 
-func TestRowsDoScan_PrimitiveTypeDestination_Succeeds(t *testing.T) {
+func TestRowScannerDoScan_PrimitiveTypeDestination_Succeeds(t *testing.T) {
 	t.Parallel()
 	cases := []struct {
 		name     string
@@ -495,7 +471,7 @@ func TestRowsDoScan_PrimitiveTypeDestination_Succeeds(t *testing.T) {
 	}
 }
 
-func TestRowsDoScan_InvalidPrimitiveTypeDestination_ReturnsErr(t *testing.T) {
+func TestRowScannerDoScan_InvalidPrimitiveTypeDestination_ReturnsErr(t *testing.T) {
 	t.Parallel()
 	cases := []struct {
 		name        string
@@ -537,7 +513,7 @@ func TestRowsDoScan_InvalidPrimitiveTypeDestination_ReturnsErr(t *testing.T) {
 	}
 }
 
-func TestRowsDoScan_RowsContainDuplicatedColumn_ReturnsErr(t *testing.T) {
+func TestRowScannerDoScan_RowsContainDuplicatedColumn_ReturnsErr(t *testing.T) {
 	t.Parallel()
 	cases := []struct {
 		name string
@@ -631,7 +607,7 @@ func TestParseDestination_InvalidDst_ReturnsErr(t *testing.T) {
 	}
 }
 
-func TestRowsDoScan_FirstScan_SetsStartedToTrue(t *testing.T) {
+func TestRowScannerDoScan_FirstScan_SetsStartedToTrue(t *testing.T) {
 	t.Parallel()
 	rows := &testRows{
 		columns: []string{"foo"},
@@ -639,7 +615,7 @@ func TestRowsDoScan_FirstScan_SetsStartedToTrue(t *testing.T) {
 			{"foo val"},
 		},
 	}
-	r := sqlscan.WrapRows(rows)
+	r := sqlscan.NewRowScanner(rows)
 	rows.Next()
 
 	var dst struct {
@@ -662,7 +638,7 @@ func (ts *testRowsStarted) start(dstValue reflect.Value) error {
 	return args.Error(0)
 }
 
-func TestRowsDoScan_AfterFirstScan_StartNotCalled(t *testing.T) {
+func TestRowScannerDoScan_AfterFirstScan_StartNotCalled(t *testing.T) {
 	t.Parallel()
 	rows := &testRows{
 		columns: []string{"foo"},
@@ -671,7 +647,7 @@ func TestRowsDoScan_AfterFirstScan_StartNotCalled(t *testing.T) {
 			{"foo val 2"},
 		},
 	}
-	r := sqlscan.WrapRows(rows)
+	r := sqlscan.NewRowScanner(rows)
 	var dst struct {
 		Foo string
 	}

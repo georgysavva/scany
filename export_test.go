@@ -6,6 +6,6 @@ import (
 
 var ParseDestination = parseDestination
 
-func (r *Rows) DoScan(dstValue reflect.Value) error { return r.doScan(dstValue) }
-func (r *Rows) SetStartFn(f startRowsFunc)          { r.startFn = f }
-func (r *Rows) Started() bool                       { return r.started }
+func (rs *RowScanner) DoScan(dstValue reflect.Value) error { return rs.doScan(dstValue) }
+func (rs *RowScanner) SetStartFn(f startRowsFunc)          { rs.startFn = f }
+func (rs *RowScanner) Started() bool                       { return rs.started }
