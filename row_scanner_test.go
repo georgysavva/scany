@@ -25,6 +25,10 @@ type nestedUnexported struct {
 	BarNested string
 }
 
+type jsonObj struct {
+	Key string
+}
+
 func TestRowScannerScan_Succeeds(t *testing.T) {
 	t.Parallel()
 	rows := testRows{
@@ -49,9 +53,6 @@ func TestRowScannerScan_Succeeds(t *testing.T) {
 
 func TestRowScannerDoScan_StructDestination_Succeeds(t *testing.T) {
 	t.Parallel()
-	type jsonObj struct {
-		SomeField string
-	}
 	cases := []struct {
 		name     string
 		rows     testRows
@@ -88,7 +89,7 @@ func TestRowScannerDoScan_StructDestination_Succeeds(t *testing.T) {
 			},
 		},
 		{
-			name: "field by ptr",
+			name: "string field by ptr",
 			rows: testRows{
 				columns: []string{"foo", "bar"},
 				data: [][]interface{}{
@@ -224,14 +225,14 @@ func TestRowScannerDoScan_StructDestination_Succeeds(t *testing.T) {
 			rows: testRows{
 				columns: []string{"foo", "json"},
 				data: [][]interface{}{
-					{"foo val", jsonObj{SomeField: "some field val"}},
+					{"foo val", jsonObj{Key: "key val"}},
 				},
 			},
 			expected: struct {
 				Json jsonObj
 				Foo  string
 			}{
-				Json: jsonObj{SomeField: "some field val"},
+				Json: jsonObj{Key: "key val"},
 				Foo:  "foo val",
 			},
 		},
@@ -240,14 +241,46 @@ func TestRowScannerDoScan_StructDestination_Succeeds(t *testing.T) {
 			rows: testRows{
 				columns: []string{"foo", "json"},
 				data: [][]interface{}{
-					{"foo val", &jsonObj{SomeField: "some field val"}},
+					{"foo val", &jsonObj{Key: "key val"}},
 				},
 			},
 			expected: struct {
 				Json *jsonObj
 				Foo  string
 			}{
-				Json: &jsonObj{SomeField: "some field val"},
+				Json: &jsonObj{Key: "key val"},
+				Foo:  "foo val",
+			},
+		},
+		{
+			name: "map field is filled from a json column",
+			rows: testRows{
+				columns: []string{"foo", "json"},
+				data: [][]interface{}{
+					{"foo val", map[string]interface{}{"key": "key val"}},
+				},
+			},
+			expected: struct {
+				Json map[string]interface{}
+				Foo  string
+			}{
+				Json: map[string]interface{}{"key": "key val"},
+				Foo:  "foo val",
+			},
+		},
+		{
+			name: "map field by ptr is filled from a json column",
+			rows: testRows{
+				columns: []string{"foo", "json"},
+				data: [][]interface{}{
+					{"foo val", &map[string]interface{}{"key": "key val"}},
+				},
+			},
+			expected: struct {
+				Json *map[string]interface{}
+				Foo  string
+			}{
+				Json: &map[string]interface{}{"key": "key val"},
 				Foo:  "foo val",
 			},
 		},
@@ -369,7 +402,7 @@ func TestRowScannerDoScan_MapDestination_Succeeds(t *testing.T) {
 		expected interface{}
 	}{
 		{
-			name: "basic map[string]interface{}",
+			name: "map[string]interface{}",
 			rows: testRows{
 				columns: []string{"foo", "bar"},
 				data: [][]interface{}{
@@ -382,7 +415,7 @@ func TestRowScannerDoScan_MapDestination_Succeeds(t *testing.T) {
 			},
 		},
 		{
-			name: "string element type",
+			name: "map[string]string{}",
 			rows: testRows{
 				columns: []string{"foo", "bar"},
 				data: [][]interface{}{
@@ -395,19 +428,70 @@ func TestRowScannerDoScan_MapDestination_Succeeds(t *testing.T) {
 			},
 		},
 		{
-			name: "string element type",
+			name: "map[string]*string{}",
 			rows: testRows{
 				columns: []string{"foo", "bar"},
 				data: [][]interface{}{
-					{"foo val", "bar val"},
+					{makeStrPtr("foo val"), nil},
 				},
 			},
-			expected: map[string]string{
-				"foo": "foo val",
-				"bar": "bar val",
+			expected: map[string]*string{
+				"foo": makeStrPtr("foo val"),
+				"bar": nil,
 			},
 		},
-		// TODO: Map of structs
+		{
+			name: "map[string]struct{}",
+			rows: testRows{
+				columns: []string{"foo", "bar"},
+				data: [][]interface{}{
+					{jsonObj{Key: "key val"}, jsonObj{Key: "key val 2"}},
+				},
+			},
+			expected: map[string]jsonObj{
+				"foo": {Key: "key val"},
+				"bar": {Key: "key val 2"},
+			},
+		},
+		{
+			name: "map[string]*struct{}",
+			rows: testRows{
+				columns: []string{"foo", "bar"},
+				data: [][]interface{}{
+					{&jsonObj{Key: "key val"}, nil},
+				},
+			},
+			expected: map[string]*jsonObj{
+				"foo": {Key: "key val"},
+				"bar": nil,
+			},
+		},
+		{
+			name: "map[string]map[string]interface{}",
+			rows: testRows{
+				columns: []string{"foo", "bar"},
+				data: [][]interface{}{
+					{map[string]interface{}{"key": "key val"}, map[string]interface{}{"key": "key val 2"}},
+				},
+			},
+			expected: map[string]map[string]interface{}{
+				"foo": {"key": "key val"},
+				"bar": {"key": "key val 2"},
+			},
+		},
+		{
+			name: "map[string]*map[string]interface{}",
+			rows: testRows{
+				columns: []string{"foo", "bar"},
+				data: [][]interface{}{
+					{&map[string]interface{}{"key": "key val"}, nil},
+				},
+			},
+			expected: map[string]*map[string]interface{}{
+				"foo": {"key": "key val"},
+				"bar": nil,
+			},
+		},
 	}
 	for _, tc := range cases {
 		tc := tc
@@ -488,6 +572,36 @@ func TestRowScannerDoScan_PrimitiveTypeDestination_Succeeds(t *testing.T) {
 				},
 			},
 			expected: []string{"foo val", "foo val 2", "foo val 3"},
+		},
+		{
+			name: "slice by ptr",
+			rows: testRows{
+				columns: []string{"foo"},
+				data: [][]interface{}{
+					{&[]string{"foo val", "foo val 2", "foo val 3"}},
+				},
+			},
+			expected: &[]string{"foo val", "foo val 2", "foo val 3"},
+		},
+		{
+			name: "struct by ptr treated as primitive type",
+			rows: testRows{
+				columns: []string{"json"},
+				data: [][]interface{}{
+					{&jsonObj{Key: "key val"}},
+				},
+			},
+			expected: &jsonObj{Key: "key val"},
+		},
+		{
+			name: "map by ptr treated as primitive type",
+			rows: testRows{
+				columns: []string{"json"},
+				data: [][]interface{}{
+					{&map[string]interface{}{"key": "key val"}},
+				},
+			},
+			expected: &map[string]interface{}{"key": "key val"},
 		},
 	}
 	for _, tc := range cases {

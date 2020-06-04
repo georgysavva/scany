@@ -114,22 +114,6 @@ func TestScanAll_Succeeds(t *testing.T) {
 			},
 		},
 		{
-			name: "slice of maps by ptr",
-			rows: testRows{
-				columns: []string{"foo", "bar"},
-				data: [][]interface{}{
-					{"foo val", "bar val"},
-					{"foo val 2", "bar val 2"},
-					{"foo val 3", "bar val 3"},
-				},
-			},
-			expected: []*map[string]interface{}{
-				{"foo": "foo val", "bar": "bar val"},
-				{"foo": "foo val 2", "bar": "bar val 2"},
-				{"foo": "foo val 3", "bar": "bar val 3"},
-			},
-		},
-		{
 			name: "slice of strings",
 			rows: testRows{
 				columns: []string{"foo"},
@@ -154,6 +138,22 @@ func TestScanAll_Succeeds(t *testing.T) {
 			expected: []*string{makeStrPtr("foo val"), nil, makeStrPtr("foo val 3")},
 		},
 		{
+			name: "slice of maps by ptr treated as primitive type case",
+			rows: testRows{
+				columns: []string{"json"},
+				data: [][]interface{}{
+					{&map[string]interface{}{"key": "key val"}},
+					{nil},
+					{&map[string]interface{}{"key": "key val 3"}},
+				},
+			},
+			expected: []*map[string]interface{}{
+				{"key": "key val"},
+				nil,
+				{"key": "key val 3"},
+			},
+		},
+		{
 			name: "slice of slices",
 			rows: testRows{
 				columns: []string{"foo"},
@@ -166,6 +166,22 @@ func TestScanAll_Succeeds(t *testing.T) {
 			expected: [][]string{
 				{"foo val", "foo val 2"},
 				{"foo val 3", "foo val 4"},
+				{"foo val 5", "foo val 6"},
+			},
+		},
+		{
+			name: "slice of slices by ptr",
+			rows: testRows{
+				columns: []string{"foo"},
+				data: [][]interface{}{
+					{&[]string{"foo val", "foo val 2"}},
+					{nil},
+					{&[]string{"foo val 5", "foo val 6"}},
+				},
+			},
+			expected: []*[]string{
+				{"foo val", "foo val 2"},
+				nil,
 				{"foo val 5", "foo val 6"},
 			},
 		},
@@ -215,6 +231,24 @@ func TestScanAll_NonSliceDestination_ReturnsErr(t *testing.T) {
 		Foo string
 	}
 	expectedErr := "destination must be a slice, got: struct { Foo string }"
+
+	err := sqlscan.ScanAll(&dst, rows)
+
+	assert.EqualError(t, err, expectedErr)
+}
+
+func TestScanAll_SliceByPointerToPointerDestination_ReturnsErr(t *testing.T) {
+	t.Parallel()
+	rows := &testRows{
+		columns: []string{"foo"},
+		data: [][]interface{}{
+			{"foo val"},
+			{"foo val 2"},
+			{"foo val 3"},
+		},
+	}
+	var dst *[]string
+	expectedErr := "destination must be a slice, got: *[]string"
 
 	err := sqlscan.ScanAll(&dst, rows)
 

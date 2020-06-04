@@ -70,14 +70,14 @@ func newRowScannerForSliceScan(rows Rows, sliceType reflect.Type) *RowScanner {
 	var sliceElementByPtr bool
 	sliceElementType := sliceType.Elem()
 
-	// If it's a slice of structs or maps,
-	// we handle them the same way and dereference pointers to values,
-	// because eventually we works with fields or keys.
+	// If it's a slice of pointers to structs,
+	// we handle it the same way as it would be slice of struct by value
+	// and dereference pointers to values,
+	// because eventually we works with fields.
 	// But if it's a slice of primitive type e.g. or []string or []*string,
 	// we must leave and pass elements as is to Rows.Scan().
 	if sliceElementType.Kind() == reflect.Ptr {
-		if sliceElementType.Elem().Kind() == reflect.Struct ||
-			sliceElementType.Elem().Kind() == reflect.Map {
+		if sliceElementType.Elem().Kind() == reflect.Struct {
 
 			sliceElementByPtr = true
 			sliceElementType = sliceElementType.Elem()
