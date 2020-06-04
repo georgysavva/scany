@@ -88,6 +88,22 @@ func TestRowScannerDoScan_StructDestination_Succeeds(t *testing.T) {
 			},
 		},
 		{
+			name: "field by ptr",
+			rows: testRows{
+				columns: []string{"foo", "bar"},
+				data: [][]interface{}{
+					{makeStrPtr("foo val"), "bar val"},
+				},
+			},
+			expected: struct {
+				Foo *string
+				Bar string
+			}{
+				Foo: makeStrPtr("foo val"),
+				Bar: "bar val",
+			},
+		},
+		{
 			name: "field with ignore tag isn't filled",
 			rows: testRows{
 				columns: []string{"foo"},
@@ -366,7 +382,20 @@ func TestRowScannerDoScan_MapDestination_Succeeds(t *testing.T) {
 			},
 		},
 		{
-			name: "non interface{} element types are allowed",
+			name: "string element type",
+			rows: testRows{
+				columns: []string{"foo", "bar"},
+				data: [][]interface{}{
+					{"foo val", "bar val"},
+				},
+			},
+			expected: map[string]string{
+				"foo": "foo val",
+				"bar": "bar val",
+			},
+		},
+		{
+			name: "string element type",
 			rows: testRows{
 				columns: []string{"foo", "bar"},
 				data: [][]interface{}{

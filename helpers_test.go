@@ -4,6 +4,8 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/pkg/errors"
+
 	"github.com/georgysavva/sqlscan"
 
 	"github.com/stretchr/testify/assert"
@@ -21,11 +23,21 @@ type testRows struct {
 func (tr *testRows) Scan(dest ...interface{}) error {
 	for i, data := range tr.currentRow {
 		dst := dest[i]
-		dstV := reflect.ValueOf(dst).Elem()
+		dstVal := reflect.ValueOf(dst).Elem()
+		if !dstVal.CanSet() {
+			return errors.Errorf("testRows: can't set into dst: %v", dst)
+		}
 		if data != nil {
-			dstV.Set(reflect.ValueOf(data))
+			dataVal := reflect.ValueOf(data)
+			if !dataVal.Type().AssignableTo(dstVal.Type()) {
+				return errors.Errorf(
+					"testRows: can't assign value of type %v to dst of type %v",
+					dataVal.Type(), dstVal.Type(),
+				)
+			}
+			dstVal.Set(dataVal)
 		} else {
-			dstV.Set(reflect.Zero(dstV.Type()))
+			dstVal.Set(reflect.Zero(dstVal.Type()))
 		}
 	}
 	return nil
