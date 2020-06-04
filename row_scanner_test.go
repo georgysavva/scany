@@ -27,7 +27,7 @@ type nestedUnexported struct {
 
 func TestRowScannerScan_Succeeds(t *testing.T) {
 	t.Parallel()
-	rows := &testRows{
+	rows := testRows{
 		columns: []string{"foo"},
 		data: [][]interface{}{
 			{"foo val"},
@@ -36,12 +36,12 @@ func TestRowScannerScan_Succeeds(t *testing.T) {
 	type dst struct {
 		Foo string
 	}
-	r := sqlscan.NewRowScanner(rows)
+	rs := sqlscan.NewRowScanner(&rows)
 	rows.Next()
 	expected := dst{Foo: "foo val"}
 
 	var got dst
-	err := r.Scan(&got)
+	err := rs.Scan(&got)
 	require.NoError(t, err)
 
 	assert.Equal(t, expected, got)
@@ -54,12 +54,12 @@ func TestRowScannerDoScan_StructDestination_Succeeds(t *testing.T) {
 	}
 	cases := []struct {
 		name     string
-		rows     *testRows
+		rows     testRows
 		expected interface{}
 	}{
 		{
 			name: "fields without tag are filled from column via snake case mapping",
-			rows: &testRows{
+			rows: testRows{
 				columns: []string{"foo_column", "bar"},
 				data: [][]interface{}{
 					{"foo val", "bar val"},
@@ -75,7 +75,7 @@ func TestRowScannerDoScan_StructDestination_Succeeds(t *testing.T) {
 		},
 		{
 			name: "fields with tag are filled from columns via tag",
-			rows: &testRows{
+			rows: testRows{
 				columns: []string{"foo_column"},
 				data: [][]interface{}{
 					{"foo val"},
@@ -89,7 +89,7 @@ func TestRowScannerDoScan_StructDestination_Succeeds(t *testing.T) {
 		},
 		{
 			name: "field with ignore tag isn't filled",
-			rows: &testRows{
+			rows: testRows{
 				columns: []string{"foo"},
 				data: [][]interface{}{
 					{"foo val"},
@@ -105,7 +105,7 @@ func TestRowScannerDoScan_StructDestination_Succeeds(t *testing.T) {
 		},
 		{
 			name: "embedded struct is filled from columns without prefix",
-			rows: &testRows{
+			rows: testRows{
 				columns: []string{"foo", "bar", "foo_nested", "bar_nested"},
 				data: [][]interface{}{
 					{"foo val", "bar val", "foo nested val", "bar nested val"},
@@ -129,7 +129,7 @@ func TestRowScannerDoScan_StructDestination_Succeeds(t *testing.T) {
 		},
 		{
 			name: "embedded struct with tag is filled from columns with prefix",
-			rows: &testRows{
+			rows: testRows{
 				columns: []string{"foo", "bar", "nested.foo_nested"},
 				data: [][]interface{}{
 					{"foo val", "bar val", "foo nested val"},
@@ -149,7 +149,7 @@ func TestRowScannerDoScan_StructDestination_Succeeds(t *testing.T) {
 		},
 		{
 			name: "embedded struct by ptr is initialized and filled",
-			rows: &testRows{
+			rows: testRows{
 				columns: []string{"foo", "bar", "foo_nested"},
 				data: [][]interface{}{
 					{"foo val", "bar val", "foo nested val"},
@@ -169,7 +169,7 @@ func TestRowScannerDoScan_StructDestination_Succeeds(t *testing.T) {
 		},
 		{
 			name: "embedded struct by ptr isn't initialized if not filled",
-			rows: &testRows{
+			rows: testRows{
 				columns: []string{"foo", "bar"},
 				data: [][]interface{}{
 					{"foo val", "bar val"},
@@ -187,7 +187,7 @@ func TestRowScannerDoScan_StructDestination_Succeeds(t *testing.T) {
 		},
 		{
 			name: "embedded struct with ignore tag isn't filled",
-			rows: &testRows{
+			rows: testRows{
 				columns: []string{"nested.foo_nested", "nested.bar_nested"},
 				data: [][]interface{}{
 					{"foo nested val", "bar nested val"},
@@ -205,7 +205,7 @@ func TestRowScannerDoScan_StructDestination_Succeeds(t *testing.T) {
 		},
 		{
 			name: "nested struct is filled from a json column",
-			rows: &testRows{
+			rows: testRows{
 				columns: []string{"foo", "json"},
 				data: [][]interface{}{
 					{"foo val", jsonObj{SomeField: "some field val"}},
@@ -219,13 +219,29 @@ func TestRowScannerDoScan_StructDestination_Succeeds(t *testing.T) {
 				Foo:  "foo val",
 			},
 		},
+		{
+			name: "nested struct by ptr is filled from a json column",
+			rows: testRows{
+				columns: []string{"foo", "json"},
+				data: [][]interface{}{
+					{"foo val", &jsonObj{SomeField: "some field val"}},
+				},
+			},
+			expected: struct {
+				Json *jsonObj
+				Foo  string
+			}{
+				Json: &jsonObj{SomeField: "some field val"},
+				Foo:  "foo val",
+			},
+		},
 	}
 	for _, tc := range cases {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			dstVal := newDstValue(tc.expected)
-			err := doScan(dstVal, tc.rows)
+			err := doScan(dstVal, &tc.rows)
 			require.NoError(t, err)
 			assertDstValueEqual(t, tc.expected, dstVal)
 		})
@@ -236,13 +252,13 @@ func TestRowScannerDoScan_InvalidStructDestination_ReturnsErr(t *testing.T) {
 	t.Parallel()
 	cases := []struct {
 		name        string
-		rows        *testRows
+		rows        testRows
 		dst         interface{}
 		expectedErr string
 	}{
 		{
 			name: "doesn't have a corresponding field",
-			rows: &testRows{
+			rows: testRows{
 				columns: []string{"foo", "bar"},
 				data: [][]interface{}{
 					{"foo val", "bar val"},
@@ -256,7 +272,7 @@ func TestRowScannerDoScan_InvalidStructDestination_ReturnsErr(t *testing.T) {
 		},
 		{
 			name: "the corresponding field is unexported",
-			rows: &testRows{
+			rows: testRows{
 				columns: []string{"foo", "bar"},
 				data: [][]interface{}{
 					{"foo val", "bar val"},
@@ -271,7 +287,7 @@ func TestRowScannerDoScan_InvalidStructDestination_ReturnsErr(t *testing.T) {
 		},
 		{
 			name: "embedded struct is unexported",
-			rows: &testRows{
+			rows: testRows{
 				columns: []string{"foo", "bar", "foo_nested", "bar_nested"},
 				data: [][]interface{}{
 					{"foo val", "bar val", "foo nested val", "bar nested val"},
@@ -287,7 +303,7 @@ func TestRowScannerDoScan_InvalidStructDestination_ReturnsErr(t *testing.T) {
 		},
 		{
 			name: "nested non embedded structs aren't allowed",
-			rows: &testRows{
+			rows: testRows{
 				columns: []string{"foo", "bar", "foo_nested", "bar_nested"},
 				data: [][]interface{}{
 					{"foo val", "bar val", "foo nested val", "bar nested val"},
@@ -302,23 +318,8 @@ func TestRowScannerDoScan_InvalidStructDestination_ReturnsErr(t *testing.T) {
 				"struct { Nested sqlscan_test.FooNested; Foo string; Bar string }",
 		},
 		{
-			name: "the corresponding field is unexported",
-			rows: &testRows{
-				columns: []string{"foo", "bar"},
-				data: [][]interface{}{
-					{"foo val", "bar val"},
-				},
-			},
-			dst: struct {
-				foo string
-				Bar string
-			}{},
-			expectedErr: "column: 'foo': no corresponding field found or it's unexported in " +
-				"struct { foo string; Bar string }",
-		},
-		{
 			name: "fields contain duplicated tag",
-			rows: &testRows{
+			rows: testRows{
 				columns: []string{"foo_column", "bar"},
 				data: [][]interface{}{
 					{"foo val", "bar val"},
@@ -338,7 +339,7 @@ func TestRowScannerDoScan_InvalidStructDestination_ReturnsErr(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			dstVal := newDstValue(tc.dst)
-			err := doScan(dstVal, tc.rows)
+			err := doScan(dstVal, &tc.rows)
 			assert.EqualError(t, err, tc.expectedErr)
 		})
 	}
@@ -348,12 +349,12 @@ func TestRowScannerDoScan_MapDestination_Succeeds(t *testing.T) {
 	t.Parallel()
 	cases := []struct {
 		name     string
-		rows     *testRows
+		rows     testRows
 		expected interface{}
 	}{
 		{
 			name: "basic map[string]interface{}",
-			rows: &testRows{
+			rows: testRows{
 				columns: []string{"foo", "bar"},
 				data: [][]interface{}{
 					{"foo val", "bar val"},
@@ -364,26 +365,27 @@ func TestRowScannerDoScan_MapDestination_Succeeds(t *testing.T) {
 				"bar": "bar val",
 			},
 		},
-		//{
-		//	name: "non interface{} element types are allowed",
-		//	rows: &testRows{
-		//		columns: []string{"foo", "bar"},
-		//		data: [][]interface{}{
-		//			{"foo val", "bar val"},
-		//		},
-		//	},
-		//	expected: map[string]string{
-		//		"foo": "foo val",
-		//		"bar": "bar val",
-		//	},
-		//},
+		{
+			name: "non interface{} element types are allowed",
+			rows: testRows{
+				columns: []string{"foo", "bar"},
+				data: [][]interface{}{
+					{"foo val", "bar val"},
+				},
+			},
+			expected: map[string]string{
+				"foo": "foo val",
+				"bar": "bar val",
+			},
+		},
+		// TODO: Map of structs
 	}
 	for _, tc := range cases {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			dstVal := newDstValue(tc.expected)
-			err := doScan(dstVal, tc.rows)
+			err := doScan(dstVal, &tc.rows)
 			require.NoError(t, err)
 			assertDstValueEqual(t, tc.expected, dstVal)
 		})
@@ -394,13 +396,13 @@ func TestRowScannerDoScan_InvalidMapDestination_ReturnsErr(t *testing.T) {
 	t.Parallel()
 	cases := []struct {
 		name        string
-		rows        *testRows
+		rows        testRows
 		dst         interface{}
 		expectedErr string
 	}{
 		{
 			name: "non string key is not allowed",
-			rows: &testRows{
+			rows: testRows{
 				columns: []string{"foo", "bar"},
 				data: [][]interface{}{
 					{"foo val", "bar val"},
@@ -415,7 +417,7 @@ func TestRowScannerDoScan_InvalidMapDestination_ReturnsErr(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			dstVal := newDstValue(tc.dst)
-			err := doScan(dstVal, tc.rows)
+			err := doScan(dstVal, &tc.rows)
 			assert.EqualError(t, err, tc.expectedErr)
 		})
 	}
@@ -425,12 +427,12 @@ func TestRowScannerDoScan_PrimitiveTypeDestination_Succeeds(t *testing.T) {
 	t.Parallel()
 	cases := []struct {
 		name     string
-		rows     *testRows
+		rows     testRows
 		expected interface{}
 	}{
 		{
 			name: "string",
-			rows: &testRows{
+			rows: testRows{
 				columns: []string{"foo"},
 				data: [][]interface{}{
 					{"foo val"},
@@ -440,7 +442,7 @@ func TestRowScannerDoScan_PrimitiveTypeDestination_Succeeds(t *testing.T) {
 		},
 		{
 			name: "string by ptr",
-			rows: &testRows{
+			rows: testRows{
 				columns: []string{"foo"},
 				data: [][]interface{}{
 					{"foo val"},
@@ -450,7 +452,7 @@ func TestRowScannerDoScan_PrimitiveTypeDestination_Succeeds(t *testing.T) {
 		},
 		{
 			name: "slice",
-			rows: &testRows{
+			rows: testRows{
 				columns: []string{"foo"},
 				data: [][]interface{}{
 					{[]string{"foo val", "foo val 2", "foo val 3"}},
@@ -464,7 +466,7 @@ func TestRowScannerDoScan_PrimitiveTypeDestination_Succeeds(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			dstVal := newDstValue(tc.expected)
-			err := doScan(dstVal, tc.rows)
+			err := doScan(dstVal, &tc.rows)
 			require.NoError(t, err)
 			assertDstValueEqual(t, tc.expected, dstVal)
 		})
@@ -475,16 +477,14 @@ func TestRowScannerDoScan_InvalidPrimitiveTypeDestination_ReturnsErr(t *testing.
 	t.Parallel()
 	cases := []struct {
 		name        string
-		rows        *testRows
+		rows        testRows
 		dst         interface{}
 		expectedErr string
 	}{
 		{
 			name: "rows contain 0 columns",
-			rows: &testRows{
-				data: [][]interface{}{
-					{"foo val"},
-				},
+			rows: testRows{
+				data:    [][]interface{}{},
 				columns: []string{},
 			},
 			dst:         "",
@@ -492,7 +492,7 @@ func TestRowScannerDoScan_InvalidPrimitiveTypeDestination_ReturnsErr(t *testing.
 		},
 		{
 			name: "rows contain more than 1 column",
-			rows: &testRows{
+			rows: testRows{
 				columns: []string{"foo", "bar"},
 				data: [][]interface{}{
 					{"foo val", "bar val"},
@@ -507,7 +507,7 @@ func TestRowScannerDoScan_InvalidPrimitiveTypeDestination_ReturnsErr(t *testing.
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			dstVal := newDstValue(tc.dst)
-			err := doScan(dstVal, tc.rows)
+			err := doScan(dstVal, &tc.rows)
 			assert.EqualError(t, err, tc.expectedErr)
 		})
 	}
@@ -534,7 +534,7 @@ func TestRowScannerDoScan_RowsContainDuplicatedColumn_ReturnsErr(t *testing.T) {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			rows := &testRows{
+			rows := testRows{
 				columns: []string{"foo", "foo"},
 				data: [][]interface{}{
 					{"foo val", "bar val"},
@@ -543,7 +543,7 @@ func TestRowScannerDoScan_RowsContainDuplicatedColumn_ReturnsErr(t *testing.T) {
 			dstVal := newDstValue(tc.dst)
 			expectedErr := "row contains duplicated column 'foo'"
 
-			err := doScan(dstVal, rows)
+			err := doScan(dstVal, &rows)
 
 			assert.EqualError(t, err, expectedErr)
 		})
@@ -607,63 +607,37 @@ func TestParseDestination_InvalidDst_ReturnsErr(t *testing.T) {
 	}
 }
 
-func TestRowScannerDoScan_FirstScan_SetsStartedToTrue(t *testing.T) {
-	t.Parallel()
-	rows := &testRows{
-		columns: []string{"foo"},
-		data: [][]interface{}{
-			{"foo val"},
-		},
-	}
-	r := sqlscan.NewRowScanner(rows)
-	rows.Next()
-
-	var dst struct {
-		Foo string
-	}
-	dstVal := newDstValue(dst)
-	err := r.DoScan(dstVal)
-	require.NoError(t, err)
-	got := r.Started()
-
-	assert.True(t, got)
-}
-
-type testRowsStarted struct {
+type RowScannerMock struct {
 	mock.Mock
+	*sqlscan.RowScanner
 }
 
-func (ts *testRowsStarted) start(dstValue reflect.Value) error {
-	args := ts.Called(dstValue)
-	return args.Error(0)
+func (rsm *RowScannerMock) start(dstValue reflect.Value) error {
+	_ = rsm.Called(dstValue)
+	return rsm.RowScanner.Start(dstValue)
 }
 
 func TestRowScannerDoScan_AfterFirstScan_StartNotCalled(t *testing.T) {
 	t.Parallel()
-	rows := &testRows{
+	rows := testRows{
 		columns: []string{"foo"},
 		data: [][]interface{}{
 			{"foo val"},
 			{"foo val 2"},
+			{"foo val 3"},
 		},
 	}
-	r := sqlscan.NewRowScanner(rows)
-	var dst struct {
-		Foo string
+	rs := sqlscan.NewRowScanner(&rows)
+	rsMock := &RowScannerMock{RowScanner: rs}
+	rsMock.On("start", mock.Anything)
+	rs.SetStartFn(rsMock.start)
+	for rows.Next() {
+		var dst struct {
+			Foo string
+		}
+		dstVal := newDstValue(dst)
+		err := rs.DoScan(dstVal)
+		require.NoError(t, err)
 	}
-	var err error
-	dstVal := newDstValue(dst)
-	rows.Next()
-	err = r.DoScan(dstVal)
-	require.NoError(t, err)
-
-	rows.Next()
-	ts := &testRowsStarted{}
-	ts.On("start", mock.Anything).Return(nil)
-	r.SetStartFn(ts.start)
-
-	err = r.DoScan(dstVal)
-	require.NoError(t, err)
-
-	ts.AssertNotCalled(t, "start", mock.Anything)
+	rsMock.AssertNumberOfCalls(t, "start", 1)
 }

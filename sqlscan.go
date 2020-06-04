@@ -49,8 +49,8 @@ func ScanOne(dst interface{}, rows Rows) error {
 }
 
 func ScanRow(dst interface{}, rows Rows) error {
-	r := NewRowScanner(rows)
-	err := r.Scan(dst)
+	rs := NewRowScanner(rows)
+	err := rs.Scan(dst)
 	return errors.WithStack(err)
 }
 
@@ -67,7 +67,7 @@ func processRows(dst interface{}, rows Rows, multipleRows bool) error {
 	if err != nil {
 		return errors.WithStack(err)
 	}
-	var r *RowScanner
+	var rs *RowScanner
 	if multipleRows {
 		dstType := dstValue.Type()
 		if dstValue.Kind() != reflect.Slice {
@@ -78,17 +78,17 @@ func processRows(dst interface{}, rows Rows, multipleRows bool) error {
 		// Make sure that slice is empty.
 		dstValue.Set(dstValue.Slice(0, 0))
 
-		r = newRowScannerForSliceScan(rows, dstType)
+		rs = newRowScannerForSliceScan(rows, dstType)
 	} else {
-		r = NewRowScanner(rows)
+		rs = NewRowScanner(rows)
 	}
 	var rowsAffected int
 	for rows.Next() {
 		var err error
 		if multipleRows {
-			err = r.scanSliceElement(dstValue)
+			err = rs.scanSliceElement(dstValue)
 		} else {
-			err = r.doScan(dstValue)
+			err = rs.doScan(dstValue)
 		}
 		if err != nil {
 			return errors.WithStack(err)

@@ -10,7 +10,7 @@ import (
 
 //func TestQueryAll_Succeeds(t *testing.T) {
 //	t.Parallel()
-//	rows := &testRows{
+//	rows := testRows{
 //		columns: []string{"foo"},
 //		data: [][]interface{}{
 //			{"foo val"},
@@ -33,7 +33,7 @@ import (
 //
 //func TestQueryOne_Succeeds(t *testing.T) {
 //	t.Parallel()
-//	rows := &testRows{
+//	rows := testRows{
 //		columns: []string{"foo"},
 //		data: [][]interface{}{
 //			{"foo val"},
@@ -56,12 +56,12 @@ func TestScanAll_Succeeds(t *testing.T) {
 	t.Parallel()
 	cases := []struct {
 		name     string
-		rows     *testRows
+		rows     testRows
 		expected interface{}
 	}{
 		{
 			name: "slice of structs",
-			rows: &testRows{
+			rows: testRows{
 				columns: []string{"foo", "bar"},
 				data: [][]interface{}{
 					{"foo val", "bar val"},
@@ -80,7 +80,7 @@ func TestScanAll_Succeeds(t *testing.T) {
 		},
 		{
 			name: "slice of structs by ptr",
-			rows: &testRows{
+			rows: testRows{
 				columns: []string{"foo", "bar"},
 				data: [][]interface{}{
 					{"foo val", "bar val"},
@@ -99,7 +99,7 @@ func TestScanAll_Succeeds(t *testing.T) {
 		},
 		{
 			name: "slice of maps",
-			rows: &testRows{
+			rows: testRows{
 				columns: []string{"foo", "bar"},
 				data: [][]interface{}{
 					{"foo val", "bar val"},
@@ -115,7 +115,7 @@ func TestScanAll_Succeeds(t *testing.T) {
 		},
 		{
 			name: "slice of maps by ptr",
-			rows: &testRows{
+			rows: testRows{
 				columns: []string{"foo", "bar"},
 				data: [][]interface{}{
 					{"foo val", "bar val"},
@@ -131,7 +131,7 @@ func TestScanAll_Succeeds(t *testing.T) {
 		},
 		{
 			name: "slice of strings",
-			rows: &testRows{
+			rows: testRows{
 				columns: []string{"foo"},
 				data: [][]interface{}{
 					{"foo val"},
@@ -143,7 +143,7 @@ func TestScanAll_Succeeds(t *testing.T) {
 		},
 		{
 			name: "slice of strings by ptr",
-			rows: &testRows{
+			rows: testRows{
 				columns: []string{"foo"},
 				data: [][]interface{}{
 					{makeStrPtr("foo val")},
@@ -155,7 +155,7 @@ func TestScanAll_Succeeds(t *testing.T) {
 		},
 		{
 			name: "slice of slices",
-			rows: &testRows{
+			rows: testRows{
 				columns: []string{"foo"},
 				data: [][]interface{}{
 					{[]string{"foo val", "foo val 2"}},
@@ -175,7 +175,7 @@ func TestScanAll_Succeeds(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			dstVal := newDstValue(tc.expected)
-			err := sqlscan.ScanAll(dstVal.Addr().Interface(), tc.rows)
+			err := sqlscan.ScanAll(dstVal.Addr().Interface(), &tc.rows)
 			require.NoError(t, err)
 			assertDstValueEqual(t, tc.expected, dstVal)
 		})

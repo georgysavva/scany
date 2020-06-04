@@ -83,10 +83,10 @@ func newRowScannerForSliceScan(rows Rows, sliceType reflect.Type) *RowScanner {
 			sliceElementType = sliceElementType.Elem()
 		}
 	}
-	r := NewRowScanner(rows)
-	r.sliceElementType = sliceElementType
-	r.sliceElementByPtr = sliceElementByPtr
-	return r
+	rs := NewRowScanner(rows)
+	rs.sliceElementType = sliceElementType
+	rs.sliceElementByPtr = sliceElementByPtr
+	return rs
 }
 
 func (rs *RowScanner) start(dstValue reflect.Value) error {
@@ -137,45 +137,23 @@ func (rs *RowScanner) scanSliceElement(sliceValue reflect.Value) error {
 	return nil
 }
 
-type valuesI interface {
-	Values() ([]interface{}, error)
-}
-
 func (rs *RowScanner) scanStruct(structValue reflect.Value) error {
 	scans := make([]interface{}, len(rs.columns))
-	var rowValues []interface{}
 	for i, column := range rs.columns {
 		fieldIndex, ok := rs.columnToFieldIndex[column]
-		if ok {
-			// Struct may contain embedded structs by ptr that defaults to nil.
-			// In order to scan values into a nested field,
-			// we need to initialize all nil structs on its way.
-			initializeNested(structValue, fieldIndex)
-
-			fieldVal := structValue.FieldByIndex(fieldIndex)
-			scans[i] = fieldVal.Addr().Interface()
-		} else {
-			// If no corresponding field is found in struct,
-			// we need to create a fake scan destination to skip this column.
-			// pgx.Rows can't scan into *interface{}, but they expose whole row values vie .Values()
-			// so we can take the corresponding column value and scan into itself.
-			// for *sql.Rows we just create *interface{} destination and it will scan into it.
-			var skipScan interface{}
-			if rowsV, ok := rs.rows.(valuesI); ok {
-				if rowValues == nil {
-					var err error
-					rowValues, err = rowsV.Values()
-					if err != nil {
-						return errors.Wrap(err, "get row values to skip missing columns")
-					}
-				}
-				rowValue := rowValues[i]
-				skipScan = &rowValue
-			} else {
-				skipScan = new(interface{})
-			}
-			scans[i] = skipScan
+		if !ok {
+			return errors.Errorf(
+				"column: '%s': no corresponding field found or it's unexported in %v",
+				column, structValue.Type(),
+			)
 		}
+		// Struct may contain embedded structs by ptr that defaults to nil.
+		// In order to scan values into a nested field,
+		// we need to initialize all nil structs on its way.
+		initializeNested(structValue, fieldIndex)
+
+		fieldVal := structValue.FieldByIndex(fieldIndex)
+		scans[i] = fieldVal.Addr().Interface()
 	}
 	err := rs.rows.Scan(scans...)
 	return errors.Wrap(err, "scan row into struct fields")
@@ -184,37 +162,6 @@ func (rs *RowScanner) scanStruct(structValue reflect.Value) error {
 func (rs *RowScanner) scanMap(mapValue reflect.Value) error {
 	if mapValue.IsNil() {
 		mapValue.Set(reflect.MakeMap(mapValue.Type()))
-	}
-	// pgx.Rows can't scan if destination type is *interface{},
-	// so in order to fill map[string]interface{} we need to use rows.Values(),
-	// that kindly returns whole row data as []interface{}.
-	// sql.Rows are able to scan into *interface{}, so we can use .Scan() in all cases,
-	// and sql.Rows actually doesn't implement .Values() method.
-	// Concluding, the rule is following:
-	// if it a map[string]interface{} and rows are pgx.Rows -> use rows.Values(),
-	// otherwise use rows.Scan().
-	if rs.mapElementType.Kind() == reflect.Interface {
-		if rowsV, ok := rs.rows.(valuesI); ok {
-			rowValues, err := rowsV.Values()
-			if err != nil {
-				return errors.Wrap(err, "get row values for map scan")
-			}
-			for i, column := range rs.columns {
-				value := reflect.ValueOf(rowValues[i])
-
-				// If value type is different compared to map element type, try to convert it,
-				// if they aren't convertible there is nothing we can do to set it.
-				if !value.Type().ConvertibleTo(rs.mapElementType) {
-					return errors.Errorf(
-						"Column '%s' value of type %v can'be set into %v",
-						column, value.Type(), mapValue.Type(),
-					)
-				}
-				key := reflect.ValueOf(column)
-				mapValue.SetMapIndex(key, value.Convert(rs.mapElementType))
-			}
-			return nil
-		}
 	}
 
 	scans := make([]interface{}, len(rs.columns))

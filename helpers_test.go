@@ -12,7 +12,6 @@ import (
 func makeStrPtr(v string) *string { return &v }
 
 type testRows struct {
-	sqlscan.Rows
 	columns       []string
 	data          [][]interface{}
 	currentRow    []interface{}
@@ -50,9 +49,9 @@ func (tr *testRows) Close() error { return nil }
 func (tr *testRows) Err() error { return nil }
 
 func doScan(dstValue reflect.Value, rows sqlscan.Rows) error {
-	r := sqlscan.NewRowScanner(rows)
+	rs := sqlscan.NewRowScanner(rows)
 	rows.Next()
-	return r.DoScan(dstValue)
+	return rs.DoScan(dstValue)
 }
 
 func newDstValue(v interface{}) reflect.Value {
