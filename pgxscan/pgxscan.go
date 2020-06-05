@@ -1,46 +1,91 @@
 package pgxscan
 
 import (
+	"context"
 	"github.com/georgysavva/sqlscan"
 	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/pkg/errors"
 )
 
-type RowsWrap struct {
-	pgx.Rows
+type QueryI interface {
+	Query(ctx context.Context, sqlText string, args ...interface{}) (pgx.Rows, error)
 }
 
-var _ sqlscan.Rows = &RowsWrap{}
+var (
+	_ QueryI = &pgxpool.Pool{}
+	_ QueryI = &pgx.Conn{}
+	_ QueryI = *new(pgx.Tx)
+)
 
-func WrapRows(rows pgx.Rows) *RowsWrap {
-	return &RowsWrap{Rows: rows}
-}
-
-func (rw *RowsWrap) Columns() ([]string, error) {
-	columns := make([]string, len(rw.Rows.FieldDescriptions()))
-	for i, fd := range rw.Rows.FieldDescriptions() {
-		columns[i] = string(fd.Name)
+func QueryAll(ctx context.Context, q QueryI, dst interface{}, sqlText string, args ...interface{}) error {
+	rows, err := q.Query(ctx, sqlText, args...)
+	if err != nil {
+		return errors.Wrap(err, "query rows")
 	}
-	return columns, nil
+	err = ScanAll(dst, rows)
+	return errors.WithStack(err)
+}
+
+func QueryOne(ctx context.Context, q QueryI, dst interface{}, sqlText string, args ...interface{}) error {
+	rows, err := q.Query(ctx, sqlText, args...)
+	if err != nil {
+		return errors.Wrap(err, "query rows")
+	}
+	err = ScanOne(dst, rows)
+	return errors.WithStack(err)
+}
+
+func ScanAll(dst interface{}, rows pgx.Rows) error {
+	err := sqlscan.ScanAll(dst, rowsAdapter{rows})
+	return errors.WithStack(err)
+}
+
+func ScanOne(dst interface{}, rows pgx.Rows) error {
+	err := sqlscan.ScanOne(dst, rowsAdapter{rows})
+	return errors.WithStack(err)
+}
+
+// NotFound returns true if err is a not found error.
+func NotFound(err error) bool {
+	return sqlscan.NotFound(err)
+}
+
+type RowScanner struct {
+	*sqlscan.RowScanner
+}
+
+func NewRowScanner(rows pgx.Rows) *RowScanner {
+	ra := rowsAdapter{rows}
+	return &RowScanner{RowScanner: sqlscan.NewRowScanner(ra)}
+}
+
+func ScanRow(dst interface{}, rows pgx.Rows) error {
+	err := sqlscan.ScanRow(dst, rowsAdapter{rows})
+	return errors.WithStack(err)
+}
+
+type rowsAdapter struct {
+	pgx.Rows
 }
 
 type emptyDecoder struct{}
 
-func (fd emptyDecoder) DecodeBinary(_ *pgtype.ConnInfo, _ []byte) error { return nil }
-func (fd emptyDecoder) DecodeText(_ *pgtype.ConnInfo, _ []byte) error   { return nil }
+func (ed emptyDecoder) DecodeBinary(_ *pgtype.ConnInfo, _ []byte) error { return nil }
+func (ed emptyDecoder) DecodeText(_ *pgtype.ConnInfo, _ []byte) error   { return nil }
 
 var _ pgtype.BinaryDecoder = emptyDecoder{}
 var _ pgtype.TextDecoder = emptyDecoder{}
 
-func (rw *RowsWrap) Scan(dest ...interface{}) error {
+func (ra rowsAdapter) Scan(dest ...interface{}) error {
 	var values []interface{}
 	shouldCallScan := false
 	for i, dst := range dest {
 		if dstPtr, ok := dst.(*interface{}); ok {
 			if values == nil {
 				var err error
-				values, err = rw.Rows.Values()
+				values, err = ra.Rows.Values()
 				if err != nil {
 					return errors.Wrap(err, "get pgx row values")
 				}
@@ -54,13 +99,21 @@ func (rw *RowsWrap) Scan(dest ...interface{}) error {
 	// If all destinations were *interface{}, we already filled them from rows.Values()
 	// and don't need to scan.
 	if shouldCallScan {
-		err := rw.Rows.Scan(dest...)
+		err := ra.Rows.Scan(dest...)
 		return errors.Wrap(err, "call pgx rows scan")
 	}
 	return nil
 }
 
-func (rw *RowsWrap) Close() error {
-	rw.Rows.Close()
+func (ra rowsAdapter) Columns() ([]string, error) {
+	columns := make([]string, len(ra.Rows.FieldDescriptions()))
+	for i, fd := range ra.Rows.FieldDescriptions() {
+		columns[i] = string(fd.Name)
+	}
+	return columns, nil
+}
+
+func (ra rowsAdapter) Close() error {
+	ra.Rows.Close()
 	return nil
 }

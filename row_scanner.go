@@ -34,6 +34,12 @@ func (rs *RowScanner) Scan(dst interface{}) error {
 	return errors.WithStack(err)
 }
 
+func ScanRow(dst interface{}, rows Rows) error {
+	rs := NewRowScanner(rows)
+	err := rs.Scan(dst)
+	return errors.WithStack(err)
+}
+
 func parseDestination(dst interface{}) (reflect.Value, error) {
 	dstVal := reflect.ValueOf(dst)
 

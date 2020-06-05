@@ -12,6 +12,12 @@ type QueryI interface {
 	QueryContext(ctx context.Context, sqlText string, args ...interface{}) (*sql.Rows, error)
 }
 
+var (
+	_ QueryI = &sql.DB{}
+	_ QueryI = &sql.Conn{}
+	_ QueryI = &sql.Tx{}
+)
+
 type Rows interface {
 	Close() error
 	Err() error
@@ -45,12 +51,6 @@ func ScanAll(dst interface{}, rows Rows) error {
 
 func ScanOne(dst interface{}, rows Rows) error {
 	err := processRows(dst, rows, false /* multipleRows */)
-	return errors.WithStack(err)
-}
-
-func ScanRow(dst interface{}, rows Rows) error {
-	rs := NewRowScanner(rows)
-	err := rs.Scan(dst)
 	return errors.WithStack(err)
 }
 
