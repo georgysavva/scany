@@ -1,56 +1,64 @@
 package sqlscan_test
 
 import (
+	"context"
+	"database/sql"
+	"flag"
+	"os"
 	"testing"
+
+	"github.com/georgysavva/sqlscan/internal/testutil"
+	_ "github.com/jackc/pgx/v4/stdlib"
 
 	"github.com/georgysavva/sqlscan"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-//func TestQueryAll(t *testing.T) {
-//	t.Parallel()
-//	rows := testRows{
-//		columns: []string{"foo"},
-//		data: [][]interface{}{
-//			{"foo val"},
-//			{"foo val 2"},
-//			{"foo val 3"},
-//		},
-//	}
-//	q := &testQuerier{rows: rows}
-//	type dst struct {
-//		Foo string
-//	}
-//	expected := []dst{{Foo: "foo val"}, {Foo: "foo val 2"}, {Foo: "foo val 3"}}
-//
-//	var got []dst
-//	err := sqlscan.QueryAll(context.Background(), q, &got, "" /* sql */)
-//	require.NoError(t, err)
-//
-//	assert.Equal(t, expected, got)
-//}
-//
-//func TestQueryOne(t *testing.T) {
-//	t.Parallel()
-//	rows := testRows{
-//		columns: []string{"foo"},
-//		data: [][]interface{}{
-//			{"foo val"},
-//		},
-//	}
-//	q := &testQuerier{rows: rows}
-//	type dst struct {
-//		Foo string
-//	}
-//	expected := dst{Foo: "foo val"}
-//
-//	var got dst
-//	err := sqlscan.QueryOne(context.Background(), q, &got, "" /* sql */)
-//	require.NoError(t, err)
-//
-//	assert.Equal(t, expected, got)
-//}
+var (
+	testDB *sql.DB
+	ctx    = context.Background()
+)
+
+type testDst struct {
+	Foo string
+	Bar string
+}
+
+func TestQueryAll(t *testing.T) {
+	t.Parallel()
+	sqlText := `
+		SELECT *
+		FROM (
+			VALUES ('foo val', 'bar val'), ('foo val 2', 'bar val 2'), ('foo val 3', 'bar val 3')
+		) AS t (foo, bar)
+	`
+	expected := []*testDst{
+		{Foo: "foo val", Bar: "bar val"},
+		{Foo: "foo val 2", Bar: "bar val 2"},
+		{Foo: "foo val 3", Bar: "bar val 3"},
+	}
+
+	var got []*testDst
+	err := sqlscan.QueryAll(ctx, testDB, &got, sqlText)
+	require.NoError(t, err)
+
+	assert.Equal(t, expected, got)
+}
+
+func TestQueryOne(t *testing.T) {
+	t.Parallel()
+	sqlText := `
+		SELECT 'foo val' AS foo, 'bar val' AS bar
+	`
+	expected := testDst{Foo: "foo val", Bar: "bar val"}
+
+	var got testDst
+	err := sqlscan.QueryOne(ctx, testDB, &got, sqlText)
+	require.NoError(t, err)
+
+	assert.Equal(t, expected, got)
+}
 
 func TestScanAll(t *testing.T) {
 	t.Parallel()
@@ -326,4 +334,22 @@ func TestScanOne_MultipleRows_ReturnsErr(t *testing.T) {
 	err := sqlscan.ScanOne(&dst, rows)
 
 	assert.EqualError(t, err, expectedErr)
+}
+
+func TestMain(m *testing.M) {
+	exitCode := func() int {
+		flag.Parse()
+		ts := testutil.StartCrdbServer()
+		defer ts.Stop()
+		var err error
+		testDB, err = sql.Open("pgx", ts.PGURL().String())
+		if err != nil {
+			panic(err)
+		}
+		defer func() {
+			_ = testDB.Close()
+		}()
+		return m.Run()
+	}()
+	os.Exit(exitCode)
 }

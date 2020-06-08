@@ -625,7 +625,7 @@ func TestRowScannerDoScan_InvalidPrimitiveTypeDestination_ReturnsErr(t *testing.
 		expectedErr string
 	}{
 		{
-			name: "rows contain 0 columns",
+			name: "sql contain 0 columns",
 			rows: testRows{
 				data:    [][]interface{}{},
 				columns: []string{},
@@ -634,7 +634,7 @@ func TestRowScannerDoScan_InvalidPrimitiveTypeDestination_ReturnsErr(t *testing.
 			expectedErr: "sqlscan: to scan into a primitive type, columns number must be exactly 1, got: 0",
 		},
 		{
-			name: "rows contain more than 1 column",
+			name: "sql contain more than 1 column",
 			rows: testRows{
 				columns: []string{"foo", "bar"},
 				data: [][]interface{}{

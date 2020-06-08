@@ -3,17 +3,17 @@ package pgxscan_test
 import (
 	"context"
 	"flag"
-	"github.com/georgysavva/sqlscan/pgxscan"
-	"github.com/stretchr/testify/assert"
 	"os"
 	"reflect"
 	"testing"
+
+	"github.com/georgysavva/sqlscan/pgxscan"
+	"github.com/stretchr/testify/assert"
 
 	"github.com/stretchr/testify/require"
 
 	"github.com/georgysavva/sqlscan/internal/testutil"
 	"github.com/jackc/pgx/v4/pgxpool"
-	_ "github.com/jackc/pgx/v4/stdlib"
 )
 
 var (
@@ -61,14 +61,55 @@ func TestQueryOne(t *testing.T) {
 	assert.Equal(t, expected, got)
 }
 
-func TestQueryOne_NoRows_ReturnsNotFoundErr(t *testing.T) {
+func TestScanAll(t *testing.T) {
+	t.Parallel()
+	sqlText := `
+		SELECT *
+		FROM (
+			VALUES ('foo val', 'bar val'), ('foo val 2', 'bar val 2'), ('foo val 3', 'bar val 3')
+		) AS t (foo, bar)
+	`
+	expected := []*testDst{
+		{Foo: "foo val", Bar: "bar val"},
+		{Foo: "foo val 2", Bar: "bar val 2"},
+		{Foo: "foo val 3", Bar: "bar val 3"},
+	}
+	rows, err := testDB.Query(ctx, sqlText)
+	require.NoError(t, err)
+
+	var got []*testDst
+	err = pgxscan.ScanAll(&got, rows)
+	require.NoError(t, err)
+
+	assert.Equal(t, expected, got)
+}
+
+func TestScanOne(t *testing.T) {
+	t.Parallel()
+	sqlText := `
+		SELECT 'foo val' AS foo, 'bar val' AS bar
+	`
+	expected := testDst{Foo: "foo val", Bar: "bar val"}
+	rows, err := testDB.Query(ctx, sqlText)
+	require.NoError(t, err)
+
+	var got testDst
+	err = pgxscan.ScanOne(&got, rows)
+	require.NoError(t, err)
+
+	assert.Equal(t, expected, got)
+}
+
+func TestScanOne_NoRows_ReturnsNotFoundErr(t *testing.T) {
 	t.Parallel()
 	sqlText := `
 		SELECT NULL AS foo, NULL AS bar LIMIT 0;
 	`
+	rows, err := testDB.Query(ctx, sqlText)
+	require.NoError(t, err)
 
 	var got testDst
-	err := pgxscan.QueryOne(ctx, testDB, &got, sqlText)
+	err = pgxscan.ScanOne(&got, rows)
 
 	assert.True(t, pgxscan.NotFound(err))
 }
@@ -186,7 +227,7 @@ func TestMain(m *testing.M) {
 		ts := testutil.StartCrdbServer()
 		defer ts.Stop()
 		var err error
-		testDB, err = pgxpool.Connect(context.Background(), ts.PGURL().String())
+		testDB, err = pgxpool.Connect(ctx, ts.PGURL().String())
 		if err != nil {
 			panic(err)
 		}

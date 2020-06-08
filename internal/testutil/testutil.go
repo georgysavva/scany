@@ -2,7 +2,9 @@ package testutil
 
 import (
 	"database/sql"
+
 	"github.com/cockroachdb/cockroach-go/v2/testserver"
+	_ "github.com/jackc/pgx/v4/stdlib"
 )
 
 func StartCrdbServer() *testserver.TestServer {

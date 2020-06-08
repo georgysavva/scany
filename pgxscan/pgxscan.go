@@ -61,7 +61,8 @@ func NewRowScanner(rows pgx.Rows) *RowScanner {
 }
 
 func ScanRow(dst interface{}, rows pgx.Rows) error {
-	err := sqlscan.ScanRow(dst, rowsAdapter{rows})
+	rs := NewRowScanner(rows)
+	err := rs.Scan(dst)
 	return errors.WithStack(err)
 }
 
