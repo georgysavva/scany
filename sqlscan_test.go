@@ -230,7 +230,7 @@ func TestScanAll_NonSliceDestination_ReturnsErr(t *testing.T) {
 	var dst struct {
 		Foo string
 	}
-	expectedErr := "destination must be a slice, got: struct { Foo string }"
+	expectedErr := "sqlscan: destination must be a slice, got: struct { Foo string }"
 
 	err := sqlscan.ScanAll(&dst, rows)
 
@@ -248,7 +248,7 @@ func TestScanAll_SliceByPointerToPointerDestination_ReturnsErr(t *testing.T) {
 		},
 	}
 	var dst *[]string
-	expectedErr := "destination must be a slice, got: *[]string"
+	expectedErr := "sqlscan: destination must be a slice, got: *[]string"
 
 	err := sqlscan.ScanAll(&dst, rows)
 
@@ -320,7 +320,7 @@ func TestScanOne_MultipleRows_ReturnsErr(t *testing.T) {
 			{"foo val 3"},
 		},
 	}
-	expectedErr := "expected 1 row, got: 3"
+	expectedErr := "sqlscan: expected 1 row, got: 3"
 
 	var dst string
 	err := sqlscan.ScanOne(&dst, rows)

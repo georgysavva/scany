@@ -44,10 +44,10 @@ func parseDestination(dst interface{}) (reflect.Value, error) {
 	dstVal := reflect.ValueOf(dst)
 
 	if !dstVal.IsValid() || (dstVal.Kind() == reflect.Ptr && dstVal.IsNil()) {
-		return reflect.Value{}, errors.Errorf("destination must be a non nil pointer")
+		return reflect.Value{}, errors.Errorf("sqlscan: destination must be a non nil pointer")
 	}
 	if dstVal.Kind() != reflect.Ptr {
-		return reflect.Value{}, errors.Errorf("destination must be a pointer, got: %v", dstVal.Type())
+		return reflect.Value{}, errors.Errorf("sqlscan: destination must be a pointer, got: %v", dstVal.Type())
 	}
 
 	dstVal = dstVal.Elem()
@@ -99,7 +99,7 @@ func (rs *RowScanner) start(dstValue reflect.Value) error {
 	var err error
 	rs.columns, err = rs.rows.Columns()
 	if err != nil {
-		return errors.Wrap(err, "get columns from rows")
+		return errors.Wrap(err, "sqlscan: get columns from rows")
 	}
 	if err := rs.ensureDistinctColumns(); err != nil {
 		return errors.WithStack(err)
@@ -113,7 +113,7 @@ func (rs *RowScanner) start(dstValue reflect.Value) error {
 		mapType := dstValue.Type()
 		if mapType.Key().Kind() != reflect.String {
 			return errors.Errorf(
-				"invalid type %v: map must have string key, got: %v",
+				"sqlscan: invalid type %v: map must have string key, got: %v",
 				mapType, mapType.Key(),
 			)
 		}
@@ -124,7 +124,7 @@ func (rs *RowScanner) start(dstValue reflect.Value) error {
 	columnsNumber := len(rs.columns)
 	if columnsNumber != 1 {
 		return errors.Errorf(
-			"to scan into a primitive type, columns number must be exactly 1, got: %d",
+			"sqlscan: to scan into a primitive type, columns number must be exactly 1, got: %d",
 			columnsNumber,
 		)
 	}
@@ -149,7 +149,7 @@ func (rs *RowScanner) scanStruct(structValue reflect.Value) error {
 		fieldIndex, ok := rs.columnToFieldIndex[column]
 		if !ok {
 			return errors.Errorf(
-				"column: '%s': no corresponding field found or it's unexported in %v",
+				"sqlscan: column: '%s': no corresponding field found or it's unexported in %v",
 				column, structValue.Type(),
 			)
 		}
@@ -162,7 +162,7 @@ func (rs *RowScanner) scanStruct(structValue reflect.Value) error {
 		scans[i] = fieldVal.Addr().Interface()
 	}
 	err := rs.rows.Scan(scans...)
-	return errors.Wrap(err, "scan row into struct fields")
+	return errors.Wrap(err, "sqlscan: scan row into struct fields")
 }
 
 func (rs *RowScanner) scanMap(mapValue reflect.Value) error {
@@ -178,7 +178,7 @@ func (rs *RowScanner) scanMap(mapValue reflect.Value) error {
 		values[i] = value
 	}
 	if err := rs.rows.Scan(scans...); err != nil {
-		return errors.Wrap(err, "scan rows into map")
+		return errors.Wrap(err, "sqlscan: scan rows into map")
 	}
 	// We can't set reflect values into destination map before scanning them,
 	// because reflect will set a copy, just like regular map behaves,
@@ -193,14 +193,14 @@ func (rs *RowScanner) scanMap(mapValue reflect.Value) error {
 
 func (rs *RowScanner) scanPrimitive(value reflect.Value) error {
 	err := rs.rows.Scan(value.Addr().Interface())
-	return errors.Wrap(err, "scan row value into primitive type")
+	return errors.Wrap(err, "sqlscan: scan row value into primitive type")
 }
 
 func (rs *RowScanner) ensureDistinctColumns() error {
 	seen := make(map[string]struct{}, len(rs.columns))
 	for _, column := range rs.columns {
 		if _, ok := seen[column]; ok {
-			return errors.Errorf("row contains duplicated column '%s'", column)
+			return errors.Errorf("sqlscan: row contains duplicated column '%s'", column)
 		}
 		seen[column] = struct{}{}
 	}

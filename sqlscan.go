@@ -29,7 +29,7 @@ type Rows interface {
 func QueryAll(ctx context.Context, q QueryI, dst interface{}, sqlText string, args ...interface{}) error {
 	rows, err := q.QueryContext(ctx, sqlText, args...)
 	if err != nil {
-		return errors.Wrap(err, "query rows")
+		return errors.Wrap(err, "sqlscan: call query rows from querier")
 	}
 	err = ScanAll(dst, rows)
 	return errors.WithStack(err)
@@ -38,7 +38,7 @@ func QueryAll(ctx context.Context, q QueryI, dst interface{}, sqlText string, ar
 func QueryOne(ctx context.Context, q QueryI, dst interface{}, sqlText string, args ...interface{}) error {
 	rows, err := q.QueryContext(ctx, sqlText, args...)
 	if err != nil {
-		return errors.Wrap(err, "query rows")
+		return errors.Wrap(err, "sqlscan: call query rows from querier")
 	}
 	err = ScanOne(dst, rows)
 	return errors.WithStack(err)
@@ -59,7 +59,7 @@ func NotFound(err error) bool {
 	return errors.Is(err, notFoundErr)
 }
 
-var notFoundErr = errors.New("no row was found")
+var notFoundErr = errors.New("sqlscan: no row was found")
 
 func processRows(dst interface{}, rows Rows, multipleRows bool) error {
 	defer rows.Close()
@@ -72,7 +72,7 @@ func processRows(dst interface{}, rows Rows, multipleRows bool) error {
 		dstType := dstValue.Type()
 		if dstValue.Kind() != reflect.Slice {
 			return errors.Errorf(
-				"destination must be a slice, got: %v", dstType,
+				"sqlscan: destination must be a slice, got: %v", dstType,
 			)
 		}
 		// Make sure that slice is empty.
@@ -97,7 +97,7 @@ func processRows(dst interface{}, rows Rows, multipleRows bool) error {
 	}
 
 	if err := rows.Err(); err != nil {
-		return errors.Wrap(err, "rows final error")
+		return errors.Wrap(err, "sqlscan: rows final error")
 	}
 
 	exactlyOneRow := !multipleRows
@@ -105,7 +105,7 @@ func processRows(dst interface{}, rows Rows, multipleRows bool) error {
 		if rowsAffected == 0 {
 			return errors.WithStack(notFoundErr)
 		} else if rowsAffected > 1 {
-			return errors.Errorf("expected 1 row, got: %d", rowsAffected)
+			return errors.Errorf("sqlscan: expected 1 row, got: %d", rowsAffected)
 		}
 	}
 	return nil

@@ -21,7 +21,7 @@ var (
 func QueryAll(ctx context.Context, q QueryI, dst interface{}, sqlText string, args ...interface{}) error {
 	rows, err := q.Query(ctx, sqlText, args...)
 	if err != nil {
-		return errors.Wrap(err, "query rows")
+		return errors.Wrap(err, "pgxscan: call query rows from querier")
 	}
 	err = ScanAll(dst, rows)
 	return errors.WithStack(err)
@@ -30,7 +30,7 @@ func QueryAll(ctx context.Context, q QueryI, dst interface{}, sqlText string, ar
 func QueryOne(ctx context.Context, q QueryI, dst interface{}, sqlText string, args ...interface{}) error {
 	rows, err := q.Query(ctx, sqlText, args...)
 	if err != nil {
-		return errors.Wrap(err, "query rows")
+		return errors.Wrap(err, "pgxscan: call query rows from querier")
 	}
 	err = ScanOne(dst, rows)
 	return errors.WithStack(err)
@@ -78,7 +78,7 @@ func (ra rowsAdapter) Scan(dest ...interface{}) error {
 				var err error
 				values, err = ra.Rows.Values()
 				if err != nil {
-					return errors.Wrap(err, "get pgx row values")
+					return errors.Wrap(err, "pgxscan: get pgx row values")
 				}
 			}
 			*dstPtr = values[i]
@@ -91,7 +91,7 @@ func (ra rowsAdapter) Scan(dest ...interface{}) error {
 	// and don't need to scan.
 	if shouldCallScan {
 		err := ra.Rows.Scan(dest...)
-		return errors.Wrap(err, "call pgx rows scan")
+		return errors.Wrap(err, "pgxscan: call pgx rows scan")
 	}
 	return nil
 }
