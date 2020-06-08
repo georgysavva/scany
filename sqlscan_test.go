@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-//func TestQueryAll_Succeeds(t *testing.T) {
+//func TestQueryAll(t *testing.T) {
 //	t.Parallel()
 //	rows := testRows{
 //		columns: []string{"foo"},
@@ -31,7 +31,7 @@ import (
 //	assert.Equal(t, expected, got)
 //}
 //
-//func TestQueryOne_Succeeds(t *testing.T) {
+//func TestQueryOne(t *testing.T) {
 //	t.Parallel()
 //	rows := testRows{
 //		columns: []string{"foo"},
@@ -52,7 +52,7 @@ import (
 //	assert.Equal(t, expected, got)
 //}
 
-func TestScanAll_Succeeds(t *testing.T) {
+func TestScanAll(t *testing.T) {
 	t.Parallel()
 	cases := []struct {
 		name     string
@@ -255,7 +255,7 @@ func TestScanAll_SliceByPointerToPointerDestination_ReturnsErr(t *testing.T) {
 	assert.EqualError(t, err, expectedErr)
 }
 
-func TestScanOne_Succeeds(t *testing.T) {
+func TestScanOne(t *testing.T) {
 	t.Parallel()
 	rows := &testRows{
 		columns: []string{"foo"},
@@ -275,7 +275,7 @@ func TestScanOne_Succeeds(t *testing.T) {
 	assert.Equal(t, expected, got)
 }
 
-func TestScanRow_Succeeds(t *testing.T) {
+func TestScanRow(t *testing.T) {
 	t.Parallel()
 	rows := &testRows{
 		columns: []string{"foo"},

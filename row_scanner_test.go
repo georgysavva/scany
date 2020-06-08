@@ -29,7 +29,7 @@ type jsonObj struct {
 	Key string
 }
 
-func TestRowScannerScan_Succeeds(t *testing.T) {
+func TestRowScannerScan(t *testing.T) {
 	t.Parallel()
 	rows := testRows{
 		columns: []string{"foo"},
@@ -51,7 +51,7 @@ func TestRowScannerScan_Succeeds(t *testing.T) {
 	assert.Equal(t, expected, got)
 }
 
-func TestRowScannerDoScan_StructDestination_Succeeds(t *testing.T) {
+func TestRowScannerDoScan_StructDestination(t *testing.T) {
 	t.Parallel()
 	cases := []struct {
 		name     string
@@ -394,7 +394,7 @@ func TestRowScannerDoScan_InvalidStructDestination_ReturnsErr(t *testing.T) {
 	}
 }
 
-func TestRowScannerDoScan_MapDestination_Succeeds(t *testing.T) {
+func TestRowScannerDoScan_MapDestination(t *testing.T) {
 	t.Parallel()
 	cases := []struct {
 		name     string
@@ -536,7 +536,7 @@ func TestRowScannerDoScan_InvalidMapDestination_ReturnsErr(t *testing.T) {
 	}
 }
 
-func TestRowScannerDoScan_PrimitiveTypeDestination_Succeeds(t *testing.T) {
+func TestRowScannerDoScan_PrimitiveTypeDestination(t *testing.T) {
 	t.Parallel()
 	cases := []struct {
 		name     string

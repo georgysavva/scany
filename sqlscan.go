@@ -29,7 +29,7 @@ type Rows interface {
 func QueryAll(ctx context.Context, q QueryI, dst interface{}, sqlText string, args ...interface{}) error {
 	rows, err := q.QueryContext(ctx, sqlText, args...)
 	if err != nil {
-		return errors.Wrap(err, "sqlscan: call query rows from querier")
+		return errors.Wrap(err, "sqlscan: query result rows")
 	}
 	err = ScanAll(dst, rows)
 	return errors.WithStack(err)
@@ -38,7 +38,7 @@ func QueryAll(ctx context.Context, q QueryI, dst interface{}, sqlText string, ar
 func QueryOne(ctx context.Context, q QueryI, dst interface{}, sqlText string, args ...interface{}) error {
 	rows, err := q.QueryContext(ctx, sqlText, args...)
 	if err != nil {
-		return errors.Wrap(err, "sqlscan: call query rows from querier")
+		return errors.Wrap(err, "sqlscan: query result rows")
 	}
 	err = ScanOne(dst, rows)
 	return errors.WithStack(err)
