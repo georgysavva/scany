@@ -3,7 +3,6 @@ package pgxscan
 import (
 	"context"
 	"github.com/georgysavva/sqlscan"
-	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/pkg/errors"
@@ -70,14 +69,6 @@ type rowsAdapter struct {
 	pgx.Rows
 }
 
-type emptyDecoder struct{}
-
-func (ed emptyDecoder) DecodeBinary(_ *pgtype.ConnInfo, _ []byte) error { return nil }
-func (ed emptyDecoder) DecodeText(_ *pgtype.ConnInfo, _ []byte) error   { return nil }
-
-var _ pgtype.BinaryDecoder = emptyDecoder{}
-var _ pgtype.TextDecoder = emptyDecoder{}
-
 func (ra rowsAdapter) Scan(dest ...interface{}) error {
 	var values []interface{}
 	shouldCallScan := false
@@ -91,7 +82,7 @@ func (ra rowsAdapter) Scan(dest ...interface{}) error {
 				}
 			}
 			*dstPtr = values[i]
-			dest[i] = emptyDecoder{}
+			dest[i] = nil
 		} else if !shouldCallScan {
 			shouldCallScan = true
 		}
