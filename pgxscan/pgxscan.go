@@ -37,12 +37,12 @@ func QueryOne(ctx context.Context, q QueryI, dst interface{}, sqlText string, ar
 }
 
 func ScanAll(dst interface{}, rows pgx.Rows) error {
-	err := dbscan.ScanAll(dst, rowsAdapter{rows})
+	err := dbscan.ScanAll(dst, RowsAdapter{rows})
 	return errors.WithStack(err)
 }
 
 func ScanOne(dst interface{}, rows pgx.Rows) error {
-	err := dbscan.ScanOne(dst, rowsAdapter{rows})
+	err := dbscan.ScanOne(dst, RowsAdapter{rows})
 	return errors.WithStack(err)
 }
 
@@ -56,7 +56,7 @@ type RowScanner struct {
 }
 
 func NewRowScanner(rows pgx.Rows) *RowScanner {
-	ra := rowsAdapter{rows}
+	ra := RowsAdapter{rows}
 	return &RowScanner{RowScanner: dbscan.NewRowScanner(ra)}
 }
 
@@ -66,11 +66,11 @@ func ScanRow(dst interface{}, rows pgx.Rows) error {
 	return errors.WithStack(err)
 }
 
-type rowsAdapter struct {
+type RowsAdapter struct {
 	pgx.Rows
 }
 
-func (ra rowsAdapter) Scan(dest ...interface{}) error {
+func (ra RowsAdapter) Scan(dest ...interface{}) error {
 	var values []interface{}
 	shouldCallScan := false
 	for i, dst := range dest {
@@ -97,7 +97,7 @@ func (ra rowsAdapter) Scan(dest ...interface{}) error {
 	return nil
 }
 
-func (ra rowsAdapter) Columns() ([]string, error) {
+func (ra RowsAdapter) Columns() ([]string, error) {
 	columns := make([]string, len(ra.Rows.FieldDescriptions()))
 	for i, fd := range ra.Rows.FieldDescriptions() {
 		columns[i] = string(fd.Name)
@@ -105,7 +105,7 @@ func (ra rowsAdapter) Columns() ([]string, error) {
 	return columns, nil
 }
 
-func (ra rowsAdapter) Close() error {
+func (ra RowsAdapter) Close() error {
 	ra.Rows.Close()
 	return nil
 }

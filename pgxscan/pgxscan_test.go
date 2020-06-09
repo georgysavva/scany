@@ -1,5 +1,3 @@
-// +build integration
-
 package pgxscan_test
 
 import (
@@ -210,7 +208,7 @@ func TestRowsAdapterScan(t *testing.T) {
 			require.NoError(t, err)
 			rows.Next()
 			defer rows.Close()
-			ra := pgxscan.NewRowsAdapter(rows)
+			ra := pgxscan.RowsAdapter{rows}
 			err = ra.Scan(tc.d1, tc.d2, tc.d3)
 			require.NoError(t, err)
 			require.NoError(t, rows.Err())

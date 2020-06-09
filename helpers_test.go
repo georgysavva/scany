@@ -4,7 +4,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/pkg/errors"
+	"github.com/georgysavva/dbscan/pgxscan"
+	"github.com/stretchr/testify/require"
 
 	"github.com/georgysavva/dbscan"
 
@@ -13,57 +14,29 @@ import (
 
 func makeStrPtr(v string) *string { return &v }
 
-type testRows struct {
-	columns       []string
-	data          [][]interface{}
-	currentRow    []interface{}
-	rowsProcessed int
+func queryRows(t *testing.T, query string) dbscan.Rows {
+	t.Helper()
+	pgxRows, err := testDB.Query(ctx, query)
+	require.NoError(t, err)
+	rows := pgxscan.RowsAdapter{pgxRows}
+	return rows
 }
 
-func (tr *testRows) Scan(dest ...interface{}) error {
-	for i, data := range tr.currentRow {
-		dst := dest[i]
-		dstVal := reflect.ValueOf(dst).Elem()
-		if !dstVal.CanSet() {
-			return errors.Errorf("testRows: can't set into dst: %v", dst)
-		}
-		if data != nil {
-			dataVal := reflect.ValueOf(data)
-			if !dataVal.Type().AssignableTo(dstVal.Type()) {
-				return errors.Errorf(
-					"testRows: can't assign value of type %v to dst of type %v",
-					dataVal.Type(), dstVal.Type(),
-				)
-			}
-			dstVal.Set(dataVal)
-		} else {
-			dstVal.Set(reflect.Zero(dstVal.Type()))
-		}
+func doScan(t *testing.T, dstValue reflect.Value, rows dbscan.Rows) error {
+	rs := dbscan.NewRowScanner(rows)
+	rows.Next()
+	defer rows.Close()
+	if err := rs.DoScan(dstValue); err != nil {
+		return err
 	}
+	requireNoRowsErrors(t, rows)
 	return nil
 }
 
-func (tr *testRows) Next() bool {
-	if tr.rowsProcessed >= len(tr.data) {
-		return false
-	}
-	tr.currentRow = tr.data[tr.rowsProcessed]
-	tr.rowsProcessed++
-	return true
-}
-
-func (tr *testRows) Columns() ([]string, error) {
-	return tr.columns, nil
-}
-
-func (tr *testRows) Close() error { return nil }
-
-func (tr *testRows) Err() error { return nil }
-
-func doScan(dstValue reflect.Value, rows dbscan.Rows) error {
-	rs := dbscan.NewRowScanner(rows)
-	rows.Next()
-	return rs.DoScan(dstValue)
+func requireNoRowsErrors(t *testing.T, rows dbscan.Rows) {
+	t.Helper()
+	require.NoError(t, rows.Err())
+	require.NoError(t, rows.Close())
 }
 
 func newDstValue(v interface{}) reflect.Value {
