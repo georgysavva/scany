@@ -1,4 +1,4 @@
-module github.com/georgysavva/sqlscan
+module github.com/georgysavva/dbscan
 
 go 1.14
 

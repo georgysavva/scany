@@ -7,12 +7,12 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/georgysavva/sqlscan/pgxscan"
+	"github.com/georgysavva/dbscan/pgxscan"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/georgysavva/sqlscan/internal/testutil"
+	"github.com/georgysavva/dbscan/internal/testutil"
 	"github.com/jackc/pgx/v4/pgxpool"
 )
 

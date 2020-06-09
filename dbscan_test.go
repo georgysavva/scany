@@ -1,4 +1,4 @@
-package sqlscan_test
+package dbscan_test
 
 import (
 	"context"
@@ -7,10 +7,10 @@ import (
 	"os"
 	"testing"
 
-	"github.com/georgysavva/sqlscan/internal/testutil"
+	"github.com/georgysavva/dbscan/internal/testutil"
 	_ "github.com/jackc/pgx/v4/stdlib"
 
-	"github.com/georgysavva/sqlscan"
+	"github.com/georgysavva/dbscan"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -40,7 +40,7 @@ func TestQueryAll(t *testing.T) {
 	}
 
 	var got []*testDst
-	err := sqlscan.QueryAll(ctx, testDB, &got, sqlText)
+	err := dbscan.QueryAll(ctx, testDB, &got, sqlText)
 	require.NoError(t, err)
 
 	assert.Equal(t, expected, got)
@@ -54,7 +54,7 @@ func TestQueryOne(t *testing.T) {
 	expected := testDst{Foo: "foo val", Bar: "bar val"}
 
 	var got testDst
-	err := sqlscan.QueryOne(ctx, testDB, &got, sqlText)
+	err := dbscan.QueryOne(ctx, testDB, &got, sqlText)
 	require.NoError(t, err)
 
 	assert.Equal(t, expected, got)
@@ -199,7 +199,7 @@ func TestScanAll(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			dstVal := newDstValue(tc.expected)
-			err := sqlscan.ScanAll(dstVal.Addr().Interface(), &tc.rows)
+			err := dbscan.ScanAll(dstVal.Addr().Interface(), &tc.rows)
 			require.NoError(t, err)
 			assertDstValueEqual(t, tc.expected, dstVal)
 		})
@@ -219,7 +219,7 @@ func TestScanAll_NonEmptySlice_ResetsDstSlice(t *testing.T) {
 	expected := []string{"foo val", "foo val 2", "foo val 3"}
 
 	got := []string{"junk data", "junk data 2"}
-	err := sqlscan.ScanAll(&got, fr)
+	err := dbscan.ScanAll(&got, fr)
 	require.NoError(t, err)
 
 	assert.Equal(t, expected, got)
@@ -240,7 +240,7 @@ func TestScanAll_NonSliceDestination_ReturnsErr(t *testing.T) {
 	}
 	expectedErr := "sqlscan: destination must be a slice, got: struct { Foo string }"
 
-	err := sqlscan.ScanAll(&dst, rows)
+	err := dbscan.ScanAll(&dst, rows)
 
 	assert.EqualError(t, err, expectedErr)
 }
@@ -258,7 +258,7 @@ func TestScanAll_SliceByPointerToPointerDestination_ReturnsErr(t *testing.T) {
 	var dst *[]string
 	expectedErr := "sqlscan: destination must be a slice, got: *[]string"
 
-	err := sqlscan.ScanAll(&dst, rows)
+	err := dbscan.ScanAll(&dst, rows)
 
 	assert.EqualError(t, err, expectedErr)
 }
@@ -277,7 +277,7 @@ func TestScanOne(t *testing.T) {
 	expected := dst{Foo: "foo val"}
 
 	got := dst{}
-	err := sqlscan.ScanOne(&got, rows)
+	err := dbscan.ScanOne(&got, rows)
 	require.NoError(t, err)
 
 	assert.Equal(t, expected, got)
@@ -298,7 +298,7 @@ func TestScanRow(t *testing.T) {
 	expected := dst{Foo: "foo val"}
 
 	var got dst
-	err := sqlscan.ScanRow(&got, rows)
+	err := dbscan.ScanRow(&got, rows)
 	require.NoError(t, err)
 
 	assert.Equal(t, expected, got)
@@ -312,8 +312,8 @@ func TestScanOne_ZeroRows_ReturnsNotFoundErr(t *testing.T) {
 	}
 
 	var dst string
-	err := sqlscan.ScanOne(&dst, rows)
-	got := sqlscan.NotFound(err)
+	err := dbscan.ScanOne(&dst, rows)
+	got := dbscan.NotFound(err)
 
 	assert.True(t, got)
 }
@@ -331,7 +331,7 @@ func TestScanOne_MultipleRows_ReturnsErr(t *testing.T) {
 	expectedErr := "sqlscan: expected 1 row, got: 3"
 
 	var dst string
-	err := sqlscan.ScanOne(&dst, rows)
+	err := dbscan.ScanOne(&dst, rows)
 
 	assert.EqualError(t, err, expectedErr)
 }

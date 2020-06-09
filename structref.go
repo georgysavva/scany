@@ -1,4 +1,4 @@
-package sqlscan
+package dbscan
 
 import (
 	"reflect"

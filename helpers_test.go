@@ -1,4 +1,4 @@
-package sqlscan_test
+package dbscan_test
 
 import (
 	"reflect"
@@ -6,7 +6,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/georgysavva/sqlscan"
+	"github.com/georgysavva/dbscan"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -60,8 +60,8 @@ func (tr *testRows) Close() error { return nil }
 
 func (tr *testRows) Err() error { return nil }
 
-func doScan(dstValue reflect.Value, rows sqlscan.Rows) error {
-	rs := sqlscan.NewRowScanner(rows)
+func doScan(dstValue reflect.Value, rows dbscan.Rows) error {
+	rs := dbscan.NewRowScanner(rows)
 	rows.Next()
 	return rs.DoScan(dstValue)
 }

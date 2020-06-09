@@ -2,7 +2,7 @@ package pgxscan
 
 import (
 	"context"
-	"github.com/georgysavva/sqlscan"
+	"github.com/georgysavva/dbscan"
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/pkg/errors"
@@ -37,27 +37,27 @@ func QueryOne(ctx context.Context, q QueryI, dst interface{}, sqlText string, ar
 }
 
 func ScanAll(dst interface{}, rows pgx.Rows) error {
-	err := sqlscan.ScanAll(dst, rowsAdapter{rows})
+	err := dbscan.ScanAll(dst, rowsAdapter{rows})
 	return errors.WithStack(err)
 }
 
 func ScanOne(dst interface{}, rows pgx.Rows) error {
-	err := sqlscan.ScanOne(dst, rowsAdapter{rows})
+	err := dbscan.ScanOne(dst, rowsAdapter{rows})
 	return errors.WithStack(err)
 }
 
 // NotFound returns true if err is a not found error.
 func NotFound(err error) bool {
-	return sqlscan.NotFound(err)
+	return dbscan.NotFound(err)
 }
 
 type RowScanner struct {
-	*sqlscan.RowScanner
+	*dbscan.RowScanner
 }
 
 func NewRowScanner(rows pgx.Rows) *RowScanner {
 	ra := rowsAdapter{rows}
-	return &RowScanner{RowScanner: sqlscan.NewRowScanner(ra)}
+	return &RowScanner{RowScanner: dbscan.NewRowScanner(ra)}
 }
 
 func ScanRow(dst interface{}, rows pgx.Rows) error {

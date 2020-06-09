@@ -1,4 +1,4 @@
-package sqlscan_test
+package dbscan_test
 
 import (
 	"reflect"
@@ -6,7 +6,7 @@ import (
 
 	"github.com/stretchr/testify/mock"
 
-	"github.com/georgysavva/sqlscan"
+	"github.com/georgysavva/dbscan"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -40,7 +40,7 @@ func TestRowScannerScan(t *testing.T) {
 	type dst struct {
 		Foo string
 	}
-	rs := sqlscan.NewRowScanner(&rows)
+	rs := dbscan.NewRowScanner(&rows)
 	rows.Next()
 	expected := dst{Foo: "foo val"}
 
@@ -699,7 +699,7 @@ func TestParseDestination_ValidDst_ReturnsElemReflectValue(t *testing.T) {
 	var dst struct{ Foo string }
 	expected := reflect.ValueOf(&dst).Elem()
 
-	got, err := sqlscan.ParseDestination(&dst)
+	got, err := dbscan.ParseDestination(&dst)
 	require.NoError(t, err)
 
 	assert.Equal(t, expected, got)
@@ -744,7 +744,7 @@ func TestParseDestination_InvalidDst_ReturnsErr(t *testing.T) {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			_, err := sqlscan.ParseDestination(tc.dst)
+			_, err := dbscan.ParseDestination(tc.dst)
 			assert.EqualError(t, err, tc.expectedErr)
 		})
 	}
@@ -752,7 +752,7 @@ func TestParseDestination_InvalidDst_ReturnsErr(t *testing.T) {
 
 type RowScannerMock struct {
 	mock.Mock
-	*sqlscan.RowScanner
+	*dbscan.RowScanner
 }
 
 func (rsm *RowScannerMock) start(dstValue reflect.Value) error {
@@ -770,7 +770,7 @@ func TestRowScannerDoScan_AfterFirstScan_StartNotCalled(t *testing.T) {
 			{"foo val 3"},
 		},
 	}
-	rs := sqlscan.NewRowScanner(&rows)
+	rs := dbscan.NewRowScanner(&rows)
 	rsMock := &RowScannerMock{RowScanner: rs}
 	rsMock.On("start", mock.Anything)
 	rs.SetStartFn(rsMock.start)
