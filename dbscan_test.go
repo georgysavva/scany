@@ -1,64 +1,17 @@
 package dbscan_test
 
 import (
-	"context"
-	"database/sql"
-	"flag"
-	"os"
+	"reflect"
 	"testing"
 
-	"github.com/georgysavva/dbscan/internal/testutil"
+	"github.com/stretchr/testify/mock"
+
 	_ "github.com/jackc/pgx/v4/stdlib"
 
 	"github.com/georgysavva/dbscan"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
-
-var (
-	testDB *sql.DB
-	ctx    = context.Background()
-)
-
-type testDst struct {
-	Foo string
-	Bar string
-}
-
-func TestQueryAll(t *testing.T) {
-	t.Parallel()
-	sqlText := `
-		SELECT *
-		FROM (
-			VALUES ('foo val', 'bar val'), ('foo val 2', 'bar val 2'), ('foo val 3', 'bar val 3')
-		) AS t (foo, bar)
-	`
-	expected := []*testDst{
-		{Foo: "foo val", Bar: "bar val"},
-		{Foo: "foo val 2", Bar: "bar val 2"},
-		{Foo: "foo val 3", Bar: "bar val 3"},
-	}
-
-	var got []*testDst
-	err := dbscan.QueryAll(ctx, testDB, &got, sqlText)
-	require.NoError(t, err)
-
-	assert.Equal(t, expected, got)
-}
-
-func TestQueryOne(t *testing.T) {
-	t.Parallel()
-	sqlText := `
-		SELECT 'foo val' AS foo, 'bar val' AS bar
-	`
-	expected := testDst{Foo: "foo val", Bar: "bar val"}
-
-	var got testDst
-	err := dbscan.QueryOne(ctx, testDB, &got, sqlText)
-	require.NoError(t, err)
-
-	assert.Equal(t, expected, got)
-}
 
 func TestScanAll(t *testing.T) {
 	t.Parallel()
@@ -238,7 +191,7 @@ func TestScanAll_NonSliceDestination_ReturnsErr(t *testing.T) {
 	var dst struct {
 		Foo string
 	}
-	expectedErr := "sqlscan: destination must be a slice, got: struct { Foo string }"
+	expectedErr := "dbscan: destination must be a slice, got: struct { Foo string }"
 
 	err := dbscan.ScanAll(&dst, rows)
 
@@ -256,7 +209,7 @@ func TestScanAll_SliceByPointerToPointerDestination_ReturnsErr(t *testing.T) {
 		},
 	}
 	var dst *[]string
-	expectedErr := "sqlscan: destination must be a slice, got: *[]string"
+	expectedErr := "dbscan: destination must be a slice, got: *[]string"
 
 	err := dbscan.ScanAll(&dst, rows)
 
@@ -278,27 +231,6 @@ func TestScanOne(t *testing.T) {
 
 	got := dst{}
 	err := dbscan.ScanOne(&got, rows)
-	require.NoError(t, err)
-
-	assert.Equal(t, expected, got)
-}
-
-func TestScanRow(t *testing.T) {
-	t.Parallel()
-	rows := &testRows{
-		columns: []string{"foo"},
-		data: [][]interface{}{
-			{"foo val"},
-		},
-	}
-	type dst struct {
-		Foo string
-	}
-	rows.Next()
-	expected := dst{Foo: "foo val"}
-
-	var got dst
-	err := dbscan.ScanRow(&got, rows)
 	require.NoError(t, err)
 
 	assert.Equal(t, expected, got)
@@ -328,7 +260,7 @@ func TestScanOne_MultipleRows_ReturnsErr(t *testing.T) {
 			{"foo val 3"},
 		},
 	}
-	expectedErr := "sqlscan: expected 1 row, got: 3"
+	expectedErr := "dbscan: expected 1 row, got: 3"
 
 	var dst string
 	err := dbscan.ScanOne(&dst, rows)
@@ -336,20 +268,80 @@ func TestScanOne_MultipleRows_ReturnsErr(t *testing.T) {
 	assert.EqualError(t, err, expectedErr)
 }
 
-func TestMain(m *testing.M) {
-	exitCode := func() int {
-		flag.Parse()
-		ts := testutil.StartCrdbServer()
-		defer ts.Stop()
-		var err error
-		testDB, err = sql.Open("pgx", ts.PGURL().String())
-		if err != nil {
-			panic(err)
+func TestRowScannerScan(t *testing.T) {
+	t.Parallel()
+	rows := testRows{
+		columns: []string{"foo"},
+		data: [][]interface{}{
+			{"foo val"},
+		},
+	}
+	type dst struct {
+		Foo string
+	}
+	rs := dbscan.NewRowScanner(&rows)
+	rows.Next()
+	expected := dst{Foo: "foo val"}
+
+	var got dst
+	err := rs.Scan(&got)
+	require.NoError(t, err)
+
+	assert.Equal(t, expected, got)
+}
+
+func TestScanRow(t *testing.T) {
+	t.Parallel()
+	rows := &testRows{
+		columns: []string{"foo"},
+		data: [][]interface{}{
+			{"foo val"},
+		},
+	}
+	type dst struct {
+		Foo string
+	}
+	rows.Next()
+	expected := dst{Foo: "foo val"}
+
+	var got dst
+	err := dbscan.ScanRow(&got, rows)
+	require.NoError(t, err)
+
+	assert.Equal(t, expected, got)
+}
+
+type RowScannerMock struct {
+	mock.Mock
+	*dbscan.RowScanner
+}
+
+func (rsm *RowScannerMock) start(dstValue reflect.Value) error {
+	_ = rsm.Called(dstValue)
+	return rsm.RowScanner.Start(dstValue)
+}
+
+func TestRowScannerDoScan_AfterFirstScan_StartNotCalled(t *testing.T) {
+	t.Parallel()
+	rows := testRows{
+		columns: []string{"foo"},
+		data: [][]interface{}{
+			{"foo val"},
+			{"foo val 2"},
+			{"foo val 3"},
+		},
+	}
+	rs := dbscan.NewRowScanner(&rows)
+	rsMock := &RowScannerMock{RowScanner: rs}
+	rsMock.On("start", mock.Anything)
+	rs.SetStartFn(rsMock.start)
+	for rows.Next() {
+		var dst struct {
+			Foo string
 		}
-		defer func() {
-			_ = testDB.Close()
-		}()
-		return m.Run()
-	}()
-	os.Exit(exitCode)
+		dstVal := newDstValue(dst)
+		err := rs.DoScan(dstVal)
+		require.NoError(t, err)
+	}
+	rsMock.AssertNumberOfCalls(t, "start", 1)
 }

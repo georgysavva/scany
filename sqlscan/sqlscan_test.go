@@ -1,25 +1,25 @@
 // +build integration
 
-package pgxscan_test
+package sqlscan_test
 
 import (
 	"context"
 	"flag"
 	"os"
-	"reflect"
-	"testing"
-
-	"github.com/georgysavva/dbscan/pgxscan"
-	"github.com/stretchr/testify/assert"
-
-	"github.com/stretchr/testify/require"
 
 	"github.com/georgysavva/dbscan/internal/testutil"
-	"github.com/jackc/pgx/v4/pgxpool"
+
+	"database/sql"
+	"testing"
+
+	"github.com/georgysavva/dbscan/sqlscan"
+	_ "github.com/jackc/pgx/v4/stdlib"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 var (
-	testDB *pgxpool.Pool
+	testDB *sql.DB
 	ctx    = context.Background()
 )
 
@@ -43,7 +43,7 @@ func TestQueryAll(t *testing.T) {
 	}
 
 	var got []*testDst
-	err := pgxscan.QueryAll(ctx, testDB, &got, sqlText)
+	err := sqlscan.QueryAll(ctx, testDB, &got, sqlText)
 	require.NoError(t, err)
 
 	assert.Equal(t, expected, got)
@@ -57,7 +57,7 @@ func TestQueryOne(t *testing.T) {
 	expected := testDst{Foo: "foo val", Bar: "bar val"}
 
 	var got testDst
-	err := pgxscan.QueryOne(ctx, testDB, &got, sqlText)
+	err := sqlscan.QueryOne(ctx, testDB, &got, sqlText)
 	require.NoError(t, err)
 
 	assert.Equal(t, expected, got)
@@ -76,11 +76,11 @@ func TestScanAll(t *testing.T) {
 		{Foo: "foo val 2", Bar: "bar val 2"},
 		{Foo: "foo val 3", Bar: "bar val 3"},
 	}
-	rows, err := testDB.Query(ctx, sqlText)
+	rows, err := testDB.Query(sqlText)
 	require.NoError(t, err)
 
 	var got []*testDst
-	err = pgxscan.ScanAll(&got, rows)
+	err = sqlscan.ScanAll(&got, rows)
 	require.NoError(t, err)
 
 	assert.Equal(t, expected, got)
@@ -92,11 +92,11 @@ func TestScanOne(t *testing.T) {
 		SELECT 'foo val' AS foo, 'bar val' AS bar
 	`
 	expected := testDst{Foo: "foo val", Bar: "bar val"}
-	rows, err := testDB.Query(ctx, sqlText)
+	rows, err := testDB.Query(sqlText)
 	require.NoError(t, err)
 
 	var got testDst
-	err = pgxscan.ScanOne(&got, rows)
+	err = sqlscan.ScanOne(&got, rows)
 	require.NoError(t, err)
 
 	assert.Equal(t, expected, got)
@@ -107,13 +107,13 @@ func TestScanOne_NoRows_ReturnsNotFoundErr(t *testing.T) {
 	sqlText := `
 		SELECT NULL AS foo, NULL AS bar LIMIT 0;
 	`
-	rows, err := testDB.Query(ctx, sqlText)
+	rows, err := testDB.Query(sqlText)
 	require.NoError(t, err)
 
 	var got testDst
-	err = pgxscan.ScanOne(&got, rows)
+	err = sqlscan.ScanOne(&got, rows)
 
-	assert.True(t, pgxscan.NotFound(err))
+	assert.True(t, sqlscan.NotFound(err))
 }
 
 func TestScanRow(t *testing.T) {
@@ -131,12 +131,12 @@ func TestScanRow(t *testing.T) {
 	}
 
 	var got []*testDst
-	rows, err := testDB.Query(ctx, sqlText)
+	rows, err := testDB.Query(sqlText)
 	require.NoError(t, err)
 	defer rows.Close()
 	for rows.Next() {
 		dst := &testDst{}
-		err := pgxscan.ScanRow(dst, rows)
+		err := sqlscan.ScanRow(dst, rows)
 		require.NoError(t, err)
 		got = append(got, dst)
 	}
@@ -160,10 +160,10 @@ func TestRowScanner(t *testing.T) {
 	}
 
 	var got []*testDst
-	rows, err := testDB.Query(ctx, sqlText)
+	rows, err := testDB.Query(sqlText)
 	require.NoError(t, err)
 	defer rows.Close()
-	rs := pgxscan.NewRowScanner(rows)
+	rs := sqlscan.NewRowScanner(rows)
 	for rows.Next() {
 		dst := &testDst{}
 		err := rs.Scan(dst)
@@ -175,53 +175,6 @@ func TestRowScanner(t *testing.T) {
 	assert.Equal(t, expected, got)
 }
 
-func TestRowsAdapterScan(t *testing.T) {
-	t.Parallel()
-	cases := []struct {
-		name string
-		d1   interface{}
-		d2   interface{}
-		d3   interface{}
-	}{
-		{
-			name: "all destinations are *interface{}",
-			d1:   new(interface{}),
-			d2:   new(interface{}),
-			d3:   new(interface{}),
-		},
-		{
-			name: "none of destinations are *interface{}",
-			d1:   new(string),
-			d2:   new(string),
-			d3:   new(string),
-		},
-		{
-			name: "mix of *interface{} and non *interface{} destinations",
-			d1:   new(interface{}),
-			d2:   new(string),
-			d3:   new(interface{}),
-		},
-	}
-	for _, tc := range cases {
-		tc := tc
-		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
-			rows, err := testDB.Query(ctx, `select '1', '2', '3'`)
-			require.NoError(t, err)
-			rows.Next()
-			defer rows.Close()
-			ra := pgxscan.NewRowsAdapter(rows)
-			err = ra.Scan(tc.d1, tc.d2, tc.d3)
-			require.NoError(t, err)
-			require.NoError(t, rows.Err())
-
-			assert.Equal(t, "1", reflect.ValueOf(tc.d1).Elem().Interface())
-			assert.Equal(t, "2", reflect.ValueOf(tc.d2).Elem().Interface())
-			assert.Equal(t, "3", reflect.ValueOf(tc.d3).Elem().Interface())
-		})
-	}
-}
-
 func TestMain(m *testing.M) {
 	exitCode := func() int {
 		flag.Parse()
@@ -230,7 +183,7 @@ func TestMain(m *testing.M) {
 			panic(err)
 		}
 		defer ts.Stop()
-		testDB, err = pgxpool.Connect(ctx, ts.PGURL().String())
+		testDB, err = sql.Open("pgx", ts.PGURL().String())
 		if err != nil {
 			panic(err)
 		}

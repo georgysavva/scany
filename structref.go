@@ -16,7 +16,7 @@ func getColumnToFieldIndexMap(structType reflect.Type) (map[string][]int, error)
 	setColumn := func(column string, index []int) error {
 		if otherIndex, ok := result[column]; ok {
 			return errors.Errorf(
-				"sqlscan: Column must have exactly one field pointing to it; "+
+				"dbscan: Column must have exactly one field pointing to it; "+
 					"found 2 fields with indexes %d and %d pointing to '%s' in %v",
 				otherIndex, index, column, structType,
 			)

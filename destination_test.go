@@ -4,8 +4,6 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/stretchr/testify/mock"
-
 	"github.com/georgysavva/dbscan"
 
 	"github.com/stretchr/testify/assert"
@@ -27,28 +25,6 @@ type nestedUnexported struct {
 
 type jsonObj struct {
 	Key string
-}
-
-func TestRowScannerScan(t *testing.T) {
-	t.Parallel()
-	rows := testRows{
-		columns: []string{"foo"},
-		data: [][]interface{}{
-			{"foo val"},
-		},
-	}
-	type dst struct {
-		Foo string
-	}
-	rs := dbscan.NewRowScanner(&rows)
-	rows.Next()
-	expected := dst{Foo: "foo val"}
-
-	var got dst
-	err := rs.Scan(&got)
-	require.NoError(t, err)
-
-	assert.Equal(t, expected, got)
 }
 
 func TestRowScannerDoScan_StructDestination(t *testing.T) {
@@ -316,7 +292,7 @@ func TestRowScannerDoScan_InvalidStructDestination_ReturnsErr(t *testing.T) {
 			dst: struct {
 				Bar string
 			}{},
-			expectedErr: "sqlscan: column: 'foo': no corresponding field found or it's unexported in " +
+			expectedErr: "dbscan: column: 'foo': no corresponding field found or it's unexported in " +
 				"struct { Bar string }",
 		},
 		{
@@ -331,7 +307,7 @@ func TestRowScannerDoScan_InvalidStructDestination_ReturnsErr(t *testing.T) {
 				foo string
 				Bar string
 			}{},
-			expectedErr: "sqlscan: column: 'foo': no corresponding field found or it's unexported in " +
+			expectedErr: "dbscan: column: 'foo': no corresponding field found or it's unexported in " +
 				"struct { foo string; Bar string }",
 		},
 		{
@@ -347,8 +323,8 @@ func TestRowScannerDoScan_InvalidStructDestination_ReturnsErr(t *testing.T) {
 				Foo string
 				Bar string
 			}{},
-			expectedErr: "sqlscan: column: 'foo_nested': no corresponding field found or it's unexported in " +
-				"struct { sqlscan_test.nestedUnexported; Foo string; Bar string }",
+			expectedErr: "dbscan: column: 'foo_nested': no corresponding field found or it's unexported in " +
+				"struct { dbscan_test.nestedUnexported; Foo string; Bar string }",
 		},
 		{
 			name: "nested non embedded structs aren't allowed",
@@ -363,8 +339,8 @@ func TestRowScannerDoScan_InvalidStructDestination_ReturnsErr(t *testing.T) {
 				Foo    string
 				Bar    string
 			}{},
-			expectedErr: "sqlscan: column: 'foo_nested': no corresponding field found or it's unexported in " +
-				"struct { Nested sqlscan_test.FooNested; Foo string; Bar string }",
+			expectedErr: "dbscan: column: 'foo_nested': no corresponding field found or it's unexported in " +
+				"struct { Nested dbscan_test.FooNested; Foo string; Bar string }",
 		},
 		{
 			name: "fields contain duplicated tag",
@@ -378,7 +354,7 @@ func TestRowScannerDoScan_InvalidStructDestination_ReturnsErr(t *testing.T) {
 				Foo string `db:"foo_column"`
 				Bar string `db:"foo_column"`
 			}{},
-			expectedErr: "sqlscan: Column must have exactly one field pointing to it; " +
+			expectedErr: "dbscan: Column must have exactly one field pointing to it; " +
 				"found 2 fields with indexes [0] and [1] pointing to 'foo_column' in " +
 				"struct { Foo string \"db:\\\"foo_column\\\"\"; Bar string \"db:\\\"foo_column\\\"\" }",
 		},
@@ -522,7 +498,7 @@ func TestRowScannerDoScan_InvalidMapDestination_ReturnsErr(t *testing.T) {
 				},
 			},
 			dst:         map[int]interface{}{},
-			expectedErr: "sqlscan: invalid type map[int]interface {}: map must have string key, got: int",
+			expectedErr: "dbscan: invalid type map[int]interface {}: map must have string key, got: int",
 		},
 	}
 	for _, tc := range cases {
@@ -625,16 +601,16 @@ func TestRowScannerDoScan_InvalidPrimitiveTypeDestination_ReturnsErr(t *testing.
 		expectedErr string
 	}{
 		{
-			name: "sql contain 0 columns",
+			name: "query contain 0 columns",
 			rows: testRows{
 				data:    [][]interface{}{},
 				columns: []string{},
 			},
 			dst:         "",
-			expectedErr: "sqlscan: to scan into a primitive type, columns number must be exactly 1, got: 0",
+			expectedErr: "dbscan: to scan into a primitive type, columns number must be exactly 1, got: 0",
 		},
 		{
-			name: "sql contain more than 1 column",
+			name: "query contain more than 1 column",
 			rows: testRows{
 				columns: []string{"foo", "bar"},
 				data: [][]interface{}{
@@ -642,7 +618,7 @@ func TestRowScannerDoScan_InvalidPrimitiveTypeDestination_ReturnsErr(t *testing.
 				},
 			},
 			dst:         "",
-			expectedErr: "sqlscan: to scan into a primitive type, columns number must be exactly 1, got: 2",
+			expectedErr: "dbscan: to scan into a primitive type, columns number must be exactly 1, got: 2",
 		},
 	}
 	for _, tc := range cases {
@@ -684,7 +660,7 @@ func TestRowScannerDoScan_RowsContainDuplicatedColumn_ReturnsErr(t *testing.T) {
 				},
 			}
 			dstVal := newDstValue(tc.dst)
-			expectedErr := "sqlscan: row contains duplicated column 'foo'"
+			expectedErr := "dbscan: row contains duplicated column 'foo'"
 
 			err := doScan(dstVal, &rows)
 
@@ -717,27 +693,27 @@ func TestParseDestination_InvalidDst_ReturnsErr(t *testing.T) {
 			dst: struct {
 				Foo string
 			}{},
-			expectedErr: "sqlscan: destination must be a pointer, got: struct { Foo string }",
+			expectedErr: "dbscan: destination must be a pointer, got: struct { Foo string }",
 		},
 		{
 			name:        "map",
 			dst:         map[string]interface{}{},
-			expectedErr: "sqlscan: destination must be a pointer, got: map[string]interface {}",
+			expectedErr: "dbscan: destination must be a pointer, got: map[string]interface {}",
 		},
 		{
 			name:        "slice",
 			dst:         []struct{ Foo string }{},
-			expectedErr: "sqlscan: destination must be a pointer, got: []struct { Foo string }",
+			expectedErr: "dbscan: destination must be a pointer, got: []struct { Foo string }",
 		},
 		{
 			name:        "nil",
 			dst:         nil,
-			expectedErr: "sqlscan: destination must be a non nil pointer",
+			expectedErr: "dbscan: destination must be a non nil pointer",
 		},
 		{
 			name:        "(*int)(nil)",
 			dst:         (*int)(nil),
-			expectedErr: "sqlscan: destination must be a non nil pointer",
+			expectedErr: "dbscan: destination must be a non nil pointer",
 		},
 	}
 	for _, tc := range cases {
@@ -748,39 +724,4 @@ func TestParseDestination_InvalidDst_ReturnsErr(t *testing.T) {
 			assert.EqualError(t, err, tc.expectedErr)
 		})
 	}
-}
-
-type RowScannerMock struct {
-	mock.Mock
-	*dbscan.RowScanner
-}
-
-func (rsm *RowScannerMock) start(dstValue reflect.Value) error {
-	_ = rsm.Called(dstValue)
-	return rsm.RowScanner.Start(dstValue)
-}
-
-func TestRowScannerDoScan_AfterFirstScan_StartNotCalled(t *testing.T) {
-	t.Parallel()
-	rows := testRows{
-		columns: []string{"foo"},
-		data: [][]interface{}{
-			{"foo val"},
-			{"foo val 2"},
-			{"foo val 3"},
-		},
-	}
-	rs := dbscan.NewRowScanner(&rows)
-	rsMock := &RowScannerMock{RowScanner: rs}
-	rsMock.On("start", mock.Anything)
-	rs.SetStartFn(rsMock.start)
-	for rows.Next() {
-		var dst struct {
-			Foo string
-		}
-		dstVal := newDstValue(dst)
-		err := rs.DoScan(dstVal)
-		require.NoError(t, err)
-	}
-	rsMock.AssertNumberOfCalls(t, "start", 1)
 }
