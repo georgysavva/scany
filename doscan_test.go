@@ -556,7 +556,7 @@ func TestRowScannerDoScan_RowsContainDuplicatedColumn_ReturnsErr(t *testing.T) {
 			`
 			rows := queryRows(t, query)
 			dstVal := newDstValue(tc.dst)
-			expectedErr := "dbscan: row contains duplicated column 'foo'"
+			expectedErr := "dbscan: rows contain duplicated column 'foo'"
 
 			err := doScan(t, dstVal, rows)
 

@@ -178,7 +178,7 @@ func (rs *RowScanner) start(dstValue reflect.Value) error {
 	var err error
 	rs.columns, err = rs.rows.Columns()
 	if err != nil {
-		return errors.Wrap(err, "dbscan: get columns from rows")
+		return errors.Wrap(err, "dbscan: get rows columns")
 	}
 	if err := rs.ensureDistinctColumns(); err != nil {
 		return errors.WithStack(err)
@@ -272,14 +272,14 @@ func (rs *RowScanner) scanMap(mapValue reflect.Value) error {
 
 func (rs *RowScanner) scanPrimitive(value reflect.Value) error {
 	err := rs.rows.Scan(value.Addr().Interface())
-	return errors.Wrap(err, "dbscan: scan row value into primitive type")
+	return errors.Wrap(err, "dbscan: scan row value into a primitive type")
 }
 
 func (rs *RowScanner) ensureDistinctColumns() error {
 	seen := make(map[string]struct{}, len(rs.columns))
 	for _, column := range rs.columns {
 		if _, ok := seen[column]; ok {
-			return errors.Errorf("dbscan: row contains duplicated column '%s'", column)
+			return errors.Errorf("dbscan: rows contain duplicated column '%s'", column)
 		}
 		seen[column] = struct{}{}
 	}
