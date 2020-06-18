@@ -6,6 +6,8 @@ import (
 	"github.com/pkg/errors"
 )
 
+// Rows is an abstract database rows that dbscan can iterate over and get the data from.
+// This interface is used to decouple from any particular database.
 type Rows interface {
 	Close() error
 	Err() error
@@ -14,17 +16,26 @@ type Rows interface {
 	Scan(dest ...interface{}) error
 }
 
+// ScanAll iterates all rows to the end. After iterating it closes the rows,
+// and propagates any errors that could pop up.
+// It expected that destination should be a slice. For each row it scans data and appends it to the destination slice.
+// It resets the destination slice, so if it's not empty it will overwrite all previous elements.
 func ScanAll(dst interface{}, rows Rows) error {
 	err := processRows(dst, rows, true /* multipleRows */)
 	return errors.WithStack(err)
 }
 
+// ScanOne iterates all rows to the end and makes sure that there was exactly one row,
+// otherwise it returns an error. After iterating it closes the rows,
+// and propagates any errors that could pop up.
+// It scans data from that single row into destination.
 func ScanOne(dst interface{}, rows Rows) error {
 	err := processRows(dst, rows, false /* multipleRows */)
 	return errors.WithStack(err)
 }
 
 // NotFound returns true if err is a not found error.
+// This error is returned by ScanOne if there were no rows.
 func NotFound(err error) bool {
 	return errors.Is(err, notFoundErr)
 }
@@ -87,6 +98,21 @@ func processRows(dst interface{}, rows Rows, multipleRows bool) error {
 
 type startRowsFunc func(dstValue reflect.Value) error
 
+// RowScanner embraces the Rows and exposes the Scan method
+// that allows to scan data from the current row into destination.
+// The first time the Scan method is called
+// it parses the destination type by reflection and caches all required information for further scans.
+// Due to this caching mechanism it's not allowed to call Scan for destinations of different types,
+// the behaviour is unknown in that case.
+// RowScanner doesn't processed to the next row nor close them, it should be done by the client code.
+//
+// You can instantiate a RowScanner and manually iterate over the rows
+// and control how data is scanned from each row.
+// This can be beneficial if the result set is large
+// and you don't want to allocate a slice for all rows at once
+// as it would be done with ScanAll.
+//
+// ScanOne and ScanAll both use this type internally.
 type RowScanner struct {
 	rows               Rows
 	columns            []string
@@ -98,12 +124,16 @@ type RowScanner struct {
 	startFn            startRowsFunc
 }
 
+// NewRowsScanner returns a new instance of the RowScanner.
 func NewRowScanner(rows Rows) *RowScanner {
 	r := &RowScanner{rows: rows}
 	r.startFn = r.start
 	return r
 }
 
+// Scan scans data from the current row into the destination.
+// On the first call it caches expensive reflection work and use it the future calls.
+// See RowScanner for details.
 func (rs *RowScanner) Scan(dst interface{}) error {
 	dstVal, err := parseDestination(dst)
 	if err != nil {
@@ -113,6 +143,12 @@ func (rs *RowScanner) Scan(dst interface{}) error {
 	return errors.WithStack(err)
 }
 
+// ScanRow creates a new RowScanner and calls RowScanner.Scan
+// that scans current row data into the destination.
+// It's just a helper function if you don't bother with efficiency
+// and don't want to instantiate a new RowScanner before iterating the rows,
+// so it could cache the reflection work between Scan calls.
+// See RowScanner for details.
 func ScanRow(dst interface{}, rows Rows) error {
 	rs := NewRowScanner(rows)
 	err := rs.Scan(dst)
