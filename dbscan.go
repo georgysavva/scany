@@ -1,9 +1,8 @@
 package dbscan
 
 import (
-	"reflect"
-
 	"github.com/pkg/errors"
+	"reflect"
 )
 
 // Rows is an abstract database rows that dbscan can iterate over and get the data from.
