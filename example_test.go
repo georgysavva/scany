@@ -24,7 +24,7 @@ func ExampleScanOne() {
 	// user variable now contains data from the single row.
 }
 
-func Example_RowScan() {
+func ExampleRowScan() {
 	type User struct {
 		ID    string
 		Name  string

@@ -5,14 +5,14 @@ import (
 	"github.com/georgysavva/dbscan"
 )
 
-func Example_RowScanner() {
-	type User struct {
-		ID    string
-		Name  string
-		Email string
-		Age   int
-	}
+type User2 struct {
+	ID    string
+	Name  string
+	Email string
+	Age   int
+}
 
+func ExampleRowScanner() {
 	// Query rows from the database that implement dbscan.Rows interface, e.g. *sql.Rows:
 	db, _ := sql.Open("pgx", "example-connection-url")
 	rows, _ := db.Query(`SELECT id, name, email, age from users`)
@@ -22,7 +22,7 @@ func Example_RowScanner() {
 
 	rs := dbscan.NewRowScanner(rows)
 	for rows.Next() {
-		var user User
+		var user User2
 		if err := rs.Scan(&user); err != nil {
 			// Handle row scanning error.
 		}

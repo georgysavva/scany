@@ -6,14 +6,15 @@ import (
 	"github.com/georgysavva/dbscan"
 )
 
+type User struct {
+	ID    string
+	Name  string
+	Email string
+	Age   int
+}
+
 func Example_scanOne() {
 	// package
-	type User struct {
-		ID    string
-		Name  string
-		Email string
-		Age   int
-	}
 
 	// Query rows from the database that implement dbscan.Rows interface, e.g. *sql.Rows:
 	db, _ := sql.Open("pgx", "example-connection-url")
