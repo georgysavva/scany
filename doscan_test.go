@@ -28,7 +28,7 @@ type jsonObj struct {
 	Key string
 }
 
-func TestRowScannerDoScan_StructDestination(t *testing.T) {
+func TestRowScanner_DoScan_structDestination(t *testing.T) {
 	t.Parallel()
 	cases := []struct {
 		name     string
@@ -242,7 +242,7 @@ func TestRowScannerDoScan_StructDestination(t *testing.T) {
 	}
 }
 
-func TestRowScannerDoScan_InvalidStructDestination_ReturnsErr(t *testing.T) {
+func TestRowScanner_DoScan_invalidStructDestination_returnsErr(t *testing.T) {
 	t.Parallel()
 	cases := []struct {
 		name        string
@@ -327,7 +327,7 @@ func TestRowScannerDoScan_InvalidStructDestination_ReturnsErr(t *testing.T) {
 	}
 }
 
-func TestRowScannerDoScan_MapDestination(t *testing.T) {
+func TestRowScanner_DoScan_mapDestination(t *testing.T) {
 	t.Parallel()
 	cases := []struct {
 		name     string
@@ -418,7 +418,7 @@ func TestRowScannerDoScan_MapDestination(t *testing.T) {
 	}
 }
 
-func TestRowScannerDoScan_MapDestinationWithNonStringKey_ReturnsErr(t *testing.T) {
+func TestRowScanner_DoScan_mapDestinationWithNonStringKey_returnsErr(t *testing.T) {
 	t.Parallel()
 	query := `
 		SELECT 'foo val' AS foo, 'bar val' AS bar
@@ -432,7 +432,7 @@ func TestRowScannerDoScan_MapDestinationWithNonStringKey_ReturnsErr(t *testing.T
 	assert.EqualError(t, err, expectedErr)
 }
 
-func TestRowScannerDoScan_PrimitiveTypeDestination(t *testing.T) {
+func TestRowScanner_DoScan_primitiveTypeDestination(t *testing.T) {
 	t.Parallel()
 	cases := []struct {
 		name     string
@@ -496,7 +496,7 @@ func TestRowScannerDoScan_PrimitiveTypeDestination(t *testing.T) {
 	}
 }
 
-func TestRowScannerDoScan_PrimitiveTypeDestinationRowsContainMoreThanOneColumn_ReturnsErr(t *testing.T) {
+func TestRowScanner_DoScan_primitiveTypeDestinationRowsContainMoreThanOneColumn_returnsErr(t *testing.T) {
 	t.Parallel()
 	query := `
 		SELECT 'foo val' AS foo, 'bar val' AS bar
@@ -520,7 +520,7 @@ func (er emptyRow) Columns() ([]string, error)  { return []string{}, nil }
 func (er emptyRow) Close() error                { return nil }
 func (er emptyRow) Err() error                  { return nil }
 
-func TestRowScannerDoScan_PrimitiveTypeDestinationRowsContainZeroColumns_ReturnsErr(t *testing.T) {
+func TestRowScanner_DoScan_primitiveTypeDestinationRowsContainZeroColumns_returnsErr(t *testing.T) {
 	t.Parallel()
 	rows := emptyRow{}
 	var dst string
@@ -530,7 +530,7 @@ func TestRowScannerDoScan_PrimitiveTypeDestinationRowsContainZeroColumns_Returns
 	assert.EqualError(t, err, expectedErr)
 }
 
-func TestRowScannerDoScan_RowsContainDuplicatedColumn_ReturnsErr(t *testing.T) {
+func TestRowScanner_DoScan_rowsContainDuplicatedColumn_returnsErr(t *testing.T) {
 	t.Parallel()
 	cases := []struct {
 		name string
@@ -575,7 +575,7 @@ func (rsm *RowScannerMock) start(dstValue reflect.Value) error {
 	return rsm.RowScanner.Start(dstValue)
 }
 
-func TestRowScannerDoScan_AfterFirstScan_StartNotCalled(t *testing.T) {
+func TestRowScanner_DoScan_startCalledExactlyOnce(t *testing.T) {
 	t.Parallel()
 	query := `
 		SELECT *

@@ -100,7 +100,7 @@ func TestScanOne(t *testing.T) {
 	assert.Equal(t, expected, got)
 }
 
-func TestScanOne_NoRows_ReturnsNotFoundErr(t *testing.T) {
+func TestScanOne_noRows_returnsNotFoundErr(t *testing.T) {
 	t.Parallel()
 	sqlText := `
 		SELECT NULL AS foo, NULL AS bar LIMIT 0;

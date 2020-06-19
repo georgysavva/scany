@@ -100,7 +100,7 @@ func TestScanOne(t *testing.T) {
 	assert.Equal(t, expected, got)
 }
 
-func TestScanOne_NoRows_ReturnsNotFoundErr(t *testing.T) {
+func TestScanOne_noRows_returnsNotFoundErr(t *testing.T) {
 	t.Parallel()
 	sqlText := `
 		SELECT NULL AS foo, NULL AS bar LIMIT 0;
@@ -173,7 +173,7 @@ func TestRowScanner(t *testing.T) {
 	assert.Equal(t, expected, got)
 }
 
-func TestRowsAdapterScan(t *testing.T) {
+func TestRowsAdapter_Scan(t *testing.T) {
 	t.Parallel()
 	cases := []struct {
 		name string
@@ -208,7 +208,7 @@ func TestRowsAdapterScan(t *testing.T) {
 			require.NoError(t, err)
 			rows.Next()
 			defer rows.Close()
-			ra := pgxscan.RowsAdapter{rows}
+			ra := pgxscan.NewRowsAdapter(rows)
 			err = ra.Scan(tc.d1, tc.d2, tc.d3)
 			require.NoError(t, err)
 			require.NoError(t, rows.Err())

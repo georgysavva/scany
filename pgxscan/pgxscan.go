@@ -37,12 +37,12 @@ func QueryOne(ctx context.Context, q QueryI, dst interface{}, sqlText string, ar
 }
 
 func ScanAll(dst interface{}, rows pgx.Rows) error {
-	err := dbscan.ScanAll(dst, RowsAdapter{rows})
+	err := dbscan.ScanAll(dst, NewRowsAdapter(rows))
 	return errors.WithStack(err)
 }
 
 func ScanOne(dst interface{}, rows pgx.Rows) error {
-	err := dbscan.ScanOne(dst, RowsAdapter{rows})
+	err := dbscan.ScanOne(dst, NewRowsAdapter(rows))
 	return errors.WithStack(err)
 }
 
@@ -56,7 +56,7 @@ type RowScanner struct {
 }
 
 func NewRowScanner(rows pgx.Rows) *RowScanner {
-	ra := RowsAdapter{rows}
+	ra := NewRowsAdapter(rows)
 	return &RowScanner{RowScanner: dbscan.NewRowScanner(ra)}
 }
 
@@ -68,6 +68,10 @@ func ScanRow(dst interface{}, rows pgx.Rows) error {
 
 type RowsAdapter struct {
 	pgx.Rows
+}
+
+func NewRowsAdapter(rows pgx.Rows) *RowsAdapter {
+	return &RowsAdapter{Rows: rows}
 }
 
 func (ra RowsAdapter) Scan(dest ...interface{}) error {

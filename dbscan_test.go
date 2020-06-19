@@ -156,7 +156,7 @@ func TestScanAll(t *testing.T) {
 	}
 }
 
-func TestScanAll_NonEmptySlice_ResetsDstSlice(t *testing.T) {
+func TestScanAll_nonEmptySlice_resetsDstSlice(t *testing.T) {
 	t.Parallel()
 	query := `
 		SELECT *
@@ -174,7 +174,7 @@ func TestScanAll_NonEmptySlice_ResetsDstSlice(t *testing.T) {
 	assert.Equal(t, expected, got)
 }
 
-func TestScanAll_NonSliceDestination_ReturnsErr(t *testing.T) {
+func TestScanAll_nonSliceDestination_returnsErr(t *testing.T) {
 	t.Parallel()
 	query := `
 		SELECT *
@@ -193,7 +193,7 @@ func TestScanAll_NonSliceDestination_ReturnsErr(t *testing.T) {
 	assert.EqualError(t, err, expectedErr)
 }
 
-func TestScanAll_SliceByPointerToPointerDestination_ReturnsErr(t *testing.T) {
+func TestScanAll_sliceByPointerToPointerDestination_returnsErr(t *testing.T) {
 	t.Parallel()
 	query := `
 		SELECT *
@@ -229,7 +229,7 @@ func TestScanOne(t *testing.T) {
 	assert.Equal(t, expected, got)
 }
 
-func TestScanOne_ZeroRows_ReturnsNotFoundErr(t *testing.T) {
+func TestScanOne_zeroRows_returnsNotFoundErr(t *testing.T) {
 	t.Parallel()
 	query := `
 		SELECT NULL AS foo, NULL AS bar LIMIT 0;
@@ -243,7 +243,7 @@ func TestScanOne_ZeroRows_ReturnsNotFoundErr(t *testing.T) {
 	assert.True(t, got)
 }
 
-func TestScanOne_MultipleRows_ReturnsErr(t *testing.T) {
+func TestScanOne_multipleRows_returnsErr(t *testing.T) {
 	t.Parallel()
 	query := `
 		SELECT *
@@ -260,7 +260,7 @@ func TestScanOne_MultipleRows_ReturnsErr(t *testing.T) {
 	assert.EqualError(t, err, expectedErr)
 }
 
-func TestRowScannerScan(t *testing.T) {
+func TestRowScanner_Scan(t *testing.T) {
 	t.Parallel()
 	query := `
 		SELECT 'foo val' AS foo, 'bar val' AS bar

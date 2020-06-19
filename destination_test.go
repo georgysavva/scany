@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestParseDestination_ValidDst_ReturnsElemReflectValue(t *testing.T) {
+func TestParseDestination(t *testing.T) {
 	t.Parallel()
 	var dst struct{ Foo string }
 	expected := reflect.ValueOf(&dst).Elem()
@@ -21,7 +21,7 @@ func TestParseDestination_ValidDst_ReturnsElemReflectValue(t *testing.T) {
 	assert.Equal(t, expected, got)
 }
 
-func TestParseDestination_InvalidDst_ReturnsErr(t *testing.T) {
+func TestParseDestination_invalidDst_returnsErr(t *testing.T) {
 	t.Parallel()
 	cases := []struct {
 		name        string

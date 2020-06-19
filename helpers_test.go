@@ -18,7 +18,7 @@ func queryRows(t *testing.T, query string) dbscan.Rows {
 	t.Helper()
 	pgxRows, err := testDB.Query(ctx, query)
 	require.NoError(t, err)
-	rows := pgxscan.RowsAdapter{pgxRows}
+	rows := pgxscan.NewRowsAdapter(pgxRows)
 	return rows
 }
 
