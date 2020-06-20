@@ -41,7 +41,7 @@ func TestQueryAll(t *testing.T) {
 	}
 
 	var got []*testDst
-	err := sqlscan.QueryAll(ctx, testDB, &got, query)
+	err := sqlscan.QueryAll(ctx, &got, testDB, query)
 	require.NoError(t, err)
 
 	assert.Equal(t, expected, got)
@@ -55,7 +55,7 @@ func TestQueryOne(t *testing.T) {
 	expected := testDst{Foo: "foo val", Bar: "bar val"}
 
 	var got testDst
-	err := sqlscan.QueryOne(ctx, testDB, &got, query)
+	err := sqlscan.QueryOne(ctx, &got, testDB, query)
 	require.NoError(t, err)
 
 	assert.Equal(t, expected, got)

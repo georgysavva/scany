@@ -7,6 +7,7 @@ import (
 
 // Rows is an abstract database rows that dbscan can iterate over and get the data from.
 // This interface is used to decouple from any particular database.
+// E.g. *sql.Rows implements this interface.
 type Rows interface {
 	Close() error
 	Err() error

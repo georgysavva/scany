@@ -41,7 +41,7 @@ func TestQueryAll(t *testing.T) {
 	}
 
 	var got []*testDst
-	err := pgxscan.QueryAll(ctx, testDB, &got, query)
+	err := pgxscan.QueryAll(ctx, &got, testDB, query)
 	require.NoError(t, err)
 
 	assert.Equal(t, expected, got)
@@ -55,7 +55,7 @@ func TestQueryOne(t *testing.T) {
 	expected := testDst{Foo: "foo val", Bar: "bar val"}
 
 	var got testDst
-	err := pgxscan.QueryOne(ctx, testDB, &got, query)
+	err := pgxscan.QueryOne(ctx, &got, testDB, query)
 	require.NoError(t, err)
 
 	assert.Equal(t, expected, got)

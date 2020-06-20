@@ -22,7 +22,7 @@ var (
 
 // QueryAll is a helper function that queries the rows and calls the ScanAll function.
 // See ScanAll for details.
-func QueryAll(ctx context.Context, q QueryI, dst interface{}, query string, args ...interface{}) error {
+func QueryAll(ctx context.Context, dst interface{}, q QueryI, query string, args ...interface{}) error {
 	rows, err := q.Query(ctx, query, args...)
 	if err != nil {
 		return errors.Wrap(err, "pgxscan: query result rows")
@@ -33,7 +33,7 @@ func QueryAll(ctx context.Context, q QueryI, dst interface{}, query string, args
 
 // QueryOne is a helper function that queries the rows and calls the ScanOne function.
 // See ScanOne for details.
-func QueryOne(ctx context.Context, q QueryI, dst interface{}, query string, args ...interface{}) error {
+func QueryOne(ctx context.Context, dst interface{}, q QueryI, query string, args ...interface{}) error {
 	rows, err := q.Query(ctx, query, args...)
 	if err != nil {
 		return errors.Wrap(err, "pgxscan: query result rows")
