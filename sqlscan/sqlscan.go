@@ -8,7 +8,7 @@ import (
 )
 
 type QueryI interface {
-	QueryContext(ctx context.Context, sqlText string, args ...interface{}) (*sql.Rows, error)
+	QueryContext(ctx context.Context, query string, args ...interface{}) (*sql.Rows, error)
 }
 
 var (
@@ -17,8 +17,8 @@ var (
 	_ QueryI = &sql.Tx{}
 )
 
-func QueryAll(ctx context.Context, q QueryI, dst interface{}, sqlText string, args ...interface{}) error {
-	rows, err := q.QueryContext(ctx, sqlText, args...)
+func QueryAll(ctx context.Context, q QueryI, dst interface{}, query string, args ...interface{}) error {
+	rows, err := q.QueryContext(ctx, query, args...)
 	if err != nil {
 		return errors.Wrap(err, "sqlscan: query result rows")
 	}
@@ -26,8 +26,8 @@ func QueryAll(ctx context.Context, q QueryI, dst interface{}, sqlText string, ar
 	return errors.WithStack(err)
 }
 
-func QueryOne(ctx context.Context, q QueryI, dst interface{}, sqlText string, args ...interface{}) error {
-	rows, err := q.QueryContext(ctx, sqlText, args...)
+func QueryOne(ctx context.Context, q QueryI, dst interface{}, query string, args ...interface{}) error {
+	rows, err := q.QueryContext(ctx, query, args...)
 	if err != nil {
 		return errors.Wrap(err, "sqlscan: query result rows")
 	}

@@ -9,7 +9,7 @@ import (
 )
 
 type QueryI interface {
-	Query(ctx context.Context, sqlText string, args ...interface{}) (pgx.Rows, error)
+	Query(ctx context.Context, query string, args ...interface{}) (pgx.Rows, error)
 }
 
 var (
@@ -18,8 +18,8 @@ var (
 	_ QueryI = *new(pgx.Tx)
 )
 
-func QueryAll(ctx context.Context, q QueryI, dst interface{}, sqlText string, args ...interface{}) error {
-	rows, err := q.Query(ctx, sqlText, args...)
+func QueryAll(ctx context.Context, q QueryI, dst interface{}, query string, args ...interface{}) error {
+	rows, err := q.Query(ctx, query, args...)
 	if err != nil {
 		return errors.Wrap(err, "pgxscan: query result rows")
 	}
@@ -27,8 +27,8 @@ func QueryAll(ctx context.Context, q QueryI, dst interface{}, sqlText string, ar
 	return errors.WithStack(err)
 }
 
-func QueryOne(ctx context.Context, q QueryI, dst interface{}, sqlText string, args ...interface{}) error {
-	rows, err := q.Query(ctx, sqlText, args...)
+func QueryOne(ctx context.Context, q QueryI, dst interface{}, query string, args ...interface{}) error {
+	rows, err := q.Query(ctx, query, args...)
 	if err != nil {
 		return errors.Wrap(err, "pgxscan: query result rows")
 	}
