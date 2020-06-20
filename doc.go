@@ -1,2 +1,2 @@
-// dbscan package is really cool
+// Package dbscan
 package dbscan
