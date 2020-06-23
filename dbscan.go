@@ -7,7 +7,6 @@ import (
 
 // Rows is an abstract database rows that dbscan can iterate over and get the data from.
 // This interface is used to decouple from any particular database.
-// E.g. *sql.Rows implements this interface.
 type Rows interface {
 	Close() error
 	Err() error
@@ -157,13 +156,14 @@ type startRowsFunc func(dstValue reflect.Value) error
 // the behaviour is unknown in that case.
 // RowScanner doesn't processed to the next row nor close them, it should be done by the client code.
 //
-// You can instantiate a RowScanner and manually iterate over the rows
+// The main benefit of using this type directly
+// is that you can instantiate a RowScanner and manually iterate over the rows
 // and control how data is scanned from each row.
 // This can be beneficial if the result set is large
 // and you don't want to allocate a slice for all rows at once
-// as it would be done with ScanAll.
+// as it would be done in ScanAll.
 //
-// ScanOne and ScanAll both use this type internally.
+// ScanOne and ScanAll both use RowScanner type internally.
 type RowScanner struct {
 	rows               Rows
 	columns            []string
