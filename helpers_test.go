@@ -22,11 +22,11 @@ func queryRows(t *testing.T, query string) dbscan.Rows {
 	return rows
 }
 
-func doScan(t *testing.T, dstValue reflect.Value, rows dbscan.Rows) error {
+func scan(t *testing.T, dst interface{}, rows dbscan.Rows) error {
+	defer rows.Close()
 	rs := dbscan.NewRowScanner(rows)
 	rows.Next()
-	defer rows.Close()
-	if err := rs.DoScan(dstValue); err != nil {
+	if err := rs.Scan(dst); err != nil {
 		return err
 	}
 	requireNoRowsErrors(t, rows)
@@ -39,14 +39,14 @@ func requireNoRowsErrors(t *testing.T, rows dbscan.Rows) {
 	require.NoError(t, rows.Close())
 }
 
-func newDstValue(v interface{}) reflect.Value {
+func allocateDestination(v interface{}) interface{} {
 	dstType := reflect.TypeOf(v)
-	dstValue := reflect.New(dstType).Elem()
-	return dstValue
+	dst := reflect.New(dstType).Interface()
+	return dst
 }
 
-func assertDstValueEqual(t *testing.T, expected interface{}, dstVal reflect.Value) {
+func assertDestinationEqual(t *testing.T, expected interface{}, dst interface{}) {
 	t.Helper()
-	got := dstVal.Interface()
+	got := reflect.ValueOf(dst).Elem().Interface()
 	assert.Equal(t, expected, got)
 }

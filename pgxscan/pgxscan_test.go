@@ -20,7 +20,7 @@ var (
 	ctx    = context.Background()
 )
 
-type testDst struct {
+type testDestination struct {
 	Foo string
 	Bar string
 }
@@ -33,13 +33,13 @@ func TestQueryAll(t *testing.T) {
 			VALUES ('foo val', 'bar val'), ('foo val 2', 'bar val 2'), ('foo val 3', 'bar val 3')
 		) AS t (foo, bar)
 	`
-	expected := []*testDst{
+	expected := []*testDestination{
 		{Foo: "foo val", Bar: "bar val"},
 		{Foo: "foo val 2", Bar: "bar val 2"},
 		{Foo: "foo val 3", Bar: "bar val 3"},
 	}
 
-	var got []*testDst
+	var got []*testDestination
 	err := pgxscan.QueryAll(ctx, &got, testDB, query)
 	require.NoError(t, err)
 
@@ -51,9 +51,9 @@ func TestQueryOne(t *testing.T) {
 	query := `
 		SELECT 'foo val' AS foo, 'bar val' AS bar
 	`
-	expected := testDst{Foo: "foo val", Bar: "bar val"}
+	expected := testDestination{Foo: "foo val", Bar: "bar val"}
 
-	var got testDst
+	var got testDestination
 	err := pgxscan.QueryOne(ctx, &got, testDB, query)
 	require.NoError(t, err)
 
@@ -68,7 +68,7 @@ func TestScanAll(t *testing.T) {
 			VALUES ('foo val', 'bar val'), ('foo val 2', 'bar val 2'), ('foo val 3', 'bar val 3')
 		) AS t (foo, bar)
 	`
-	expected := []*testDst{
+	expected := []*testDestination{
 		{Foo: "foo val", Bar: "bar val"},
 		{Foo: "foo val 2", Bar: "bar val 2"},
 		{Foo: "foo val 3", Bar: "bar val 3"},
@@ -76,7 +76,7 @@ func TestScanAll(t *testing.T) {
 	rows, err := testDB.Query(ctx, query)
 	require.NoError(t, err)
 
-	var got []*testDst
+	var got []*testDestination
 	err = pgxscan.ScanAll(&got, rows)
 	require.NoError(t, err)
 
@@ -88,11 +88,11 @@ func TestScanOne(t *testing.T) {
 	query := `
 		SELECT 'foo val' AS foo, 'bar val' AS bar
 	`
-	expected := testDst{Foo: "foo val", Bar: "bar val"}
+	expected := testDestination{Foo: "foo val", Bar: "bar val"}
 	rows, err := testDB.Query(ctx, query)
 	require.NoError(t, err)
 
-	var got testDst
+	var got testDestination
 	err = pgxscan.ScanOne(&got, rows)
 	require.NoError(t, err)
 
@@ -107,7 +107,7 @@ func TestScanOne_noRows_returnsNotFoundErr(t *testing.T) {
 	rows, err := testDB.Query(ctx, query)
 	require.NoError(t, err)
 
-	var got testDst
+	var got testDestination
 	err = pgxscan.ScanOne(&got, rows)
 
 	assert.True(t, pgxscan.NotFound(err))

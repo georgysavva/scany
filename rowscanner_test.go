@@ -28,7 +28,7 @@ type jsonObj struct {
 	Key string
 }
 
-func TestRowScanner_DoScan_structDestination(t *testing.T) {
+func TestRowScanner_Scan_structDestination(t *testing.T) {
 	t.Parallel()
 	cases := []struct {
 		name     string
@@ -234,15 +234,15 @@ func TestRowScanner_DoScan_structDestination(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			rows := queryRows(t, tc.query)
-			dstVal := newDstValue(tc.expected)
-			err := doScan(t, dstVal, rows)
+			dst := allocateDestination(tc.expected)
+			err := scan(t, dst, rows)
 			require.NoError(t, err)
-			assertDstValueEqual(t, tc.expected, dstVal)
+			assertDestinationEqual(t, tc.expected, dst)
 		})
 	}
 }
 
-func TestRowScanner_DoScan_invalidStructDestination_returnsErr(t *testing.T) {
+func TestRowScanner_Scan_invalidStructDestination_returnsErr(t *testing.T) {
 	t.Parallel()
 	cases := []struct {
 		name        string
@@ -255,7 +255,7 @@ func TestRowScanner_DoScan_invalidStructDestination_returnsErr(t *testing.T) {
 			query: `
 				SELECT 'foo val' AS foo, 'bar val' AS bar
 			`,
-			dst: struct {
+			dst: &struct {
 				Bar string
 			}{},
 			expectedErr: "dbscan: column: 'foo': no corresponding field found or it's unexported in " +
@@ -266,7 +266,7 @@ func TestRowScanner_DoScan_invalidStructDestination_returnsErr(t *testing.T) {
 			query: `
 				SELECT 'foo val' AS foo, 'bar val' AS bar
 			`,
-			dst: struct {
+			dst: &struct {
 				foo string
 				Bar string
 			}{},
@@ -279,7 +279,7 @@ func TestRowScanner_DoScan_invalidStructDestination_returnsErr(t *testing.T) {
 				SELECT 'foo val' AS foo, 'bar val' AS bar,
 					'foo nested val' as foo_nested, 'bar nested val' as bar_nested
 			`,
-			dst: struct {
+			dst: &struct {
 				nestedUnexported
 				Foo string
 				Bar string
@@ -293,7 +293,7 @@ func TestRowScanner_DoScan_invalidStructDestination_returnsErr(t *testing.T) {
 				SELECT 'foo val' AS foo, 'bar val' AS bar,
 					'foo nested val' as foo_nested, 'bar nested val' as bar_nested
 			`,
-			dst: struct {
+			dst: &struct {
 				Nested FooNested
 				Foo    string
 				Bar    string
@@ -306,7 +306,7 @@ func TestRowScanner_DoScan_invalidStructDestination_returnsErr(t *testing.T) {
 			query: `
 				SELECT 'foo val' AS foo_column, 'bar val' AS bar
 			`,
-			dst: struct {
+			dst: &struct {
 				Foo string `db:"foo_column"`
 				Bar string `db:"foo_column"`
 			}{},
@@ -320,14 +320,13 @@ func TestRowScanner_DoScan_invalidStructDestination_returnsErr(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			rows := queryRows(t, tc.query)
-			dstVal := newDstValue(tc.dst)
-			err := doScan(t, dstVal, rows)
+			err := scan(t, tc.dst, rows)
 			assert.EqualError(t, err, tc.expectedErr)
 		})
 	}
 }
 
-func TestRowScanner_DoScan_mapDestination(t *testing.T) {
+func TestRowScanner_Scan_mapDestination(t *testing.T) {
 	t.Parallel()
 	cases := []struct {
 		name     string
@@ -410,29 +409,29 @@ func TestRowScanner_DoScan_mapDestination(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			rows := queryRows(t, tc.query)
-			dstVal := newDstValue(tc.expected)
-			err := doScan(t, dstVal, rows)
+			dst := allocateDestination(tc.expected)
+			err := scan(t, dst, rows)
 			require.NoError(t, err)
-			assertDstValueEqual(t, tc.expected, dstVal)
+			assertDestinationEqual(t, tc.expected, dst)
 		})
 	}
 }
 
-func TestRowScanner_DoScan_mapDestinationWithNonStringKey_returnsErr(t *testing.T) {
+func TestRowScanner_Scan_mapDestinationWithNonStringKey_returnsErr(t *testing.T) {
 	t.Parallel()
 	query := `
 		SELECT 'foo val' AS foo, 'bar val' AS bar
 	`
 	rows := queryRows(t, query)
 	expectedErr := "dbscan: invalid type map[int]interface {}: map must have string key, got: int"
-	dstVal := newDstValue(map[int]interface{}{})
+	dst := &map[int]interface{}{}
 
-	err := doScan(t, dstVal, rows)
+	err := scan(t, dst, rows)
 
 	assert.EqualError(t, err, expectedErr)
 }
 
-func TestRowScanner_DoScan_primitiveTypeDestination(t *testing.T) {
+func TestRowScanner_Scan_primitiveTypeDestination(t *testing.T) {
 	t.Parallel()
 	cases := []struct {
 		name     string
@@ -488,25 +487,23 @@ func TestRowScanner_DoScan_primitiveTypeDestination(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			rows := queryRows(t, tc.query)
-			dstVal := newDstValue(tc.expected)
-			err := doScan(t, dstVal, rows)
+			dst := allocateDestination(tc.expected)
+			err := scan(t, dst, rows)
 			require.NoError(t, err)
-			assertDstValueEqual(t, tc.expected, dstVal)
+			assertDestinationEqual(t, tc.expected, dst)
 		})
 	}
 }
 
-func TestRowScanner_DoScan_primitiveTypeDestinationRowsContainMoreThanOneColumn_returnsErr(t *testing.T) {
+func TestRowScanner_Scan_primitiveTypeDestinationRowsContainMoreThanOneColumn_returnsErr(t *testing.T) {
 	t.Parallel()
 	query := `
 		SELECT 'foo val' AS foo, 'bar val' AS bar
 	`
 	rows := queryRows(t, query)
 	expectedErr := "dbscan: to scan into a primitive type, columns number must be exactly 1, got: 2"
-	dstVal := newDstValue("")
-
-	err := doScan(t, dstVal, rows)
-
+	dst := new(string)
+	err := scan(t, dst, rows)
 	assert.EqualError(t, err, expectedErr)
 }
 
@@ -520,17 +517,16 @@ func (er emptyRow) Columns() ([]string, error)  { return []string{}, nil }
 func (er emptyRow) Close() error                { return nil }
 func (er emptyRow) Err() error                  { return nil }
 
-func TestRowScanner_DoScan_primitiveTypeDestinationRowsContainZeroColumns_returnsErr(t *testing.T) {
+func TestRowScanner_Scan_primitiveTypeDestinationRowsContainZeroColumns_returnsErr(t *testing.T) {
 	t.Parallel()
 	rows := emptyRow{}
-	var dst string
 	expectedErr := "dbscan: to scan into a primitive type, columns number must be exactly 1, got: 0"
-	dstVal := newDstValue(dst)
-	err := doScan(t, dstVal, rows)
+	dst := new(string)
+	err := scan(t, dst, rows)
 	assert.EqualError(t, err, expectedErr)
 }
 
-func TestRowScanner_DoScan_rowsContainDuplicatedColumn_returnsErr(t *testing.T) {
+func TestRowScanner_Scan_rowsContainDuplicatedColumn_returnsErr(t *testing.T) {
 	t.Parallel()
 	cases := []struct {
 		name string
@@ -538,13 +534,13 @@ func TestRowScanner_DoScan_rowsContainDuplicatedColumn_returnsErr(t *testing.T) 
 	}{
 		{
 			name: "struct destination",
-			dst: struct {
+			dst: &struct {
 				Foo string
 			}{},
 		},
 		{
 			name: "map destination",
-			dst:  map[string]interface{}{},
+			dst:  &map[string]interface{}{},
 		},
 	}
 	for _, tc := range cases {
@@ -555,12 +551,55 @@ func TestRowScanner_DoScan_rowsContainDuplicatedColumn_returnsErr(t *testing.T) 
 				SELECT 'foo val' AS foo, 'foo val' AS foo
 			`
 			rows := queryRows(t, query)
-			dstVal := newDstValue(tc.dst)
 			expectedErr := "dbscan: rows contain duplicated column 'foo'"
-
-			err := doScan(t, dstVal, rows)
-
+			err := scan(t, tc.dst, rows)
 			assert.EqualError(t, err, expectedErr)
+		})
+	}
+}
+
+func TestRowScanner_Scan_invalidDst_returnsErr(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		name        string
+		dst         interface{}
+		expectedErr string
+	}{
+		{
+			name: "non pointer",
+			dst: struct {
+				Foo string
+			}{},
+			expectedErr: "dbscan: destination must be a pointer, got: struct { Foo string }",
+		},
+		{
+			name:        "map",
+			dst:         map[string]interface{}{},
+			expectedErr: "dbscan: destination must be a pointer, got: map[string]interface {}",
+		},
+		{
+			name:        "slice",
+			dst:         []struct{ Foo string }{},
+			expectedErr: "dbscan: destination must be a pointer, got: []struct { Foo string }",
+		},
+		{
+			name:        "nil",
+			dst:         nil,
+			expectedErr: "dbscan: destination must be a non nil pointer",
+		},
+		{
+			name:        "(*int)(nil)",
+			dst:         (*int)(nil),
+			expectedErr: "dbscan: destination must be a non nil pointer",
+		},
+	}
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			rows := queryRows(t, `SELECT 1`)
+			err := scan(t, tc.dst, rows)
+			assert.EqualError(t, err, tc.expectedErr)
 		})
 	}
 }
@@ -575,7 +614,7 @@ func (rsm *RowScannerMock) start(dstValue reflect.Value) error {
 	return rsm.RowScanner.Start(dstValue)
 }
 
-func TestRowScanner_DoScan_startCalledExactlyOnce(t *testing.T) {
+func TestRowScanner_Scan_startCalledExactlyOnce(t *testing.T) {
 	t.Parallel()
 	query := `
 		SELECT *
@@ -591,11 +630,10 @@ func TestRowScanner_DoScan_startCalledExactlyOnce(t *testing.T) {
 	rs.SetStartFn(rsMock.start)
 
 	for rows.Next() {
-		var dst struct {
+		dst := &struct {
 			Foo string
-		}
-		dstVal := newDstValue(dst)
-		err := rs.DoScan(dstVal)
+		}{}
+		err := rs.Scan(dst)
 		require.NoError(t, err)
 	}
 	requireNoRowsErrors(t, rows)

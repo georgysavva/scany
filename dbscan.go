@@ -42,34 +42,32 @@ func NotFound(err error) bool {
 
 var notFoundErr = errors.New("dbscan: no row was found")
 
+type sliceDestinationMeta struct {
+	val             reflect.Value
+	elementBaseType reflect.Type
+	elementByPtr    bool
+}
+
 func processRows(dst interface{}, rows Rows, multipleRows bool) error {
 	defer rows.Close()
-	dstValue, err := parseDestination(dst)
-	if err != nil {
-		return errors.WithStack(err)
-	}
-	var rs *RowScanner
+	var sliceMeta *sliceDestinationMeta
 	if multipleRows {
-		dstType := dstValue.Type()
-		if dstValue.Kind() != reflect.Slice {
-			return errors.Errorf(
-				"dbscan: destination must be a slice, got: %v", dstType,
-			)
+		var err error
+		sliceMeta, err = parseSliceDestination(dst)
+		if err != nil {
+			return errors.WithStack(err)
 		}
 		// Make sure that slice is empty.
-		dstValue.Set(dstValue.Slice(0, 0))
-
-		rs = newRowScannerForSliceScan(rows, dstType)
-	} else {
-		rs = NewRowScanner(rows)
+		sliceMeta.val.Set(sliceMeta.val.Slice(0, 0))
 	}
+	rs := NewRowScanner(rows)
 	var rowsAffected int
 	for rows.Next() {
 		var err error
 		if multipleRows {
-			err = rs.scanSliceElement(dstValue)
+			err = scanSliceElement(rs, sliceMeta)
 		} else {
-			err = rs.doScan(dstValue)
+			err = rs.Scan(dst)
 		}
 		if err != nil {
 			return errors.WithStack(err)
@@ -96,6 +94,59 @@ func processRows(dst interface{}, rows Rows, multipleRows bool) error {
 	return nil
 }
 
+func parseSliceDestination(dst interface{}) (*sliceDestinationMeta, error) {
+	dstValue, err := parseDestination(dst)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	dstType := dstValue.Type()
+
+	if dstValue.Kind() != reflect.Slice {
+		return nil, errors.Errorf(
+			"dbscan: destination must be a slice, got: %v", dstType,
+		)
+	}
+
+	elementBaseType := dstType.Elem()
+	var elementByPtr bool
+	// If it's a slice of pointers to structs,
+	// we handle it the same way as it would be slice of struct by value
+	// and dereference pointers to values,
+	// because eventually we works with fields.
+	// But if it's a slice of primitive type e.g. or []string or []*string,
+	// we must leave and pass elements as is to Rows.Scan().
+	if elementBaseType.Kind() == reflect.Ptr {
+		if elementBaseType.Elem().Kind() == reflect.Struct {
+			elementBaseType = elementBaseType.Elem()
+			elementByPtr = true
+		}
+	}
+
+	meta := &sliceDestinationMeta{
+		val:             dstValue,
+		elementBaseType: elementBaseType,
+		elementByPtr:    elementByPtr,
+	}
+	return meta, nil
+}
+
+func scanSliceElement(rs *RowScanner, sliceMeta *sliceDestinationMeta) error {
+	dstVal := reflect.New(sliceMeta.elementBaseType).Elem()
+	if err := rs.Scan(dstVal.Addr().Interface()); err != nil {
+		return errors.WithStack(err)
+	}
+	var elemVal reflect.Value
+	if sliceMeta.elementByPtr {
+		elemVal = dstVal.Addr()
+	} else {
+		elemVal = dstVal
+	}
+
+	sliceMeta.val.Set(reflect.Append(sliceMeta.val, elemVal))
+	return nil
+}
+
 type startRowsFunc func(dstValue reflect.Value) error
 
 // RowScanner embraces the Rows and exposes the Scan method
@@ -117,8 +168,6 @@ type RowScanner struct {
 	rows               Rows
 	columns            []string
 	columnToFieldIndex map[string][]int
-	sliceElementType   reflect.Type
-	sliceElementByPtr  bool
 	mapElementType     reflect.Type
 	started            bool
 	startFn            startRowsFunc
@@ -187,29 +236,6 @@ func (rs *RowScanner) doScan(dstValue reflect.Value) error {
 	return errors.WithStack(err)
 }
 
-func newRowScannerForSliceScan(rows Rows, sliceType reflect.Type) *RowScanner {
-	var sliceElementByPtr bool
-	sliceElementType := sliceType.Elem()
-
-	// If it's a slice of pointers to structs,
-	// we handle it the same way as it would be slice of struct by value
-	// and dereference pointers to values,
-	// because eventually we works with fields.
-	// But if it's a slice of primitive type e.g. or []string or []*string,
-	// we must leave and pass elements as is to Rows.Scan().
-	if sliceElementType.Kind() == reflect.Ptr {
-		if sliceElementType.Elem().Kind() == reflect.Struct {
-
-			sliceElementByPtr = true
-			sliceElementType = sliceElementType.Elem()
-		}
-	}
-	rs := NewRowScanner(rows)
-	rs.sliceElementType = sliceElementType
-	rs.sliceElementByPtr = sliceElementByPtr
-	return rs
-}
-
 func (rs *RowScanner) start(dstValue reflect.Value) error {
 	var err error
 	rs.columns, err = rs.rows.Columns()
@@ -243,18 +269,6 @@ func (rs *RowScanner) start(dstValue reflect.Value) error {
 			columnsNumber,
 		)
 	}
-	return nil
-}
-
-func (rs *RowScanner) scanSliceElement(sliceValue reflect.Value) error {
-	elemVal := reflect.New(rs.sliceElementType).Elem()
-	if err := rs.doScan(elemVal); err != nil {
-		return errors.WithStack(err)
-	}
-	if rs.sliceElementByPtr {
-		elemVal = elemVal.Addr()
-	}
-	sliceValue.Set(reflect.Append(sliceValue, elemVal))
 	return nil
 }
 

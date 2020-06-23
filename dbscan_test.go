@@ -148,15 +148,15 @@ func TestScanAll(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			rows := queryRows(t, tc.query)
-			dstVal := newDstValue(tc.expected)
-			err := dbscan.ScanAll(dstVal.Addr().Interface(), rows)
+			dst := allocateDestination(tc.expected)
+			err := dbscan.ScanAll(dst, rows)
 			require.NoError(t, err)
-			assertDstValueEqual(t, tc.expected, dstVal)
+			assertDestinationEqual(t, tc.expected, dst)
 		})
 	}
 }
 
-func TestScanAll_nonEmptySlice_resetsDstSlice(t *testing.T) {
+func TestScanAll_nonEmptySlice_resetsDestinationSlice(t *testing.T) {
 	t.Parallel()
 	query := `
 		SELECT *
@@ -258,29 +258,6 @@ func TestScanOne_multipleRows_returnsErr(t *testing.T) {
 	err := dbscan.ScanOne(&dst, rows)
 
 	assert.EqualError(t, err, expectedErr)
-}
-
-func TestRowScanner_Scan(t *testing.T) {
-	t.Parallel()
-	query := `
-		SELECT 'foo val' AS foo, 'bar val' AS bar
-	`
-	rows := queryRows(t, query)
-	defer rows.Close()
-	type dst struct {
-		Foo string
-		Bar string
-	}
-	rs := dbscan.NewRowScanner(rows)
-	rows.Next()
-	expected := dst{Foo: "foo val", Bar: "bar val"}
-
-	var got dst
-	err := rs.Scan(&got)
-	require.NoError(t, err)
-	requireNoRowsErrors(t, rows)
-
-	assert.Equal(t, expected, got)
 }
 
 func TestScanRow(t *testing.T) {
