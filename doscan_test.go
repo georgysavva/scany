@@ -451,7 +451,7 @@ func TestRowScanner_DoScan_primitiveTypeDestination(t *testing.T) {
 			query: `
 				SELECT 'foo val' AS foo 
 			`,
-			expected: "foo val",
+			expected: makeStrPtr("foo val"),
 		},
 		{
 			name: "slice",

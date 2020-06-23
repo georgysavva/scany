@@ -12,7 +12,7 @@ go get github.com/georgysavva/dbscan
 
 ```
 type User struct {
-    ID    string
+    ID    string `db:"user_id"`
     Name  string
     Email string
     Age   int
@@ -20,7 +20,7 @@ type User struct {
 
 // Query rows from the database that implement dbscan.Rows interface, e.g. *sql.Rows:
 db, _ := sql.Open("pgx", "example-connection-url")
-rows, _ := db.Query(`SELECT id, name, email, age from users`)
+rows, _ := db.Query(`SELECT user_id, name, email, age from users`)
 
 var users []*User
 if err := dbscan.ScanAll(&users, rows); err != nil {

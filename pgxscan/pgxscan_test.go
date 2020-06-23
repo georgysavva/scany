@@ -4,7 +4,6 @@ import (
 	"context"
 	"flag"
 	"os"
-	"reflect"
 	"testing"
 
 	"github.com/georgysavva/dbscan/pgxscan"
@@ -159,53 +158,6 @@ func TestScanRow(t *testing.T) {
 	require.NoError(t, rows.Err())
 
 	assert.Equal(t, expected, got)
-}
-
-func TestRowsAdapter_Scan(t *testing.T) {
-	t.Parallel()
-	cases := []struct {
-		name string
-		d1   interface{}
-		d2   interface{}
-		d3   interface{}
-	}{
-		{
-			name: "all destinations are *interface{}",
-			d1:   new(interface{}),
-			d2:   new(interface{}),
-			d3:   new(interface{}),
-		},
-		{
-			name: "none of destinations are *interface{}",
-			d1:   new(string),
-			d2:   new(string),
-			d3:   new(string),
-		},
-		{
-			name: "mix of *interface{} and non *interface{} destinations",
-			d1:   new(interface{}),
-			d2:   new(string),
-			d3:   new(interface{}),
-		},
-	}
-	for _, tc := range cases {
-		tc := tc
-		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
-			rows, err := testDB.Query(ctx, `select '1', '2', '3'`)
-			require.NoError(t, err)
-			rows.Next()
-			defer rows.Close()
-			ra := pgxscan.NewRowsAdapter(rows)
-			err = ra.Scan(tc.d1, tc.d2, tc.d3)
-			require.NoError(t, err)
-			require.NoError(t, rows.Err())
-
-			assert.Equal(t, "1", reflect.ValueOf(tc.d1).Elem().Interface())
-			assert.Equal(t, "2", reflect.ValueOf(tc.d2).Elem().Interface())
-			assert.Equal(t, "3", reflect.ValueOf(tc.d3).Elem().Interface())
-		})
-	}
 }
 
 func TestMain(m *testing.M) {

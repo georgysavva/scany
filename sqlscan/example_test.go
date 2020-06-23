@@ -8,7 +8,7 @@ import (
 
 func ExampleQueryAll() {
 	type User struct {
-		ID    string
+		ID    string `db:"user_id"`
 		Name  string
 		Email string
 		Age   int
@@ -18,7 +18,7 @@ func ExampleQueryAll() {
 
 	var users []*User
 	if err := sqlscan.QueryAll(
-		ctx, &users, db, `SELECT id, name, email, age from users`,
+		ctx, &users, db, `SELECT user_id, name, email, age from users`,
 	); err != nil {
 		// Handle query or rows processing error.
 	}
@@ -27,7 +27,7 @@ func ExampleQueryAll() {
 
 func ExampleQueryOne() {
 	type User struct {
-		ID    string
+		ID    string `db:"user_id"`
 		Name  string
 		Email string
 		Age   int
@@ -37,7 +37,7 @@ func ExampleQueryOne() {
 
 	var user User
 	if err := sqlscan.QueryOne(
-		ctx, &user, db, `SELECT id, name, email, age from users where id='bob'`,
+		ctx, &user, db, `SELECT user_id, name, email, age from users where id='bob'`,
 	); err != nil {
 		// Handle query or rows processing error.
 	}
@@ -46,7 +46,7 @@ func ExampleQueryOne() {
 
 func ExampleScanAll() {
 	type User struct {
-		ID    string
+		ID    string `db:"user_id"`
 		Name  string
 		Email string
 		Age   int
@@ -54,7 +54,7 @@ func ExampleScanAll() {
 
 	// Query *sql.Rows from the database.
 	db, _ := sql.Open("pgx", "example-connection-url")
-	rows, _ := db.Query(`SELECT id, name, email, age from users`)
+	rows, _ := db.Query(`SELECT user_id, name, email, age from users`)
 
 	var users []*User
 	if err := sqlscan.ScanAll(&users, rows); err != nil {
@@ -65,7 +65,7 @@ func ExampleScanAll() {
 
 func ExampleScanOne() {
 	type User struct {
-		ID    string
+		ID    string `db:"user_id"`
 		Name  string
 		Email string
 		Age   int
@@ -73,7 +73,7 @@ func ExampleScanOne() {
 
 	// Query *sql.Rows from the database.
 	db, _ := sql.Open("pgx", "example-connection-url")
-	rows, _ := db.Query(`SELECT id, name, email, age from users where id='bob'`)
+	rows, _ := db.Query(`SELECT user_id, name, email, age from users where id='bob'`)
 
 	var user User
 	if err := sqlscan.ScanOne(&user, rows); err != nil {
@@ -84,7 +84,7 @@ func ExampleScanOne() {
 
 func ExampleRowScanner() {
 	type User struct {
-		ID    string
+		ID    string `db:"user_id"`
 		Name  string
 		Email string
 		Age   int
@@ -92,7 +92,7 @@ func ExampleRowScanner() {
 
 	// Query *sql.Rows from the database.
 	db, _ := sql.Open("pgx", "example-connection-url")
-	rows, _ := db.Query(`SELECT id, name, email, age from users`)
+	rows, _ := db.Query(`SELECT user_id, name, email, age from users`)
 	// Make sure rows are closed.
 	defer rows.Close()
 
@@ -114,7 +114,7 @@ func ExampleRowScanner() {
 
 func ExampleRowScan() {
 	type User struct {
-		ID    string
+		ID    string `db:"user_id"`
 		Name  string
 		Email string
 		Age   int
@@ -122,7 +122,7 @@ func ExampleRowScan() {
 
 	// Query *sql.Rows from the database.
 	db, _ := sql.Open("pgx", "example-connection-url")
-	rows, _ := db.Query(`SELECT id, name, email, age from users`)
+	rows, _ := db.Query(`SELECT user_id, name, email, age from users`)
 	// Make sure rows are closed.
 	defer rows.Close()
 
