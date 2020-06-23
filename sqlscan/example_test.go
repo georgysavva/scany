@@ -93,9 +93,9 @@ func ExampleRowScanner() {
 	// Query *sql.Rows from the database.
 	db, _ := sql.Open("pgx", "example-connection-url")
 	rows, _ := db.Query(`SELECT user_id, name, email, age from users`)
-	// Make sure rows are closed.
-	defer rows.Close()
 
+	// Make sure rows are always closed.
+	defer rows.Close()
 	rs := sqlscan.NewRowScanner(rows)
 	for rows.Next() {
 		var user User
@@ -123,9 +123,9 @@ func ExampleRowScan() {
 	// Query *sql.Rows from the database.
 	db, _ := sql.Open("pgx", "example-connection-url")
 	rows, _ := db.Query(`SELECT user_id, name, email, age from users`)
-	// Make sure rows are closed.
-	defer rows.Close()
 
+	// Make sure rows are always closed.
+	defer rows.Close()
 	for rows.Next() {
 		var user User
 		if err := sqlscan.ScanRow(&user, rows); err != nil {

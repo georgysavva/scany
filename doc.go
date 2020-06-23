@@ -1,17 +1,19 @@
 // Package dbscan allows scanning data from database rows into complex Go types.
 /*
-dbscan works with abstract `Rows` and doesn't depend on any specific database or library.
+dbscan works with abstract Rows and doesn't depend on any specific database or library.
 If a type implements Rows interface it can leverage full functional of this package.
 Subpackages sqlscan and pgxscan are wrappers around this package
 they contain functions and adapters tailored to database/sql and
 github.com/jackc/pgx/v4 libraries correspondingly. sqlscan and pgxscan proxy all calls to dbscan internally.
 dbscan does all the logic, but generally, it shouldn't be imported by the application code directly.
+
 If you are working with database/sql - use sqlscan subpackage.
+
 If you are working with pgx - use pgxscan subpackage.
 
 Scanning into struct
 
-dbscan provides ability to scan row data into struct.
+The main feature of dbscan is ability to scan row data into struct.
 
 	type User struct {
 		ID        string `db:"user_id"`
@@ -27,7 +29,7 @@ dbscan provides ability to scan row data into struct.
 
 By default, to get the corresponding column dbscan translates field name to snake case.
 In order to override this behaviour, specify column name in the `db` field tag.
-In the example above `User` struct is mapped to the following columns: "user_id", "first_name", "email".
+In the example above User struct is mapped to the following columns: "user_id", "first_name", "email".
 
 Struct can contain embedded structs as well. It allows to reuse models in different queries.
 Note that non-embedded structs aren't allowed, this decision was made due to simplicity.
@@ -73,13 +75,12 @@ dbscan won't be able to make the chose to which field to assign and return an er
 		Post
 	}
 
-`Row` struct is invalid since both User.ID and Post.ID are mapped to the "id" column.
+Row struct is invalid since both User.ID and Post.ID are mapped to the "id" column.
 
-Other destination types
+Scanning into map
 
 Apart from scanning into structs, dbscan can handle maps,
 in that case it uses column name as the map key and column data as the map value. For example:
-
 
 	var results []map[string]interface{}
 	if err := dbscan.ScanAll(&result, rows); err != nil {
@@ -87,10 +88,11 @@ in that case it uses column name as the map key and column data as the map value
 	}
 	// results variable now contains data from the row.
 
-
 Note that map type isn't limited to map[string]interface{},
 it can be any map with string key, e.g. map[string]string or map[string]int,
 if all column values have the same specific type.
+
+Scanning into other types
 
 If the destination isn't a struct nor a map, dbscan handles it as single column scan,
 it ensures that rows contain exactly one column and scans destination from the column, for example:

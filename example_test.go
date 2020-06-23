@@ -4,8 +4,6 @@ import (
 	"github.com/georgysavva/dbscan"
 )
 
-var rows dbscan.Rows
-
 func ExampleScanAll() {
 	type User struct {
 		ID    string
@@ -15,6 +13,7 @@ func ExampleScanAll() {
 	}
 
 	// Query rows from the database that implement dbscan.Rows interface.
+	var rows dbscan.Rows
 
 	var users []*User
 	if err := dbscan.ScanAll(&users, rows); err != nil {
@@ -32,6 +31,7 @@ func ExampleScanOne() {
 	}
 
 	// Query rows from the database that implement dbscan.Rows interface.
+	var rows dbscan.Rows
 
 	var user User
 	if err := dbscan.ScanOne(&user, rows); err != nil {
@@ -49,10 +49,10 @@ func ExampleRowScanner() {
 	}
 
 	// Query rows from the database that implement dbscan.Rows interface.
+	var rows dbscan.Rows
 
-	// Make sure rows are closed.
+	// Make sure rows are always closed.
 	defer rows.Close()
-
 	rs := dbscan.NewRowScanner(rows)
 	for rows.Next() {
 		var user User
@@ -78,10 +78,10 @@ func ExampleRowScan() {
 	}
 
 	// Query rows from the database that implement dbscan.Rows interface.
+	var rows dbscan.Rows
 
-	// Make sure rows are closed.
+	// Make sure rows are always closed.
 	defer rows.Close()
-
 	for rows.Next() {
 		var user User
 		if err := dbscan.ScanRow(&user, rows); err != nil {

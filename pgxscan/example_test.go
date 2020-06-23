@@ -92,9 +92,9 @@ func ExampleRowScanner() {
 	// Query pgx.Rows from the database.
 	db, _ := pgxpool.Connect(ctx, "example-connection-url")
 	rows, _ := db.Query(ctx, `SELECT user_id, name, email, age from users`)
-	// Make sure rows are closed.
-	defer rows.Close()
 
+	// Make sure rows are always closed.
+	defer rows.Close()
 	rs := pgxscan.NewRowScanner(rows)
 	for rows.Next() {
 		var user User
@@ -119,9 +119,9 @@ func ExampleRowScan() {
 	// Query pgx.Rows from the database.
 	db, _ := pgxpool.Connect(ctx, "example-connection-url")
 	rows, _ := db.Query(ctx, `SELECT user_id, name, email, age from users`)
-	// Make sure rows are closed.
-	defer rows.Close()
 
+	// Make sure rows are always closed.
+	defer rows.Close()
 	for rows.Next() {
 		var user User
 		if err := pgxscan.ScanRow(&user, rows); err != nil {
