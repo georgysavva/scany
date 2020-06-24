@@ -20,7 +20,7 @@ var (
 	_ QueryI = *new(pgx.Tx)
 )
 
-// QueryAll is a helper function that queries the rows and calls the ScanAll function.
+// QueryAll is a high-level function that queries the rows and calls the ScanAll function.
 // See ScanAll for details.
 func QueryAll(ctx context.Context, dst interface{}, q QueryI, query string, args ...interface{}) error {
 	rows, err := q.Query(ctx, query, args...)
@@ -31,7 +31,7 @@ func QueryAll(ctx context.Context, dst interface{}, q QueryI, query string, args
 	return errors.WithStack(err)
 }
 
-// QueryOne is a helper function that queries the rows and calls the ScanOne function.
+// QueryOne is a high-level function that queries the rows and calls the ScanOne function.
 // See ScanOne for details.
 func QueryOne(ctx context.Context, dst interface{}, q QueryI, query string, args ...interface{}) error {
 	rows, err := q.Query(ctx, query, args...)
