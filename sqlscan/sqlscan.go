@@ -3,8 +3,10 @@ package sqlscan
 import (
 	"context"
 	"database/sql"
-	"github.com/georgysavva/dbscan"
+
 	"github.com/pkg/errors"
+
+	"github.com/georgysavva/dbscan"
 )
 
 // QueryI is something that sqlscan can query and get the *sql.Rows,

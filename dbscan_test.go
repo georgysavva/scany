@@ -7,26 +7,21 @@ import (
 	"testing"
 
 	"github.com/jackc/pgx/v4/pgxpool"
-
-	"github.com/georgysavva/dbscan/internal/testutil"
-
 	_ "github.com/jackc/pgx/v4/stdlib"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/georgysavva/dbscan"
+	"github.com/georgysavva/dbscan/internal/testutil"
 )
 
 var (
 	testDB *pgxpool.Pool
 	ctx    = context.Background()
-
 )
 
 func TestScanAll(t *testing.T) {
 	t.Parallel()
-
 	cases := []struct {
 		name     string
 		query    string

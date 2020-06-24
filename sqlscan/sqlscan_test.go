@@ -2,18 +2,17 @@ package sqlscan_test
 
 import (
 	"context"
+	"database/sql"
 	"flag"
 	"os"
-
-	"github.com/georgysavva/dbscan/internal/testutil"
-
-	"database/sql"
 	"testing"
 
-	"github.com/georgysavva/dbscan/sqlscan"
 	_ "github.com/jackc/pgx/v4/stdlib"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/georgysavva/dbscan/internal/testutil"
+	"github.com/georgysavva/dbscan/sqlscan"
 )
 
 var (

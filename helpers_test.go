@@ -4,12 +4,11 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/georgysavva/dbscan/pgxscan"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/georgysavva/dbscan"
-
-	"github.com/stretchr/testify/assert"
+	"github.com/georgysavva/dbscan/pgxscan"
 )
 
 func makeStrPtr(v string) *string { return &v }

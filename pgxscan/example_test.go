@@ -1,8 +1,9 @@
 package pgxscan_test
 
 import (
-	"github.com/georgysavva/dbscan/pgxscan"
 	"github.com/jackc/pgx/v4/pgxpool"
+
+	"github.com/georgysavva/dbscan/pgxscan"
 )
 
 func ExampleQueryAll() {

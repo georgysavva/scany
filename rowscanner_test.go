@@ -4,11 +4,11 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/georgysavva/dbscan"
-	"github.com/stretchr/testify/mock"
-
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+
+	"github.com/georgysavva/dbscan"
 )
 
 type FooNested struct {

@@ -6,13 +6,12 @@ import (
 	"os"
 	"testing"
 
-	"github.com/georgysavva/dbscan/pgxscan"
+	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/stretchr/testify/assert"
-
 	"github.com/stretchr/testify/require"
 
 	"github.com/georgysavva/dbscan/internal/testutil"
-	"github.com/jackc/pgx/v4/pgxpool"
+	"github.com/georgysavva/dbscan/pgxscan"
 )
 
 var (

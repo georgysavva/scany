@@ -2,10 +2,12 @@ package pgxscan
 
 import (
 	"context"
-	"github.com/georgysavva/dbscan"
+
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/pkg/errors"
+
+	"github.com/georgysavva/dbscan"
 )
 
 // QueryI is something that pgxscan can query and get the pgx.Rows.
