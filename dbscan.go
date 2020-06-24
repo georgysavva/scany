@@ -1,8 +1,9 @@
 package dbscan
 
 import (
-	"github.com/pkg/errors"
 	"reflect"
+
+	"github.com/pkg/errors"
 )
 
 // Rows is an abstract database rows that dbscan can iterate over and get the data from.
@@ -19,6 +20,20 @@ type Rows interface {
 // and propagates any errors that could pop up.
 // It expected that destination should be a slice. For each row it scans data and appends it to the destination slice.
 // It resets the destination slice, so if it's not empty it will overwrite all previous elements.
+// ScanAll supports both types of slices: slice of structs by pointer and slice of structs by value,
+// for example:
+//
+//     type User struct {
+//         ID    string
+//         Name  string
+//         Email string
+//         Age   int
+//     }
+//
+//     var usersByPtr []*User
+//     var usersByValue []User
+//
+// Both usersByPtr and usersByValue are valid destinations for ScanAll function.
 func ScanAll(dst interface{}, rows Rows) error {
 	err := processRows(dst, rows, true /* multipleRows */)
 	return errors.WithStack(err)
