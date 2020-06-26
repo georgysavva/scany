@@ -18,7 +18,7 @@ func ExampleQueryAll() {
 
 	var users []*User
 	if err := pgxscan.QueryAll(
-		ctx, &users, db, `SELECT user_id, name, email, age from users`,
+		ctx, &users, db, `SELECT user_id, name, email, age FROM users`,
 	); err != nil {
 		// Handle query or rows processing error.
 	}
@@ -37,11 +37,11 @@ func ExampleQueryOne() {
 
 	var user User
 	if err := pgxscan.QueryOne(
-		ctx, &user, db, `SELECT user_id, name, email, age from users where id='bob'`,
+		ctx, &user, db, `SELECT user_id, name, email, age FROM users WHERE id='bob'`,
 	); err != nil {
 		// Handle query or rows processing error.
 	}
-	// users variable now contains data from all rows.
+	// user variable now contains data from all rows.
 }
 
 func ExampleScanAll() {
@@ -54,7 +54,7 @@ func ExampleScanAll() {
 
 	// Query pgx.Rows from the database.
 	db, _ := pgxpool.Connect(ctx, "example-connection-url")
-	rows, _ := db.Query(ctx, `SELECT user_id, name, email, age from users`)
+	rows, _ := db.Query(ctx, `SELECT user_id, name, email, age FROM users`)
 
 	var users []*User
 	if err := pgxscan.ScanAll(&users, rows); err != nil {
@@ -73,7 +73,7 @@ func ExampleScanOne() {
 
 	// Query pgx.Rows from the database.
 	db, _ := pgxpool.Connect(ctx, "example-connection-url")
-	rows, _ := db.Query(ctx, `SELECT user_id, name, email, age from users where id='bob'`)
+	rows, _ := db.Query(ctx, `SELECT user_id, name, email, age FROM users WHERE id='bob'`)
 
 	var user User
 	if err := pgxscan.ScanOne(&user, rows); err != nil {
@@ -92,7 +92,7 @@ func ExampleRowScanner() {
 
 	// Query pgx.Rows from the database.
 	db, _ := pgxpool.Connect(ctx, "example-connection-url")
-	rows, _ := db.Query(ctx, `SELECT user_id, name, email, age from users`)
+	rows, _ := db.Query(ctx, `SELECT user_id, name, email, age FROM users`)
 
 	// Make sure rows are always closed.
 	defer rows.Close()
@@ -109,7 +109,7 @@ func ExampleRowScanner() {
 	}
 }
 
-func ExampleRowScan() {
+func ExampleScanRow() {
 	type User struct {
 		ID    string `db:"user_id"`
 		Name  string
@@ -119,7 +119,7 @@ func ExampleRowScan() {
 
 	// Query pgx.Rows from the database.
 	db, _ := pgxpool.Connect(ctx, "example-connection-url")
-	rows, _ := db.Query(ctx, `SELECT user_id, name, email, age from users`)
+	rows, _ := db.Query(ctx, `SELECT user_id, name, email, age FROM users`)
 
 	// Make sure rows are always closed.
 	defer rows.Close()

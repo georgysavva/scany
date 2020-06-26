@@ -10,8 +10,8 @@ import (
 	"github.com/georgysavva/dbscan"
 )
 
-// QueryI is something that pgxscan can query and get the pgx.Rows.
-// For example: *pgxpool.Pool, *pgx.Conn or pgx.Tx.
+// QueryI is something that pgxscan can query and get the pgx.Rows from.
+// For example, it can be: *pgxpool.Pool, *pgx.Conn or pgx.Tx.
 type QueryI interface {
 	Query(ctx context.Context, query string, args ...interface{}) (pgx.Rows, error)
 }

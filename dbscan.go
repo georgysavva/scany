@@ -19,8 +19,7 @@ type Rows interface {
 // ScanAll iterates all rows to the end. After iterating it closes the rows,
 // and propagates any errors that could pop up.
 // It expected that destination should be a slice. For each row it scans data and appends it to the destination slice.
-// It resets the destination slice, so if it's not empty it will overwrite all previous elements.
-// ScanAll supports both types of slices: slice of structs by pointer and slice of structs by value,
+// ScanAll supports both types of slices: slice of structs by a pointer and slice of structs by value,
 // for example:
 //
 //     type User struct {
@@ -34,15 +33,19 @@ type Rows interface {
 //     var usersByValue []User
 //
 // Both usersByPtr and usersByValue are valid destinations for ScanAll function.
+//
+// Note that before starting, ScanAll resets the destination slice,
+// so if it's not empty it will overwrite all existing elements.
 func ScanAll(dst interface{}, rows Rows) error {
 	err := processRows(dst, rows, true /* multipleRows */)
 	return errors.WithStack(err)
 }
 
 // ScanOne iterates all rows to the end and makes sure that there was exactly one row,
-// otherwise it returns an error. After iterating it closes the rows,
+// otherwise, it returns an error. Use NotFound function to check if there were no rows.
+// After iterating ScanOne closes the rows,
 // and propagates any errors that could pop up.
-// It scans data from that single row into destination.
+// It scans data from that single row into the destination.
 func ScanOne(dst interface{}, rows Rows) error {
 	err := processRows(dst, rows, false /* multipleRows */)
 	return errors.WithStack(err)
@@ -71,7 +74,7 @@ func processRows(dst interface{}, rows Rows, multipleRows bool) error {
 		if err != nil {
 			return errors.WithStack(err)
 		}
-		// Make sure that slice is empty.
+		// Make sure slice is empty.
 		sliceMeta.val.Set(sliceMeta.val.Slice(0, 0))
 	}
 	rs := NewRowScanner(rows)
@@ -127,7 +130,7 @@ func parseSliceDestination(dst interface{}) (*sliceDestinationMeta, error) {
 	// If it's a slice of pointers to structs,
 	// we handle it the same way as it would be slice of struct by value
 	// and dereference pointers to values,
-	// because eventually we works with fields.
+	// because eventually we work with fields.
 	// But if it's a slice of primitive type e.g. or []string or []*string,
 	// we must leave and pass elements as is to Rows.Scan().
 	if elementBaseType.Kind() == reflect.Ptr {
@@ -165,12 +168,12 @@ func scanSliceElement(rs *RowScanner, sliceMeta *sliceDestinationMeta) error {
 type startScannerFunc func(rs *RowScanner, dstValue reflect.Value) error
 
 // RowScanner embraces the Rows and exposes the Scan method
-// that allows to scan data from the current row into destination.
+// that allows to scan data from the current row into the destination.
 // The first time the Scan method is called
-// it parses the destination type by reflection and caches all required information for further scans.
+// it parses the destination type via reflection and caches all required information for further scans.
 // Due to this caching mechanism it's not allowed to call Scan for destinations of different types,
 // the behaviour is unknown in that case.
-// RowScanner doesn't processed to the next row nor close them, it should be done by the client code.
+// RowScanner doesn't proceed to the next row nor close them, it should be done by the client code.
 //
 // The main benefit of using this type directly
 // is that you can instantiate a RowScanner and manually iterate over the rows
@@ -195,7 +198,7 @@ func NewRowScanner(rows Rows) *RowScanner {
 }
 
 // Scan scans data from the current row into the destination.
-// On the first call it caches expensive reflection work and use it the future calls.
+// On the first call it caches expensive reflection work and uses it the future calls.
 // See RowScanner for details.
 func (rs *RowScanner) Scan(dst interface{}) error {
 	dstVal, err := parseDestination(dst)
@@ -292,7 +295,7 @@ func (rs *RowScanner) scanStruct(structValue reflect.Value) error {
 		fieldIndex, ok := rs.columnToFieldIndex[column]
 		if !ok {
 			return errors.Errorf(
-				"dbscan: column: '%s': no corresponding field found or it's unexported in %v",
+				"dbscan: column: '%s': no corresponding field found, or it's unexported in %v",
 				column, structValue.Type(),
 			)
 		}
@@ -343,7 +346,7 @@ func (rs *RowScanner) ensureDistinctColumns() error {
 	seen := make(map[string]struct{}, len(rs.columns))
 	for _, column := range rs.columns {
 		if _, ok := seen[column]; ok {
-			return errors.Errorf("dbscan: rows contain duplicated column '%s'", column)
+			return errors.Errorf("dbscan: rows contain a duplicated column '%s'", column)
 		}
 		seen[column] = struct{}{}
 	}

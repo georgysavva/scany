@@ -3,7 +3,7 @@
 dbscan works with abstract Rows and doesn't depend on any specific database or library.
 If a type implements Rows interface it can leverage full functional of this package.
 Subpackages github.com/georgysavva/dbscan/sqlscan
-and github.com/georgysavva/dbscan/pgxscan are wrappers around this package
+and github.com/georgysavva/dbscan/pgxscan are wrappers around this package,
 they contain functions and adapters tailored to database/sql
 and github.com/jackc/pgx/v4 libraries correspondingly. sqlscan and pgxscan proxy all calls to dbscan internally.
 dbscan does all the logic, but generally, it shouldn't be imported by the application code directly.
@@ -34,10 +34,10 @@ In the example above User struct is mapped to the following columns: "user_id", 
 
 Struct can contain embedded structs as well. It allows to reuse models in different queries.
 Note that non-embedded structs aren't allowed, this decision was made due to simplicity.
-By default, dbscan maps fields from embedded structs to columns as is and doesn't add prefix,
+By default, dbscan maps fields from embedded structs to columns as is and doesn't add any prefix,
 this simulates behaviour of major SQL databases in case of a JOIN.
 In order to add a prefix to all fields of the embedded struct specify it in the `db` field tag,
-"." used as the separator for example:
+dbscan uses "." as a separator, for example:
 
 	type User struct {
 		UserID    string
@@ -54,11 +54,12 @@ In order to add a prefix to all fields of the embedded struct specify it in the 
 		Post `db:post`
 	}
 
-will get mapped to the following columns: "user_id", "email", "post.id", "post.text".
+Row struct is mapped to the following columns: "user_id", "email", "post.id", "post.text".
 
+In order to scan into a field it must be exported, unexported fields will be ignored.
 If dbscan can't find corresponding field for a column it returns an error,
 this forces to only select data from the database that application needs.
-Also if struct contains multiple fields that are mapped to the same column,
+Also, if struct contains multiple fields that are mapped to the same column,
 dbscan won't be able to make the chose to which field to assign and return an error, for example:
 
 	type User struct {
@@ -76,15 +77,15 @@ dbscan won't be able to make the chose to which field to assign and return an er
 		Post
 	}
 
-Row struct is invalid since both User.ID and Post.ID are mapped to the "id" column.
+Row struct is invalid since both Row.User.ID and Row.Post.ID are mapped to the "id" column.
 
 Scanning into map
 
 Apart from scanning into structs, dbscan can handle maps,
-in that case it uses column name as the map key and column data as the map value. For example:
+in that case it uses column name as the map key and column data as the map value, for example:
 
 	var results []map[string]interface{}
-	if err := dbscan.ScanAll(&result, rows); err != nil {
+	if err := dbscan.ScanAll(&results, rows); err != nil {
 		// Handle rows processing error
 	}
 	// results variable now contains data from the row.
@@ -96,18 +97,18 @@ if all column values have the same specific type.
 Scanning into other types
 
 If the destination isn't a struct nor a map, dbscan handles it as single column scan,
-it ensures that rows contain exactly one column and scans destination from the column, for example:
+dbscan ensures that rows contain exactly one column and scans destination from that column, for example:
 
-	var result []string
-	if err := dbscan.ScanAll(&result, rows); err != nil {
+	var results []string
+	if err := dbscan.ScanAll(&results, rows); err != nil {
 		// Handle rows processing error
 	}
-	// result variable not contains data from the row single column.
+	// results variable not contains data from the row single column.
 
 Rows processing
 
 ScanAll and ScanOne functions take care of rows processing,
 they iterate rows to the end and close them after that.
-Client code doesn't need bother with all of that, it just needs to pass rows to dbscan.
+Client code doesn't need to bother with that, it just passes rows to dbscan.
 */
 package dbscan

@@ -9,8 +9,8 @@ import (
 	"github.com/georgysavva/dbscan"
 )
 
-// QueryI is something that sqlscan can query and get the *sql.Rows,
-// For example: *sql.DB, *sql.Conn or *sql.Tx.
+// QueryI is something that sqlscan can query and get the *sql.Rows from.
+// For example, it can be: *sql.DB, *sql.Conn or *sql.Tx.
 type QueryI interface {
 	QueryContext(ctx context.Context, query string, args ...interface{}) (*sql.Rows, error)
 }

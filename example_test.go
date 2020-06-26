@@ -69,7 +69,7 @@ func ExampleRowScanner() {
 	}
 }
 
-func ExampleRowScan() {
+func ExampleScanRow() {
 	type User struct {
 		ID    string
 		Name  string

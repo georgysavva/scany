@@ -258,7 +258,7 @@ func TestRowScanner_Scan_invalidStructDestination_returnsErr(t *testing.T) {
 			dst: &struct {
 				Bar string
 			}{},
-			expectedErr: "dbscan: column: 'foo': no corresponding field found or it's unexported in " +
+			expectedErr: "dbscan: column: 'foo': no corresponding field found, or it's unexported in " +
 				"struct { Bar string }",
 		},
 		{
@@ -270,7 +270,7 @@ func TestRowScanner_Scan_invalidStructDestination_returnsErr(t *testing.T) {
 				foo string
 				Bar string
 			}{},
-			expectedErr: "dbscan: column: 'foo': no corresponding field found or it's unexported in " +
+			expectedErr: "dbscan: column: 'foo': no corresponding field found, or it's unexported in " +
 				"struct { foo string; Bar string }",
 		},
 		{
@@ -284,7 +284,7 @@ func TestRowScanner_Scan_invalidStructDestination_returnsErr(t *testing.T) {
 				Foo string
 				Bar string
 			}{},
-			expectedErr: "dbscan: column: 'foo_nested': no corresponding field found or it's unexported in " +
+			expectedErr: "dbscan: column: 'foo_nested': no corresponding field found, or it's unexported in " +
 				"struct { dbscan_test.nestedUnexported; Foo string; Bar string }",
 		},
 		{
@@ -298,7 +298,7 @@ func TestRowScanner_Scan_invalidStructDestination_returnsErr(t *testing.T) {
 				Foo    string
 				Bar    string
 			}{},
-			expectedErr: "dbscan: column: 'foo_nested': no corresponding field found or it's unexported in " +
+			expectedErr: "dbscan: column: 'foo_nested': no corresponding field found, or it's unexported in " +
 				"struct { Nested dbscan_test.FooNested; Foo string; Bar string }",
 		},
 		{
@@ -551,7 +551,7 @@ func TestRowScanner_Scan_rowsContainDuplicatedColumn_returnsErr(t *testing.T) {
 				SELECT 'foo val' AS foo, 'foo val' AS foo
 			`
 			rows := queryRows(t, query)
-			expectedErr := "dbscan: rows contain duplicated column 'foo'"
+			expectedErr := "dbscan: rows contain a duplicated column 'foo'"
 			err := scan(t, tc.dst, rows)
 			assert.EqualError(t, err, expectedErr)
 		})
