@@ -56,10 +56,12 @@ dbscan uses "." as a separator, for example:
 
 Row struct is mapped to the following columns: "user_id", "email", "post.id", "post.text".
 
-In order to scan into a field it must be exported, unexported fields will be ignored.
-If dbscan can't find corresponding field for a column it returns an error,
+Note that, in order for dbscan to work with a field it must be exported, unexported fields will be ignored.
+
+In case there is no corresponding field for a column dbscan returns an error,
 this forces to only select data from the database that application needs.
-Also, if struct contains multiple fields that are mapped to the same column,
+
+if a struct contains multiple fields that are mapped to the same column,
 dbscan won't be able to make the chose to which field to assign and return an error, for example:
 
 	type User struct {
