@@ -131,8 +131,9 @@ func parseSliceDestination(dst interface{}) (*sliceDestinationMeta, error) {
 	// But if it's a slice of primitive type e.g. or []string or []*string,
 	// we must leave and pass elements as is to Rows.Scan().
 	if elementBaseType.Kind() == reflect.Ptr {
-		if elementBaseType.Elem().Kind() == reflect.Struct {
-			elementBaseType = elementBaseType.Elem()
+		elementBaseTypeElem := elementBaseType.Elem()
+		if elementBaseTypeElem.Kind() == reflect.Struct {
+			elementBaseType = elementBaseTypeElem
 			elementByPtr = true
 		}
 	}
@@ -146,15 +147,15 @@ func parseSliceDestination(dst interface{}) (*sliceDestinationMeta, error) {
 }
 
 func scanSliceElement(rs *RowScanner, sliceMeta *sliceDestinationMeta) error {
-	dstVal := reflect.New(sliceMeta.elementBaseType).Elem()
-	if err := rs.Scan(dstVal.Addr().Interface()); err != nil {
+	dstValPtr := reflect.New(sliceMeta.elementBaseType)
+	if err := rs.Scan(dstValPtr.Interface()); err != nil {
 		return errors.WithStack(err)
 	}
 	var elemVal reflect.Value
 	if sliceMeta.elementByPtr {
-		elemVal = dstVal.Addr()
+		elemVal = dstValPtr
 	} else {
-		elemVal = dstVal
+		elemVal = dstValPtr.Elem()
 	}
 
 	sliceMeta.val.Set(reflect.Append(sliceMeta.val, elemVal))
@@ -315,9 +316,9 @@ func (rs *RowScanner) scanMap(mapValue reflect.Value) error {
 	scans := make([]interface{}, len(rs.columns))
 	values := make([]reflect.Value, len(rs.columns))
 	for i := range rs.columns {
-		value := reflect.New(rs.mapElementType).Elem()
-		scans[i] = value.Addr().Interface()
-		values[i] = value
+		valuePtr := reflect.New(rs.mapElementType)
+		scans[i] = valuePtr.Interface()
+		values[i] = valuePtr.Elem()
 	}
 	if err := rs.rows.Scan(scans...); err != nil {
 		return errors.Wrap(err, "dbscan: scan rows into map")
