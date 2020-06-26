@@ -36,5 +36,28 @@ it's as simple as this:
 		// Handle query or rows processing error.
 	}
 	// users variable now contains data from all rows.
+
+pgx custom types
+
+pgx has concept of custom types: https://pkg.go.dev/github.com/jackc/pgx/v4@v4.6.0?tab=doc#hdr-Custom_Type_Support,
+You can use them with pgxscan too, here is an example of a struct that works with pgtype.Text:
+
+	type User struct {
+		UserID string
+		Name   string
+		Bio    pgtype.Text
+	}
+
+Note that you must use pgtype.Text by value, not by pointer. This will not work:
+
+	type User struct {
+		UserID string
+		Name   string
+		Bio    *pgtype.Text // pgxscan won't be able to scan data into field defined that way.
+	}
+
+This happens because struct fields are always passed to pgx.Rows.Scan() as pointers,
+and if the field type is *pgtype.Text, pgx.Rows.Scan() will receive **pgtype.Text and
+pgx won't be able to handle that type, since only *pgtype.Text implements pgx custom type interfaces.
 */
 package pgxscan
