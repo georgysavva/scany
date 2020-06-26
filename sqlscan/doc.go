@@ -36,5 +36,38 @@ it's as simple as this:
 		// Handle query or rows processing error.
 	}
 	// users variable now contains data from all rows.
+
+Types that implement sql.Scanner
+
+sqlscan plays well with custom types that implement sql.Scanner interface, here is how you can use them:
+
+	type Data struct {
+		Title   string
+		Text    string
+		Counter int
+	}
+
+	func (d *Data) Scan(value interface{}) error {
+		b, ok := value.([]byte)
+		if !ok {
+			return errors.New("Data.Scan: value isn't []byte")
+		}
+		return json.Unmarshal(b, &d)
+	}
+
+	type Post struct {
+		PostID  string
+		OwnerID string
+		Data    Data
+	}
+
+	type Comment struct {
+		CommentID    string
+		OwnerID      string
+		OptionalData *Data
+	}
+
+Note that type implementing sql.Scanner, Data in the example above,
+can present both by value as in Post and by pointer as in Comment.
 */
 package sqlscan

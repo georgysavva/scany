@@ -40,7 +40,7 @@ it's as simple as this:
 pgx custom types
 
 pgx has concept of custom types: https://pkg.go.dev/github.com/jackc/pgx/v4@v4.6.0?tab=doc#hdr-Custom_Type_Support,
-You can use them with pgxscan too, here is an example of a struct that works with pgtype.Text:
+You can use them with pgxscan too, here is an example of a struct with pgtype.Text field:
 
 	type User struct {
 		UserID string
