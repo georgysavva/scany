@@ -9,21 +9,21 @@ import (
 	"github.com/georgysavva/dbscan"
 )
 
-// QueryI is something that sqlscan can query and get the *sql.Rows from.
+// Querier is something that sqlscan can query and get the *sql.Rows from.
 // For example, it can be: *sql.DB, *sql.Conn or *sql.Tx.
-type QueryI interface {
+type Querier interface {
 	QueryContext(ctx context.Context, query string, args ...interface{}) (*sql.Rows, error)
 }
 
 var (
-	_ QueryI = &sql.DB{}
-	_ QueryI = &sql.Conn{}
-	_ QueryI = &sql.Tx{}
+	_ Querier = &sql.DB{}
+	_ Querier = &sql.Conn{}
+	_ Querier = &sql.Tx{}
 )
 
 // QueryAll is a high-level function that queries the rows and calls the ScanAll function.
 // See ScanAll for details.
-func QueryAll(ctx context.Context, dst interface{}, q QueryI, query string, args ...interface{}) error {
+func QueryAll(ctx context.Context, dst interface{}, q Querier, query string, args ...interface{}) error {
 	rows, err := q.QueryContext(ctx, query, args...)
 	if err != nil {
 		return errors.Wrap(err, "sqlscan: query result rows")
@@ -34,7 +34,7 @@ func QueryAll(ctx context.Context, dst interface{}, q QueryI, query string, args
 
 // QueryOne is a high-level function that queries the rows and calls the ScanOne function.
 // See ScanOne for details.
-func QueryOne(ctx context.Context, dst interface{}, q QueryI, query string, args ...interface{}) error {
+func QueryOne(ctx context.Context, dst interface{}, q Querier, query string, args ...interface{}) error {
 	rows, err := q.QueryContext(ctx, query, args...)
 	if err != nil {
 		return errors.Wrap(err, "sqlscan: query result rows")

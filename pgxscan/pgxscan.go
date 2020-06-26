@@ -10,21 +10,21 @@ import (
 	"github.com/georgysavva/dbscan"
 )
 
-// QueryI is something that pgxscan can query and get the pgx.Rows from.
+// Querier is something that pgxscan can query and get the pgx.Rows from.
 // For example, it can be: *pgxpool.Pool, *pgx.Conn or pgx.Tx.
-type QueryI interface {
+type Querier interface {
 	Query(ctx context.Context, query string, args ...interface{}) (pgx.Rows, error)
 }
 
 var (
-	_ QueryI = &pgxpool.Pool{}
-	_ QueryI = &pgx.Conn{}
-	_ QueryI = *new(pgx.Tx)
+	_ Querier = &pgxpool.Pool{}
+	_ Querier = &pgx.Conn{}
+	_ Querier = *new(pgx.Tx)
 )
 
 // QueryAll is a high-level function that queries the rows and calls the ScanAll function.
 // See ScanAll for details.
-func QueryAll(ctx context.Context, dst interface{}, q QueryI, query string, args ...interface{}) error {
+func QueryAll(ctx context.Context, dst interface{}, q Querier, query string, args ...interface{}) error {
 	rows, err := q.Query(ctx, query, args...)
 	if err != nil {
 		return errors.Wrap(err, "pgxscan: query result rows")
@@ -35,7 +35,7 @@ func QueryAll(ctx context.Context, dst interface{}, q QueryI, query string, args
 
 // QueryOne is a high-level function that queries the rows and calls the ScanOne function.
 // See ScanOne for details.
-func QueryOne(ctx context.Context, dst interface{}, q QueryI, query string, args ...interface{}) error {
+func QueryOne(ctx context.Context, dst interface{}, q Querier, query string, args ...interface{}) error {
 	rows, err := q.Query(ctx, query, args...)
 	if err != nil {
 		return errors.Wrap(err, "pgxscan: query result rows")
