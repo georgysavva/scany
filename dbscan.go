@@ -161,7 +161,7 @@ func scanSliceElement(rs *RowScanner, sliceMeta *sliceDestinationMeta) error {
 	return nil
 }
 
-type startRowsFunc func(dstValue reflect.Value) error
+type startScannerFunc func(rs *RowScanner, dstValue reflect.Value) error
 
 // RowScanner embraces the Rows and exposes the Scan method
 // that allows to scan data from the current row into destination.
@@ -185,14 +185,12 @@ type RowScanner struct {
 	columnToFieldIndex map[string][]int
 	mapElementType     reflect.Type
 	started            bool
-	startFn            startRowsFunc
+	start              startScannerFunc
 }
 
 // NewRowsScanner returns a new instance of the RowScanner.
 func NewRowScanner(rows Rows) *RowScanner {
-	r := &RowScanner{rows: rows}
-	r.startFn = r.start
-	return r
+	return &RowScanner{rows: rows, start: startScanner}
 }
 
 // Scan scans data from the current row into the destination.
@@ -235,7 +233,7 @@ func parseDestination(dst interface{}) (reflect.Value, error) {
 
 func (rs *RowScanner) doScan(dstValue reflect.Value) error {
 	if !rs.started {
-		if err := rs.startFn(dstValue); err != nil {
+		if err := rs.start(rs, dstValue); err != nil {
 			return errors.WithStack(err)
 		}
 		rs.started = true
@@ -251,7 +249,7 @@ func (rs *RowScanner) doScan(dstValue reflect.Value) error {
 	return errors.WithStack(err)
 }
 
-func (rs *RowScanner) start(dstValue reflect.Value) error {
+func startScanner(rs *RowScanner, dstValue reflect.Value) error {
 	var err error
 	rs.columns, err = rs.rows.Columns()
 	if err != nil {

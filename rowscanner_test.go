@@ -1,7 +1,6 @@
 package dbscan_test
 
 import (
-	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -9,6 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/georgysavva/dbscan"
+	"github.com/georgysavva/dbscan/internal/mocks"
 )
 
 type FooNested struct {
@@ -604,31 +604,24 @@ func TestRowScanner_Scan_invalidDst_returnsErr(t *testing.T) {
 	}
 }
 
-type RowScannerMock struct {
-	mock.Mock
-	*dbscan.RowScanner
-}
-
-func (rsm *RowScannerMock) start(dstValue reflect.Value) error {
-	_ = rsm.Called(dstValue)
-	return rsm.RowScanner.Start(dstValue)
-}
-
 func TestRowScanner_Scan_startCalledExactlyOnce(t *testing.T) {
 	t.Parallel()
 	query := `
-		SELECT *
-		FROM (
-			VALUES ('foo val'), ('foo val 2'), ('foo val 3')
-		) AS t (foo)
-	`
+			SELECT *
+			FROM (
+				VALUES ('foo val'), ('foo val 2'), ('foo val 3')
+			) AS t (foo)
+		`
 	rows := queryRows(t, query)
 	defer rows.Close()
-	rs := dbscan.NewRowScanner(rows)
-	rsMock := &RowScannerMock{RowScanner: rs}
-	rsMock.On("start", mock.Anything)
-	rs.SetStartFn(rsMock.start)
-
+	mockStart := &mocks.StartScannerFunc{}
+	rs := dbscan.NewRowScannerWithStart(rows, mockStart.Execute)
+	mockStart.On("Execute", rs, mock.AnythingOfType("reflect.Value")).Return(nil).Run(func(args mock.Arguments) {
+		rs := args.Get(0).(*dbscan.RowScanner)
+		columns := []string{"foo"}
+		columnToFieldIndex := map[string][]int{"foo": {0}}
+		dbscan.PatchRowScanner(rs, columns, columnToFieldIndex, nil /* mapElementType */)
+	})
 	for rows.Next() {
 		dst := &struct {
 			Foo string
@@ -638,5 +631,5 @@ func TestRowScanner_Scan_startCalledExactlyOnce(t *testing.T) {
 	}
 	requireNoRowsErrors(t, rows)
 
-	rsMock.AssertNumberOfCalls(t, "start", 1)
+	mockStart.AssertNumberOfCalls(t, "Execute", 1)
 }
