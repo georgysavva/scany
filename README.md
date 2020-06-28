@@ -12,7 +12,7 @@
 go get github.com/georgysavva/dbscan
 ```
 
-## Example
+## How to use
 
 ```
 type User struct {
