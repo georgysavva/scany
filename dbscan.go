@@ -192,7 +192,7 @@ type RowScanner struct {
 	start              startScannerFunc
 }
 
-// NewRowsScanner returns a new instance of the RowScanner.
+// NewRowScanner returns a new instance of the RowScanner.
 func NewRowScanner(rows Rows) *RowScanner {
 	return &RowScanner{rows: rows, start: startScanner}
 }
