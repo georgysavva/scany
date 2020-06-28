@@ -1,7 +1,7 @@
 # dbscan - Allows scanning database rows into structs and more. 
 
 ## Overview 
-[![GoDoc](https://godoc.org/github.com/georgysavva/dbscan?status.svg)](https://godoc.org/github.com/georgysavva/dbscan) 
+[![GoDoc](https://img.shields.io/badge/pkg.go.dev-doc-blue)](http://pkg.go.dev/github.com/georgysavva/dbscan)
 [![Build Status](https://travis-ci.org/georgysavva/dbscan.svg?branch=master)](https://travis-ci.org/georgysavva/dbscan) 
 [![codecov](https://codecov.io/gh/github.com/georgysavva/dbscan/branch/master/graph/badge.svg)](https://codecov.io/gh/.)
 [![Go Report Card](https://goreportcard.com/badge/github.com/georgysavva/dbscan)](https://goreportcard.com/report/github.com/georgysavva/dbscan)
