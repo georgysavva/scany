@@ -1,9 +1,11 @@
 package testutil_test
 
 import (
-	"github.com/georgysavva/dbscan/internal/testutil"
-	"github.com/stretchr/testify/require"
 	"testing"
+
+	"github.com/stretchr/testify/require"
+
+	"github.com/georgysavva/dbscan/internal/testutil"
 )
 
 func TestStartCrdbServer(t *testing.T) {

@@ -2,10 +2,10 @@ package testutil
 
 import (
 	"database/sql"
-	"github.com/pkg/errors"
 
 	"github.com/cockroachdb/cockroach-go/v2/testserver"
 	_ "github.com/jackc/pgx/v4/stdlib"
+	"github.com/pkg/errors"
 )
 
 func StartCrdbServer() (*testserver.TestServer, error) {
