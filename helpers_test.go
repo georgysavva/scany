@@ -28,11 +28,11 @@ func scan(t *testing.T, dst interface{}, rows dbscan.Rows) error {
 	if err := rs.Scan(dst); err != nil {
 		return err
 	}
-	requireNoRowsErrors(t, rows)
+	requireNoRowsErrorsAndClose(t, rows)
 	return nil
 }
 
-func requireNoRowsErrors(t *testing.T, rows dbscan.Rows) {
+func requireNoRowsErrorsAndClose(t *testing.T, rows dbscan.Rows) {
 	t.Helper()
 	require.NoError(t, rows.Err())
 	require.NoError(t, rows.Close())

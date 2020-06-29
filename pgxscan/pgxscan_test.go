@@ -19,7 +19,7 @@ var (
 	ctx    = context.Background()
 )
 
-type testDestination struct {
+type testModel struct {
 	Foo string
 	Bar string
 }
@@ -32,13 +32,13 @@ func TestQueryAll(t *testing.T) {
 			VALUES ('foo val', 'bar val'), ('foo val 2', 'bar val 2'), ('foo val 3', 'bar val 3')
 		) AS t (foo, bar)
 	`
-	expected := []*testDestination{
+	expected := []*testModel{
 		{Foo: "foo val", Bar: "bar val"},
 		{Foo: "foo val 2", Bar: "bar val 2"},
 		{Foo: "foo val 3", Bar: "bar val 3"},
 	}
 
-	var got []*testDestination
+	var got []*testModel
 	err := pgxscan.QueryAll(ctx, &got, testDB, query)
 	require.NoError(t, err)
 
@@ -50,9 +50,9 @@ func TestQueryOne(t *testing.T) {
 	query := `
 		SELECT 'foo val' AS foo, 'bar val' AS bar
 	`
-	expected := testDestination{Foo: "foo val", Bar: "bar val"}
+	expected := testModel{Foo: "foo val", Bar: "bar val"}
 
-	var got testDestination
+	var got testModel
 	err := pgxscan.QueryOne(ctx, &got, testDB, query)
 	require.NoError(t, err)
 
@@ -67,7 +67,7 @@ func TestScanAll(t *testing.T) {
 			VALUES ('foo val', 'bar val'), ('foo val 2', 'bar val 2'), ('foo val 3', 'bar val 3')
 		) AS t (foo, bar)
 	`
-	expected := []*testDestination{
+	expected := []*testModel{
 		{Foo: "foo val", Bar: "bar val"},
 		{Foo: "foo val 2", Bar: "bar val 2"},
 		{Foo: "foo val 3", Bar: "bar val 3"},
@@ -75,7 +75,7 @@ func TestScanAll(t *testing.T) {
 	rows, err := testDB.Query(ctx, query)
 	require.NoError(t, err)
 
-	var got []*testDestination
+	var got []*testModel
 	err = pgxscan.ScanAll(&got, rows)
 	require.NoError(t, err)
 
@@ -87,11 +87,11 @@ func TestScanOne(t *testing.T) {
 	query := `
 		SELECT 'foo val' AS foo, 'bar val' AS bar
 	`
-	expected := testDestination{Foo: "foo val", Bar: "bar val"}
+	expected := testModel{Foo: "foo val", Bar: "bar val"}
 	rows, err := testDB.Query(ctx, query)
 	require.NoError(t, err)
 
-	var got testDestination
+	var got testModel
 	err = pgxscan.ScanOne(&got, rows)
 	require.NoError(t, err)
 
@@ -106,7 +106,7 @@ func TestScanOne_noRows_returnsNotFoundErr(t *testing.T) {
 	rows, err := testDB.Query(ctx, query)
 	require.NoError(t, err)
 
-	var got testDestination
+	var got testModel
 	err = pgxscan.ScanOne(&got, rows)
 
 	assert.True(t, pgxscan.NotFound(err))
@@ -120,15 +120,11 @@ func TestRowScanner_Scan(t *testing.T) {
 	rows, err := testDB.Query(ctx, query)
 	require.NoError(t, err)
 	defer rows.Close()
-	type dst struct {
-		Foo string
-		Bar string
-	}
 	rs := pgxscan.NewRowScanner(rows)
 	rows.Next()
-	expected := dst{Foo: "foo val", Bar: "bar val"}
+	expected := testModel{Foo: "foo val", Bar: "bar val"}
 
-	var got dst
+	var got testModel
 	err = rs.Scan(&got)
 	require.NoError(t, err)
 	require.NoError(t, rows.Err())
@@ -144,19 +140,37 @@ func TestScanRow(t *testing.T) {
 	rows, err := testDB.Query(ctx, query)
 	require.NoError(t, err)
 	defer rows.Close()
-	type dst struct {
-		Foo string
-		Bar string
-	}
 	rows.Next()
-	expected := dst{Foo: "foo val", Bar: "bar val"}
+	expected := testModel{Foo: "foo val", Bar: "bar val"}
 
-	var got dst
+	var got testModel
 	err = pgxscan.ScanRow(&got, rows)
 	require.NoError(t, err)
 	require.NoError(t, rows.Err())
 
 	assert.Equal(t, expected, got)
+}
+
+func TestRowScanner_Scan_closedRows(t *testing.T) {
+	t.Parallel()
+	query := `
+		SELECT *
+		FROM (
+			VALUES ('foo val', 'bar val'), ('foo val 2', 'bar val 2'), ('foo val 3', 'bar val 3')
+		) AS t (foo, bar)
+	`
+	rows, err := testDB.Query(ctx, query)
+	require.NoError(t, err)
+	for rows.Next() {
+	}
+	require.NoError(t, rows.Err())
+	rows.Close()
+
+	rs := pgxscan.NewRowScanner(rows)
+	dst := &testModel{}
+	err = rs.Scan(dst)
+
+	assert.NoError(t, err)
 }
 
 func TestMain(m *testing.M) {

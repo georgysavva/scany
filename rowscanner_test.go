@@ -314,6 +314,17 @@ func TestRowScanner_Scan_invalidStructDestination_returnsErr(t *testing.T) {
 				"found 2 fields with indexes [0] and [1] pointing to 'foo_column' in " +
 				"struct { Foo string \"db:\\\"foo_column\\\"\"; Bar string \"db:\\\"foo_column\\\"\" }",
 		},
+		{
+			name: "field type does not match with column type",
+			query: `
+				SELECT 'foo val' AS foo, 'bar val' AS bar
+			`,
+			dst: &struct {
+				Foo int
+				Bar string
+			}{},
+			expectedErr: "dbscan: scan row into struct fields: can't scan into dest[0]: unable to assign to *int",
+		},
 	}
 	for _, tc := range cases {
 		tc := tc
@@ -629,7 +640,7 @@ func TestRowScanner_Scan_startCalledExactlyOnce(t *testing.T) {
 		err := rs.Scan(dst)
 		require.NoError(t, err)
 	}
-	requireNoRowsErrors(t, rows)
+	requireNoRowsErrorsAndClose(t, rows)
 
 	mockStart.AssertNumberOfCalls(t, "Execute", 1)
 }
