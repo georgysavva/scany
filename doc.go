@@ -112,5 +112,10 @@ Rows processing
 ScanAll and ScanOne functions take care of rows processing,
 they iterate rows to the end and close them after that.
 Client code doesn't need to bother with that, it just passes rows to dbscan.
+
+Manual rows iteration
+
+It's possible to manually control rows iteration, but still use all scanning features of dbscan,
+see RowScanner for details.
 */
 package dbscan
