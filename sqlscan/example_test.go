@@ -107,9 +107,6 @@ func ExampleRowScanner() {
 	if err := rows.Err(); err != nil {
 		// Handle rows final error.
 	}
-	if err := rows.Close(); err != nil {
-		// Handle rows closing error.
-	}
 }
 
 func ExampleScanRow() {
@@ -135,8 +132,5 @@ func ExampleScanRow() {
 	}
 	if err := rows.Err(); err != nil {
 		// Handle rows final error.
-	}
-	if err := rows.Close(); err != nil {
-		// Handle rows closing error.
 	}
 }
