@@ -170,7 +170,10 @@ func TestRowScanner_Scan_closedRows(t *testing.T) {
 	dst := &testModel{}
 	err = rs.Scan(dst)
 
-	assert.EqualError(t, err, "dbscan: get rows columns: sql: Rows are closed")
+	assert.EqualError(t, err,
+		"sqlscan: proxy call to dbscan.RowScanner.Scan: "+
+			"dbscan: get rows columns: sql: Rows are closed",
+	)
 }
 
 func requireNoRowsErrorsAndClose(t *testing.T, rows *sql.Rows) {

@@ -48,14 +48,14 @@ func QueryOne(ctx context.Context, dst interface{}, q Querier, query string, arg
 // Se dbscan.ScanAll for details.
 func ScanAll(dst interface{}, rows pgx.Rows) error {
 	err := dbscan.ScanAll(dst, NewRowsAdapter(rows))
-	return errors.WithStack(err)
+	return errors.Wrap(err, "pgxscan: proxy call to dbscan.ScanAll")
 }
 
 // ScanOne is a wrapper around the dbscan.ScanOne function.
 // Se dbscan.ScanOne for details.
 func ScanOne(dst interface{}, rows pgx.Rows) error {
 	err := dbscan.ScanOne(dst, NewRowsAdapter(rows))
-	return errors.WithStack(err)
+	return errors.Wrap(err, "pgxscan: proxy call to dbscan.ScanOne")
 }
 
 // NotFound is a wrapper around the dbscan.NotFound function.
@@ -75,11 +75,18 @@ func NewRowScanner(rows pgx.Rows) *RowScanner {
 	return &RowScanner{RowScanner: dbscan.NewRowScanner(ra)}
 }
 
+// Scan is a wrapper around the dbscan.RowScanner.Scan method.
+// See dbscan.RowScanner.Scan for details.
+func (rs *RowScanner) Scan(dst interface{}) error {
+	err := rs.RowScanner.Scan(dst)
+	return errors.Wrap(err, "pgxscan: proxy call to dbscan.RowScanner.Scan")
+}
+
 // ScanRow is a wrapper around the dbscan.ScanRow function.
 // See dbscan.ScanRow for details.
 func ScanRow(dst interface{}, rows pgx.Rows) error {
 	err := dbscan.ScanRow(dst, NewRowsAdapter(rows))
-	return errors.WithStack(err)
+	return errors.Wrap(err, "pgxscan: proxy call to dbscan.ScanRow")
 }
 
 // RowsAdapter makes pgx.Rows compliant with the dbscan.Rows interface.
