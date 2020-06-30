@@ -7,7 +7,7 @@ import (
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/pkg/errors"
 
-	"github.com/georgysavva/dbscan"
+	"github.com/georgysavva/dbscan/dbscan"
 )
 
 // Querier is something that pgxscan can query and get the pgx.Rows from.

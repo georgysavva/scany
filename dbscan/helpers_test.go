@@ -7,13 +7,13 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/georgysavva/dbscan"
+	dbscan2 "github.com/georgysavva/dbscan/dbscan"
 	"github.com/georgysavva/dbscan/pgxscan"
 )
 
 func makeStrPtr(v string) *string { return &v }
 
-func queryRows(t *testing.T, query string) dbscan.Rows {
+func queryRows(t *testing.T, query string) dbscan2.Rows {
 	t.Helper()
 	pgxRows, err := testDB.Query(ctx, query)
 	require.NoError(t, err)
@@ -21,9 +21,9 @@ func queryRows(t *testing.T, query string) dbscan.Rows {
 	return rows
 }
 
-func scan(t *testing.T, dst interface{}, rows dbscan.Rows) error {
+func scan(t *testing.T, dst interface{}, rows dbscan2.Rows) error {
 	defer rows.Close()
-	rs := dbscan.NewRowScanner(rows)
+	rs := dbscan2.NewRowScanner(rows)
 	rows.Next()
 	if err := rs.Scan(dst); err != nil {
 		return err
@@ -32,7 +32,7 @@ func scan(t *testing.T, dst interface{}, rows dbscan.Rows) error {
 	return nil
 }
 
-func requireNoRowsErrorsAndClose(t *testing.T, rows dbscan.Rows) {
+func requireNoRowsErrorsAndClose(t *testing.T, rows dbscan2.Rows) {
 	t.Helper()
 	require.NoError(t, rows.Err())
 	require.NoError(t, rows.Close())
