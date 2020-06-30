@@ -3,6 +3,8 @@ github.com/cockroachdb/apd v1.1.0 h1:3LFP3629v+1aKXU5Q37mxmRxX/pIu1nijXydLShEq5I
 github.com/cockroachdb/apd v1.1.0/go.mod h1:8Sl8LxpKi29FqWXR16WEFZRNSz3SoPzUzeMeY4+DwBQ=
 github.com/cockroachdb/cockroach-go/v2 v2.0.0 h1:34FdeWSTsOANpqIGuvkEYF7mNjZnIbMrv1rHQcFefto=
 github.com/cockroachdb/cockroach-go/v2 v2.0.0/go.mod h1:oReO3/FZVS/8KidC56m7CDiUZbfL278nwLq7gkuhxsc=
+github.com/cockroachdb/cockroach-go/v2 v2.0.1-0.20200629211254-091a2dd96f7d h1:K5HEC4zY9iw9WdWekr6AcUZ/uMVpNHVMIiiZpAjdgKU=
+github.com/cockroachdb/cockroach-go/v2 v2.0.1-0.20200629211254-091a2dd96f7d/go.mod h1:oReO3/FZVS/8KidC56m7CDiUZbfL278nwLq7gkuhxsc=
 github.com/coreos/go-systemd v0.0.0-20190321100706-95778dfbb74e/go.mod h1:F5haX7vjVVG0kc13fIWeqUViNPyEJxv/OmvnBo0Yme4=
 github.com/coreos/go-systemd v0.0.0-20190719114852-fd7a80b32e1f/go.mod h1:F5haX7vjVVG0kc13fIWeqUViNPyEJxv/OmvnBo0Yme4=
 github.com/creack/pty v1.1.7/go.mod h1:lj5s0c3V2DBrqTV7llrYr5NG6My20zk30Fl46Y7DoTY=

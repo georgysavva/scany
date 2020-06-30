@@ -6,11 +6,11 @@ import (
 	"os"
 	"testing"
 
+	"github.com/cockroachdb/cockroach-go/v2/testserver"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/georgysavva/dbscan/internal/testutil"
 	"github.com/georgysavva/dbscan/pgxscan"
 )
 
@@ -176,7 +176,7 @@ func TestRowScanner_Scan_closedRows(t *testing.T) {
 func TestMain(m *testing.M) {
 	exitCode := func() int {
 		flag.Parse()
-		ts, err := testutil.StartCrdbServer()
+		ts, err := testserver.NewTestServer()
 		if err != nil {
 			panic(err)
 		}

@@ -3,7 +3,7 @@ module github.com/georgysavva/dbscan
 go 1.14
 
 require (
-	github.com/cockroachdb/cockroach-go/v2 v2.0.0
+	github.com/cockroachdb/cockroach-go/v2 v2.0.1-0.20200629211254-091a2dd96f7d
 	github.com/jackc/pgtype v1.3.1-0.20200612023650-09efc3839047 // indirect
 	github.com/jackc/pgx/v4 v4.6.1-0.20200606145419-4e5062306904
 	github.com/pkg/errors v0.9.1

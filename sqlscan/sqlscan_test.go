@@ -7,11 +7,11 @@ import (
 	"os"
 	"testing"
 
+	"github.com/cockroachdb/cockroach-go/v2/testserver"
 	_ "github.com/jackc/pgx/v4/stdlib"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/georgysavva/dbscan/internal/testutil"
 	"github.com/georgysavva/dbscan/sqlscan"
 )
 
@@ -185,7 +185,7 @@ func requireNoRowsErrorsAndClose(t *testing.T, rows *sql.Rows) {
 func TestMain(m *testing.M) {
 	exitCode := func() int {
 		flag.Parse()
-		ts, err := testutil.StartCrdbServer()
+		ts, err := testserver.NewTestServer()
 		if err != nil {
 			panic(err)
 		}
