@@ -78,7 +78,6 @@ The only thing you need to run tests locally is an internet connection,
 it's required to download and cache the database binary.
 Just type `go test ./...` inside dbscan root directory and let the code to the rest. 
 
-## what it is 
 ## what it is not 
 
 ## Contributing 
