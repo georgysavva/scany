@@ -1,4 +1,4 @@
-// Package dbscan allows scanning data from abstract database rows into complex Go types.
+// Package dbscan allows scanning data from abstract database rows into Go structs and more.
 /*
 dbscan works with abstract Rows and doesn't depend on any specific database or library.
 If a type implements Rows interface it can leverage full functional of this package.
