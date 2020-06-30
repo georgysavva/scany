@@ -46,6 +46,22 @@ func TestQueryAll(t *testing.T) {
 	assert.Equal(t, expected, got)
 }
 
+func TestQueryAll_queryError_propagatesAndWrapsErr(t *testing.T) {
+	t.Parallel()
+	query := `
+		SELECT foo, bar, baz
+		FROM (
+			VALUES ('foo val', 'bar val'), ('foo val 2', 'bar val 2'), ('foo val 3', 'bar val 3')
+		) AS t (foo, bar)
+	`
+	expectedErr := "sqlscan: query multiple result rows: ERROR: column \"baz\" does not exist (SQLSTATE 42703)"
+
+	dst := &[]*testModel{}
+	err := sqlscan.QueryAll(ctx, dst, testDB, query)
+
+	assert.EqualError(t, err, expectedErr)
+}
+
 func TestQueryOne(t *testing.T) {
 	t.Parallel()
 	query := `
@@ -58,6 +74,19 @@ func TestQueryOne(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Equal(t, expected, got)
+}
+
+func TestQueryOne_queryError_propagatesAndWrapsErr(t *testing.T) {
+	t.Parallel()
+	query := `
+		SELECT 'foo val' AS foo, 'bar val' AS bar, baz
+	`
+	expectedErr := "sqlscan: query one result row: ERROR: column \"baz\" does not exist (SQLSTATE 42703)"
+
+	dst := &testModel{}
+	err := sqlscan.QueryOne(ctx, dst, testDB, query)
+
+	assert.EqualError(t, err, expectedErr)
 }
 
 func TestScanAll(t *testing.T) {

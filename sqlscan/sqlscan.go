@@ -26,7 +26,7 @@ var (
 func QueryAll(ctx context.Context, dst interface{}, q Querier, query string, args ...interface{}) error {
 	rows, err := q.QueryContext(ctx, query, args...)
 	if err != nil {
-		return errors.Wrap(err, "sqlscan: query result rows")
+		return errors.Wrap(err, "sqlscan: query multiple result rows")
 	}
 	err = ScanAll(dst, rows)
 	return errors.WithStack(err)
@@ -37,7 +37,7 @@ func QueryAll(ctx context.Context, dst interface{}, q Querier, query string, arg
 func QueryOne(ctx context.Context, dst interface{}, q Querier, query string, args ...interface{}) error {
 	rows, err := q.QueryContext(ctx, query, args...)
 	if err != nil {
-		return errors.Wrap(err, "sqlscan: query result rows")
+		return errors.Wrap(err, "sqlscan: query one result row")
 	}
 	err = ScanOne(dst, rows)
 	return errors.WithStack(err)

@@ -428,18 +428,40 @@ func TestRowScanner_Scan_mapDestination(t *testing.T) {
 	}
 }
 
-func TestRowScanner_Scan_mapDestinationWithNonStringKey_returnsErr(t *testing.T) {
+func TestRowScanner_Scan_invalidMapDestination_returnsErr(t *testing.T) {
 	t.Parallel()
-	query := `
-		SELECT 'foo val' AS foo, 'bar val' AS bar
-	`
-	rows := queryRows(t, query)
-	expectedErr := "dbscan: invalid type map[int]interface {}: map must have string key, got: int"
-	dst := &map[int]interface{}{}
-
-	err := scan(t, dst, rows)
-
-	assert.EqualError(t, err, expectedErr)
+	cases := []struct {
+		name        string
+		query       string
+		dst         interface{}
+		expectedErr string
+	}{
+		{
+			name: "non string key",
+			query: `
+				SELECT 'foo val' AS foo, 'bar val' AS bar
+			`,
+			dst:         &map[int]interface{}{},
+			expectedErr: "dbscan: invalid type map[int]interface {}: map must have string key, got: int",
+		},
+		{
+			name: "value type does not match with column type",
+			query: `
+				SELECT 'foo val' AS foo, 'bar val' AS bar
+			`,
+			dst:         &map[string]int{},
+			expectedErr: "dbscan: scan rows into map: can't scan into dest[0]: unable to assign to *int",
+		},
+	}
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			rows := queryRows(t, tc.query)
+			err := scan(t, tc.dst, rows)
+			assert.EqualError(t, err, tc.expectedErr)
+		})
+	}
 }
 
 func TestRowScanner_Scan_primitiveTypeDestination(t *testing.T) {
@@ -504,6 +526,18 @@ func TestRowScanner_Scan_primitiveTypeDestination(t *testing.T) {
 			assertDestinationEqual(t, tc.expected, dst)
 		})
 	}
+}
+
+func TestRowScanner_Scan_primitiveTypeDestinationDoesNotMatchWithColumnType_returnsErr(t *testing.T) {
+	t.Parallel()
+	query := `
+		SELECT 'foo val' AS foo
+	`
+	rows := queryRows(t, query)
+	expectedErr := "dbscan: scan row value into a primitive type: can't scan into dest[0]: unable to assign to *int"
+	dst := new(int)
+	err := scan(t, dst, rows)
+	assert.EqualError(t, err, expectedErr)
 }
 
 func TestRowScanner_Scan_primitiveTypeDestinationRowsContainMoreThanOneColumn_returnsErr(t *testing.T) {
