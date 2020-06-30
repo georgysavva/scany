@@ -86,7 +86,7 @@ Every feature request or question is really appreciated. Don't hesitate, just po
 
 ## Roadmap   
 
-todo
+Customize
 
 ## Supported Go versions 
 
