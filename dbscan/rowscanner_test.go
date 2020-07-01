@@ -325,6 +325,17 @@ func TestRowScanner_Scan_invalidStructDestination_returnsErr(t *testing.T) {
 			}{},
 			expectedErr: "dbscan: scan row into struct fields: can't scan into dest[0]: unable to assign to *int",
 		},
+		{
+			name: "non struct embedded field",
+			query: `
+				SELECT 'foo val' AS foo, 'text' AS string
+			`,
+			dst: &struct {
+				string
+				Foo string
+			}{},
+			expectedErr: "dbscan: column: 'string': no corresponding field found, or it's unexported in struct { string; Foo string }",
+		},
 	}
 	for _, tc := range cases {
 		tc := tc
