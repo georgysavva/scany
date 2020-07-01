@@ -3,7 +3,7 @@ package sqlscan_test
 import (
 	"database/sql"
 
-	"github.com/georgysavva/dbscan/sqlscan"
+	"github.com/georgysavva/scany/sqlscan"
 )
 
 func ExampleQueryAll() {

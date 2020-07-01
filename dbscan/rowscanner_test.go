@@ -7,8 +7,8 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
-	dbscan2 "github.com/georgysavva/dbscan/dbscan"
-	"github.com/georgysavva/dbscan/internal/mocks"
+	"github.com/georgysavva/scany/dbscan"
+	"github.com/georgysavva/scany/internal/mocks"
 )
 
 type FooNested struct {
@@ -660,12 +660,12 @@ func TestRowScanner_Scan_startCalledExactlyOnce(t *testing.T) {
 	rows := queryRows(t, query)
 	defer rows.Close()
 	mockStart := &mocks.StartScannerFunc{}
-	rs := dbscan2.NewRowScannerWithStart(rows, mockStart.Execute)
+	rs := dbscan.NewRowScannerWithStart(rows, mockStart.Execute)
 	mockStart.On("Execute", rs, mock.AnythingOfType("reflect.Value")).Return(nil).Run(func(args mock.Arguments) {
-		rs := args.Get(0).(*dbscan2.RowScanner)
+		rs := args.Get(0).(*dbscan.RowScanner)
 		columns := []string{"foo"}
 		columnToFieldIndex := map[string][]int{"foo": {0}}
-		dbscan2.PatchRowScanner(rs, columns, columnToFieldIndex, nil /* mapElementType */)
+		dbscan.PatchRowScanner(rs, columns, columnToFieldIndex, nil /* mapElementType */)
 	})
 	for rows.Next() {
 		dst := &struct {

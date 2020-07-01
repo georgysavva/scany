@@ -2,7 +2,7 @@
 /*
 sqlscan allows scanning complex data into Go structs and other composite types,
 when working with database/sql library. Essentially,
-it is a wrapper around github.com/georgysavva/dbscan package.
+it is a wrapper around github.com/georgysavva/scany/dbscan package.
 It contains adapters and proxy functions that are meant to connect database/sql
 with dbscan functionality. sqlscan mirrors all capabilities provided by dbscan.
 See dbscan docs to get familiar with all concepts and features.

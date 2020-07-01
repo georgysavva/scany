@@ -2,15 +2,15 @@
 /*
 dbscan works with abstract Rows and doesn't depend on any specific database or library.
 If a type implements Rows interface it can leverage full functional of this package.
-Subpackages github.com/georgysavva/dbscan/sqlscan
-and github.com/georgysavva/dbscan/pgxscan are wrappers around this package,
+Subpackages github.com/georgysavva/scany/sqlscan
+and github.com/georgysavva/scany/pgxscan are wrappers around this package,
 they contain functions and adapters tailored to database/sql
 and github.com/jackc/pgx/v4 libraries correspondingly. sqlscan and pgxscan proxy all calls to dbscan internally.
 dbscan does all the logic, but generally, it shouldn't be imported by the application code directly.
 
-If you are working with database/sql - use github.com/georgysavva/dbscan/sqlscan package.
+If you are working with database/sql - use github.com/georgysavva/scany/sqlscan package.
 
-If you are working with pgx - use github.com/georgysavva/dbscan/pgxscan package.
+If you are working with pgx - use github.com/georgysavva/scany/pgxscan package.
 
 Scanning into struct
 

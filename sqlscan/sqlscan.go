@@ -6,7 +6,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/georgysavva/dbscan/dbscan"
+	"github.com/georgysavva/scany/dbscan"
 )
 
 // Querier is something that sqlscan can query and get the *sql.Rows from.

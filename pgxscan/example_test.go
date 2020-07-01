@@ -3,7 +3,7 @@ package pgxscan_test
 import (
 	"github.com/jackc/pgx/v4/pgxpool"
 
-	"github.com/georgysavva/dbscan/pgxscan"
+	"github.com/georgysavva/scany/pgxscan"
 )
 
 func ExampleQueryAll() {

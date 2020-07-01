@@ -1,9 +1,9 @@
-# dbscan
+# Scany
 
-[![GoDoc](https://img.shields.io/badge/pkg.go.dev-doc-blue)](http://pkg.go.dev/github.com/georgysavva/dbscan)
-[![Build Status](https://travis-ci.com/georgysavva/dbscan.svg?branch=master)](https://travis-ci.com/georgysavva/dbscan) 
-[![codecov](https://codecov.io/gh/georgysavva/dbscan/branch/master/graph/badge.svg)](https://codecov.io/gh/georgysavva/dbscan)
-[![Go Report Card](https://goreportcard.com/badge/github.com/georgysavva/dbscan)](https://goreportcard.com/report/github.com/georgysavva/dbscan)
+[![GoDoc](https://img.shields.io/badge/pkg.go.dev-doc-blue)](http://pkg.go.dev/github.com/georgysavva/scany)
+[![Build Status](https://travis-ci.com/georgysavva/scany.svg?branch=master)](https://travis-ci.com/georgysavva/scany) 
+[![codecov](https://codecov.io/gh/georgysavva/scany/branch/master/graph/badge.svg)](https://codecov.io/gh/georgysavva/scany)
+[![Go Report Card](https://goreportcard.com/badge/github.com/georgysavva/scany)](https://goreportcard.com/report/github.com/georgysavva/scany)
 
 Library for scanning data from database into Go structs and more.
 
@@ -14,7 +14,7 @@ It provides great control and efficiency in your queries, but here is a problem:
 you need to manually iterate over database rows and scan data from all columns into a corresponding destination.
 It can be error prone, verbose and just tedious. 
 
-`dbscan` library aims to solve this problem, 
+`Scany` library aims to solve this problem, 
 it allows developers to scan complex data from database into Go structs and other composite types 
 with just one function call and don't bother with rows iteration.
 It's not limited to any specific database, it works with standard `database/sql` library, 
@@ -69,14 +69,14 @@ if err := dbscan.ScanAll(&users, rows); err != nil {
 ## Install
 
 ```
-go get github.com/georgysavva/dbscan
+go get github.com/georgysavva/scany
 ```
 
 ## Tests
 
 The only thing you need to run tests locally is an internet connection, 
 it's required to download and cache the database binary.
-Just type `go test ./...` inside dbscan root directory and let the code to the rest. 
+Just type `go test ./...` inside scany root directory and let the code to the rest. 
 
 ## what it is not 
 
@@ -90,7 +90,7 @@ Customize
 
 ## Supported Go versions 
 
-dbscan supports Go 1.13 and higher.
+Scany supports Go 1.13 and higher.
 
 
 ## Versions policy
