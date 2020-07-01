@@ -302,7 +302,7 @@ func TestRowScanner_Scan_invalidStructDestination_returnsErr(t *testing.T) {
 				"struct { Nested dbscan_test.FooNested; Foo string; Bar string }",
 		},
 		{
-			name: "fields contain duplicated tag",
+			name: "fields contain duplicate tags",
 			query: `
 				SELECT 'foo val' AS foo_column, 'bar val' AS bar
 			`,
@@ -582,7 +582,7 @@ func TestRowScanner_Scan_primitiveTypeDestinationRowsContainZeroColumns_returnsE
 	assert.EqualError(t, err, expectedErr)
 }
 
-func TestRowScanner_Scan_rowsContainDuplicatedColumn_returnsErr(t *testing.T) {
+func TestRowScanner_Scan_rowsContainDuplicateColumns_returnsErr(t *testing.T) {
 	t.Parallel()
 	cases := []struct {
 		name string
@@ -607,7 +607,7 @@ func TestRowScanner_Scan_rowsContainDuplicatedColumn_returnsErr(t *testing.T) {
 				SELECT 'foo val' AS foo, 'foo val' AS foo
 			`
 			rows := queryRows(t, query)
-			expectedErr := "dbscan: rows contain a duplicated column 'foo'"
+			expectedErr := "dbscan: rows contain a duplicate column 'foo'"
 			err := scan(t, tc.dst, rows)
 			assert.EqualError(t, err, expectedErr)
 		})

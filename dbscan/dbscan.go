@@ -34,7 +34,7 @@ type Rows interface {
 //
 // Both usersByPtr and usersByValue are valid destinations for ScanAll function.
 //
-// Note that before starting, ScanAll resets the destination slice,
+// Before starting, ScanAll resets the destination slice,
 // so if it's not empty it will overwrite all existing elements.
 func ScanAll(dst interface{}, rows Rows) error {
 	err := processRows(dst, rows, true /* multipleRows */)
@@ -346,7 +346,7 @@ func (rs *RowScanner) ensureDistinctColumns() error {
 	seen := make(map[string]struct{}, len(rs.columns))
 	for _, column := range rs.columns {
 		if _, ok := seen[column]; ok {
-			return errors.Errorf("dbscan: rows contain a duplicated column '%s'", column)
+			return errors.Errorf("dbscan: rows contain a duplicate column '%s'", column)
 		}
 		seen[column] = struct{}{}
 	}
