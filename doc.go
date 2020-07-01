@@ -1,4 +1,4 @@
-//  Library for scanning data from database into Go structs and more.
+// Package scany is a set of packages for scanning data from database into Go structs and more.
 /*
 Go favors simplicity and it's pretty common to work with database via driver directly without any ORM.
 It provides great control and efficiency in your queries, but here is a problem:
