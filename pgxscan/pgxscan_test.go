@@ -180,28 +180,6 @@ func TestScanRow(t *testing.T) {
 	assert.Equal(t, expected, got)
 }
 
-func TestRowScanner_Scan_closedRows(t *testing.T) {
-	t.Parallel()
-	query := `
-		SELECT *
-		FROM (
-			VALUES ('foo val', 'bar val'), ('foo val 2', 'bar val 2'), ('foo val 3', 'bar val 3')
-		) AS t (foo, bar)
-	`
-	rows, err := testDB.Query(ctx, query)
-	require.NoError(t, err)
-	for rows.Next() {
-	}
-	require.NoError(t, rows.Err())
-	rows.Close()
-
-	rs := pgxscan.NewRowScanner(rows)
-	dst := &testModel{}
-	err = rs.Scan(dst)
-
-	assert.NoError(t, err)
-}
-
 func TestMain(m *testing.M) {
 	exitCode := func() int {
 		flag.Parse()
