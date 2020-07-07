@@ -1,16 +1,7 @@
 // Package dbscan allows scanning data from abstract database rows into Go structs and more.
 /*
-dbscan works with abstract Rows and doesn't depend on any specific database or library.
+dbscan works with abstract Rows and doesn't depend on any specific database or a library.
 If a type implements Rows interface it can leverage full functional of this package.
-Subpackages github.com/georgysavva/scany/sqlscan
-and github.com/georgysavva/scany/pgxscan are wrappers around this package,
-they contain functions and adapters tailored to database/sql
-and github.com/jackc/pgx/v4 libraries correspondingly. sqlscan and pgxscan proxy all calls to dbscan internally.
-dbscan does all the logic, but generally, it shouldn't be imported by the application code directly.
-
-If you are working with database/sql - use github.com/georgysavva/scany/sqlscan package.
-
-If you are working with pgx - use github.com/georgysavva/scany/pgxscan package.
 
 Scanning into struct
 
@@ -22,10 +13,11 @@ The main feature of dbscan is ability to scan row data into struct.
 		Email     string
 	}
 
+	// Query rows from the database that implement dbscan.Rows interface.
+	var rows dbscan.Rows
+
 	var users []*User
-	if err := dbscan.ScanAll(&users, rows); err != nil {
-		// Handle rows processing error
-	}
+	dbscan.ScanAll(&users, rows)
 	// users variable now contains data from all rows.
 
 By default, to get the corresponding column dbscan translates field name to snake case.
@@ -104,11 +96,12 @@ Scanning into map
 Apart from scanning into structs, dbscan can handle maps,
 in that case it uses column name as the map key and column data as the map value, for example:
 
+	// Query rows from the database that implement dbscan.Rows interface.
+	var rows dbscan.Rows
+
 	var results []map[string]interface{}
-	if err := dbscan.ScanAll(&results, rows); err != nil {
-		// Handle rows processing error
-	}
-	// results variable now contains data from the row.
+	dbscan.ScanAll(&results, rows)
+	// results variable now contains data from all rows.
 
 Map type isn't limited to map[string]interface{},
 it can be any map with string key, e.g. map[string]string or map[string]int,
@@ -116,14 +109,15 @@ if all column values have the same specific type.
 
 Scanning into other types
 
-If the destination isn't a struct nor a map, dbscan handles it as single column scan,
+If the destination isn't a struct nor a map, dbscan handles it as a single column scan,
 dbscan ensures that rows contain exactly one column and scans destination from that column, for example:
 
+	// Query rows from the database that implement dbscan.Rows interface.
+	var rows dbscan.Rows
+
 	var results []string
-	if err := dbscan.ScanAll(&results, rows); err != nil {
-		// Handle rows processing error
-	}
-	// results variable not contains data from the row single column.
+	dbscan.ScanAll(&results, rows)
+	// results variable not contains data from all single columns rows.
 
 Duplicate columns
 

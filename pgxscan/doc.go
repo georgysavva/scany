@@ -1,7 +1,7 @@
-// Package pgxscan improves scanning abilities of pgx library.
+// Package pgxscan allows scanning data into Go structs and other composite types,
+// when working with pgx library.
 /*
-pgxscan allows scanning complex data into Go structs and other composite types,
-when working with pgx library. Essentially, it is a wrapper around github.com/georgysavva/scany/dbscan package.
+Essentially, pgxscan is a wrapper around github.com/georgysavva/scany/dbscan package.
 It contains adapters and proxy functions that are meant to connect github.com/jackc/pgx/v4
 with dbscan functionality. pgxscan mirrors all capabilities provided by dbscan.
 See dbscan docs to get familiar with all concepts and features.

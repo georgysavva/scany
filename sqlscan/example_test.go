@@ -14,7 +14,7 @@ func ExampleQueryAll() {
 		Age   int
 	}
 
-	db, _ := sql.Open("pgx", "example-connection-url")
+	db, _ := sql.Open("postgres", "example-connection-url")
 
 	var users []*User
 	if err := sqlscan.QueryAll(
@@ -33,7 +33,7 @@ func ExampleQueryOne() {
 		Age   int
 	}
 
-	db, _ := sql.Open("pgx", "example-connection-url")
+	db, _ := sql.Open("postgres", "example-connection-url")
 
 	var user User
 	if err := sqlscan.QueryOne(
@@ -53,7 +53,7 @@ func ExampleScanAll() {
 	}
 
 	// Query *sql.Rows from the database.
-	db, _ := sql.Open("pgx", "example-connection-url")
+	db, _ := sql.Open("postgres", "example-connection-url")
 	rows, _ := db.Query(`SELECT user_id, name, email, age FROM users`)
 
 	var users []*User
@@ -72,7 +72,7 @@ func ExampleScanOne() {
 	}
 
 	// Query *sql.Rows from the database.
-	db, _ := sql.Open("pgx", "example-connection-url")
+	db, _ := sql.Open("postgres", "example-connection-url")
 	rows, _ := db.Query(`SELECT user_id, name, email, age FROM users WHERE id='bob'`)
 
 	var user User
@@ -91,7 +91,7 @@ func ExampleRowScanner() {
 	}
 
 	// Query *sql.Rows from the database.
-	db, _ := sql.Open("pgx", "example-connection-url")
+	db, _ := sql.Open("postgres", "example-connection-url")
 	rows, _ := db.Query(`SELECT user_id, name, email, age FROM users`)
 
 	// Make sure rows are always closed.
@@ -118,7 +118,7 @@ func ExampleScanRow() {
 	}
 
 	// Query *sql.Rows from the database.
-	db, _ := sql.Open("pgx", "example-connection-url")
+	db, _ := sql.Open("postgres", "example-connection-url")
 	rows, _ := db.Query(`SELECT user_id, name, email, age FROM users`)
 
 	// Make sure rows are always closed.

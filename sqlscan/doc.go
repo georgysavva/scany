@@ -1,8 +1,7 @@
-// Package sqlscan improves scanning abilities of standard database/sql library.
+// Package sqlscan allows scanning data into Go structs and other composite types,
+// when working with database/sql library.
 /*
-sqlscan allows scanning complex data into Go structs and other composite types,
-when working with database/sql library. Essentially,
-it is a wrapper around github.com/georgysavva/scany/dbscan package.
+Essentially, sqlscan is a wrapper around github.com/georgysavva/scany/dbscan package.
 It contains adapters and proxy functions that are meant to connect database/sql
 with dbscan functionality. sqlscan mirrors all capabilities provided by dbscan.
 See dbscan docs to get familiar with all concepts and features.
@@ -19,7 +18,7 @@ it's as simple as this:
 		Age   int
 	}
 
-	db, _ := sql.Open("pgx", "example-connection-url")
+	db, _ := sql.Open("postgres", "example-connection-url")
 
 	// Use QueryAll to query multiple records.
 	var users []*User
