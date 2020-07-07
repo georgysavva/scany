@@ -48,5 +48,9 @@ Note that you must specify pgtype.Text by value, not by a pointer. This will not
 This happens because struct fields are always passed to pgx.Rows.Scan() as pointers,
 and if the field type is *pgtype.Text, pgx.Rows.Scan() will receive **pgtype.Text and
 pgx won't be able to handle that type, since only *pgtype.Text implements pgx custom type interfaces.
+
+Supported pgx version
+
+pgxscan only works with pgx v4. So the import path of your pgx must be: "github.com/jackc/pgx/v4".
 */
 package pgxscan

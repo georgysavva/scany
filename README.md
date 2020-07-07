@@ -1,27 +1,24 @@
-# Scany
+# scany
 
 [![GoDoc](https://img.shields.io/badge/pkg.go.dev-doc-blue)](http://pkg.go.dev/github.com/georgysavva/scany)
 [![Build Status](https://travis-ci.com/georgysavva/scany.svg?branch=master)](https://travis-ci.com/georgysavva/scany) 
 [![codecov](https://codecov.io/gh/georgysavva/scany/branch/master/graph/badge.svg)](https://codecov.io/gh/georgysavva/scany)
 [![Go Report Card](https://goreportcard.com/badge/github.com/georgysavva/scany)](https://goreportcard.com/report/github.com/georgysavva/scany)
 
-Library for scanning data from a database into Go structs and more.
-
 ## Overview
 
 Go favors simplicity, and it's pretty common to work with a database via driver directly without any ORM.
 It provides great control and efficiency in your queries, but here is a problem: 
 you need to manually iterate over database rows and scan data from all columns into a corresponding destination.
-It can be error-prone, verbose, and just tedious. 
-Scany aims to solve this problem, 
+It can be error-prone verbose and just tedious. 
+scany aims to solve this problem, 
 it allows developers to scan complex data from a database into Go structs and other composite types 
 with just one function call and don't bother with rows iteration.
 
-Scany isn't limited to any specific database. It integrates with standard `database/sql` library, 
+scany isn't limited to any specific database. It integrates with standard `database/sql` library, 
 so any database with `database/sql` driver is supported. 
 It also works with [pgx](https://github.com/jackc/pgx) - specific library for PostgreSQL. 
-Apart from supporting `database/sql` and `pgx` out of the box, 
-Scany can be easily extended to work with any database library.
+Apart from the out of the box support, scany can be easily extended to work with any database library.
 
 ## Install
 
@@ -104,7 +101,7 @@ Both `sqlscan` and `pgxscan` use `dbscan` internally.
 
 ## Supported Go versions 
 
-Scany supports Go 1.13 and higher.
+scany supports Go 1.13 and higher.
 
 ## Roadmap   
 
