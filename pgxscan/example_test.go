@@ -6,7 +6,7 @@ import (
 	"github.com/georgysavva/scany/pgxscan"
 )
 
-func ExampleQueryAll() {
+func ExampleQuery() {
 	type User struct {
 		ID    string `db:"user_id"`
 		Name  string
@@ -17,7 +17,7 @@ func ExampleQueryAll() {
 	db, _ := pgxpool.Connect(ctx, "example-connection-url")
 
 	var users []*User
-	if err := pgxscan.QueryAll(
+	if err := pgxscan.Query(
 		ctx, &users, db, `SELECT user_id, name, email, age FROM users`,
 	); err != nil {
 		// Handle query or rows processing error.

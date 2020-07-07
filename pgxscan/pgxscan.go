@@ -22,9 +22,9 @@ var (
 	_ Querier = *new(pgx.Tx)
 )
 
-// QueryAll is a high-level function that queries the rows and calls the ScanAll function.
+// Query is a high-level function that queries the rows and calls the ScanAll function.
 // See ScanAll for details.
-func QueryAll(ctx context.Context, dst interface{}, q Querier, query string, args ...interface{}) error {
+func Query(ctx context.Context, dst interface{}, q Querier, query string, args ...interface{}) error {
 	rows, err := q.Query(ctx, query, args...)
 	if err != nil {
 		return errors.Wrap(err, "pgxscan: query multiple result rows")

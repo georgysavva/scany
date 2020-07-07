@@ -8,7 +8,7 @@ See dbscan docs to get familiar with all concepts and features.
 
 How to use
 
-The most common way to use pgxscan is by calling QueryAll or QueryOne function,
+The most common way to use pgxscan is by calling Query or QueryOne function,
 it's as simple as this:
 
 	type User struct {
@@ -20,9 +20,9 @@ it's as simple as this:
 
 	db, _ := pgxpool.Connect(ctx, "example-connection-url")
 
-	// Use QueryAll to query multiple records.
+	// Use Query to query multiple records.
 	var users []*User
-	pgxscan.QueryAll(ctx, &users, db, `SELECT user_id, name, email, age FROM users`)
+	pgxscan.Query(ctx, &users, db, `SELECT user_id, name, email, age FROM users`)
 	// users variable now contains data from all rows.
 
 Pgx custom types

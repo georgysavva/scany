@@ -24,7 +24,7 @@ type testModel struct {
 	Bar string
 }
 
-func TestQueryAll(t *testing.T) {
+func TestQuery(t *testing.T) {
 	t.Parallel()
 	query := `
 		SELECT *
@@ -39,13 +39,13 @@ func TestQueryAll(t *testing.T) {
 	}
 
 	var got []*testModel
-	err := pgxscan.QueryAll(ctx, &got, testDB, query)
+	err := pgxscan.Query(ctx, &got, testDB, query)
 	require.NoError(t, err)
 
 	assert.Equal(t, expected, got)
 }
 
-func TestQueryAll_queryError_propagatesAndWrapsErr(t *testing.T) {
+func TestQuery_queryError_propagatesAndWrapsErr(t *testing.T) {
 	t.Parallel()
 	query := `
 		SELECT foo, bar, baz
@@ -56,7 +56,7 @@ func TestQueryAll_queryError_propagatesAndWrapsErr(t *testing.T) {
 	expectedErr := "pgxscan: query multiple result rows: ERROR: column \"baz\" does not exist (SQLSTATE 42703)"
 
 	dst := &[]*testModel{}
-	err := pgxscan.QueryAll(ctx, dst, testDB, query)
+	err := pgxscan.Query(ctx, dst, testDB, query)
 
 	assert.EqualError(t, err, expectedErr)
 }
