@@ -1,11 +1,11 @@
 // Package dbscan allows scanning data from abstract database rows into Go structs and more.
 /*
-dbscan works with abstract Rows and doesn't depend on any specific database or a library.
-If a type implements Rows interface it can leverage full functional of this package.
+dbscan works with abstract Rows interface and doesn't depend on any specific database or a library.
+If a type implements Rows it can leverage the full functionality of this package.
 
 Scanning into struct
 
-The main feature of dbscan is ability to scan row data into struct.
+The main feature of dbscan is the ability to scan row data into structs.
 
 	type User struct {
 		ID        string `db:"user_id"`
@@ -21,7 +21,7 @@ The main feature of dbscan is ability to scan row data into struct.
 	// users variable now contains data from all rows.
 
 By default, to get the corresponding column dbscan translates field name to snake case.
-In order to override this behaviour, specify column name in the `db` field tag.
+To override this behavior, specify the column name in the `db` field tag.
 In the example above User struct is mapped to the following columns: "user_id", "first_name", "email".
 
 dbscan works recursively, struct can contain embedded structs as well.

@@ -12,7 +12,7 @@ Library for scanning data from a database into Go structs and more.
 Go favors simplicity, and it's pretty common to work with a database via driver directly without any ORM.
 It provides great control and efficiency in your queries, but here is a problem: 
 you need to manually iterate over database rows and scan data from all columns into a corresponding destination.
-It can be error prone, verbose and just tedious. 
+It can be error-prone, verbose, and just tedious. 
 Scany aims to solve this problem, 
 it allows developers to scan complex data from a database into Go structs and other composite types 
 with just one function call and don't bother with rows iteration.
@@ -118,7 +118,7 @@ Just type `go test ./...` inside scany root directory and let the code do the re
 
 ## Contributing 
 
-Every feature request or question is really appreciated. Don't hesitate, just post an issue or PR.
+Every feature request or question is appreciated. Don't hesitate, just post an issue or PR.
 
 ## License
 
