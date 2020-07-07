@@ -41,8 +41,8 @@ func ScanAll(dst interface{}, rows Rows) error {
 	return errors.WithStack(err)
 }
 
-// ScanOne iterates all rows to the end and makes sure that there was exactly one row,
-// otherwise, it returns an error. Use NotFound function to check if there were no rows.
+// ScanOne iterates all rows to the end and makes sure that there was exactly one row
+// otherwise it returns an error. Use NotFound function to check if there were no rows.
 // After iterating ScanOne closes the rows,
 // and propagates any errors that could pop up.
 // It scans data from that single row into the destination.

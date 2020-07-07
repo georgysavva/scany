@@ -24,12 +24,12 @@ By default, to get the corresponding column dbscan translates field name to snak
 To override this behavior, specify the column name in the `db` field tag.
 In the example above User struct is mapped to the following columns: "user_id", "first_name", "email".
 
-dbscan works recursively, struct can contain embedded structs as well.
-It allows to reuse models in different queries. Structs can be embedded both by value and by a pointer.
+dbscan works recursively, a struct can contain embedded structs as well.
+It allows reusing models in different queries. Structs can be embedded both by value and by a pointer.
 Note that, nested non-embedded structs aren't allowed, this decision was made due to simplicity.
-By default, dbscan maps fields from embedded structs to columns as is and doesn't add any prefix,
-this simulates behaviour of major SQL databases in case of a JOIN.
-In order to add a prefix to all fields of the embedded struct specify it in the `db` field tag,
+By default, dbscan maps fields from embedded structs to columns as-is and doesn't add any prefix,
+this simulates the behavior of major SQL databases in case of a JOIN.
+To add a prefix to all fields of the embedded struct specify it in the `db` field tag,
 dbscan uses "." as a separator, for example:
 
 	type User struct {
@@ -53,7 +53,7 @@ In order for dbscan to work with a field it must be exported, unexported fields 
 This applied to embedded structs too, the type that is embedded must be exported.
 
 It's possible to explicitly mark a field as ignored for dbscan. To do this set `db:"-"` struct tag.
-By the way, it also works for embedded structs as well, for example:
+By the way, it works for embedded structs as well, for example:
 
 	type Post struct {
 		ID   string
@@ -94,7 +94,7 @@ Row struct is invalid since both Row.User.ID and Row.Post.ID are mapped to the "
 Scanning into map
 
 Apart from scanning into structs, dbscan can handle maps,
-in that case it uses column name as the map key and column data as the map value, for example:
+in that case, it uses column name as the map key and column data as the map value, for example:
 
 	// Query rows from the database that implement dbscan.Rows interface.
 	var rows dbscan.Rows
@@ -104,7 +104,7 @@ in that case it uses column name as the map key and column data as the map value
 	// results variable now contains data from all rows.
 
 Map type isn't limited to map[string]interface{},
-it can be any map with string key, e.g. map[string]string or map[string]int,
+it can be any map with a string key, e.g. map[string]string or map[string]int,
 if all column values have the same specific type.
 
 Scanning into other types
@@ -121,7 +121,7 @@ dbscan ensures that rows contain exactly one column and scans destination from t
 
 Duplicate columns
 
-Rows must not contain duplicate columns, otherwise dbscan won't be able to decide
+Rows must not contain duplicate columns otherwise dbscan won't be able to decide
 from which column to select and will return an error.
 
 Rows processing
@@ -132,7 +132,7 @@ Client code doesn't need to bother with that, it just passes rows to dbscan.
 
 Manual rows iteration
 
-It's possible to manually control rows iteration, but still use all scanning features of dbscan,
+It's possible to manually control rows iteration but still use all scanning features of dbscan,
 see RowScanner for details.
 */
 package dbscan
