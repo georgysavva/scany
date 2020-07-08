@@ -5,7 +5,7 @@ If a type implements Rows it can leverage the full functionality of this package
 
 Scanning into struct
 
-The main feature of dbscan is the ability to scan row data into structs.
+The main feature of dbscan is the ability to scan rows data into structs.
 
 	type User struct {
 		ID        string `db:"user_id"`
@@ -117,7 +117,7 @@ dbscan ensures that rows contain exactly one column and scans destination from t
 
 	var results []string
 	dbscan.ScanAll(&results, rows)
-	// results variable not contains data from all single columns rows.
+	// results variable not contains data from all rows single column.
 
 Duplicate columns
 

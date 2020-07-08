@@ -4,7 +4,7 @@
 Essentially, pgxscan is a wrapper around github.com/georgysavva/scany/dbscan package.
 It contains adapters and proxy functions that are meant to connect github.com/jackc/pgx/v4
 with dbscan functionality. pgxscan mirrors all capabilities provided by dbscan.
-See dbscan docs to get familiar with all concepts and features.
+It's encouraged to read dbscan docs first to get familiar with all concepts and features.
 
 How to use
 
@@ -12,10 +12,10 @@ The most common way to use pgxscan is by calling Query or QueryOne function,
 it's as simple as this:
 
 	type User struct {
-		ID    string `db:"user_id"`
-		Name  string
-		Email string
-		Age   int
+		UserID string
+		Name   string
+		Email  string
+		Age    int
 	}
 
 	db, _ := pgxpool.Connect(ctx, "example-connection-url")
@@ -45,9 +45,9 @@ Note that you must specify pgtype.Text by value, not by a pointer. This will not
 		Bio    *pgtype.Text // pgxscan won't be able to scan data into a field defined that way.
 	}
 
-This happens because struct fields are always passed to pgx.Rows.Scan() as pointers,
+This happens because struct fields are always passed to the underlying pgx.Rows.Scan() as pointers,
 and if the field type is *pgtype.Text, pgx.Rows.Scan() will receive **pgtype.Text and
-pgx won't be able to handle that type, since only *pgtype.Text implements pgx custom type interfaces.
+pgx won't be able to handle that type, since only *pgtype.Text implements pgx custom type interface.
 
 Supported pgx version
 

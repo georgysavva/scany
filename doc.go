@@ -1,6 +1,6 @@
 // Package scany is a set of packages for scanning data from a database into Go structs and more.
 /*
-scany isn't limited to any specific database. It integrates with standard database/sql library,
+scany isn't limited to any specific database. It integrates with database/sql,
 so any database with database/sql driver is supported.
 It also works with https://github.com/jackc/pgx - specific library for PostgreSQL.
 Apart from the out of the box support, scany can be easily extended to work with any database library.

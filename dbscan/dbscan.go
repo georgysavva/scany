@@ -7,7 +7,7 @@ import (
 )
 
 // Rows is an abstract database rows that dbscan can iterate over and get the data from.
-// This interface is used to decouple from any particular database.
+// This interface is used to decouple from any particular database library.
 type Rows interface {
 	Close() error
 	Err() error
@@ -18,7 +18,7 @@ type Rows interface {
 
 // ScanAll iterates all rows to the end. After iterating it closes the rows,
 // and propagates any errors that could pop up.
-// It expected that destination should be a slice. For each row it scans data and appends it to the destination slice.
+// It expects that destination should be a slice. For each row it scans data and appends it to the destination slice.
 // ScanAll supports both types of slices: slice of structs by a pointer and slice of structs by value,
 // for example:
 //
@@ -167,12 +167,12 @@ func scanSliceElement(rs *RowScanner, sliceMeta *sliceDestinationMeta) error {
 
 type startScannerFunc func(rs *RowScanner, dstValue reflect.Value) error
 
-// RowScanner embraces the Rows and exposes the Scan method
-// that allows to scan data from the current row into the destination.
+// RowScanner embraces Rows and exposes the Scan method
+// that allows scanning data from the current row into the destination.
 // The first time the Scan method is called
 // it parses the destination type via reflection and caches all required information for further scans.
-// Due to this caching mechanism it's not allowed to call Scan for destinations of different types,
-// the behaviour is unknown in that case.
+// Due to this caching mechanism, it's not allowed to call Scan for destinations of different types,
+// the behavior is unknown in that case.
 // RowScanner doesn't proceed to the next row nor close them, it should be done by the client code.
 //
 // The main benefit of using this type directly

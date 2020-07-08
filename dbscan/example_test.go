@@ -6,13 +6,13 @@ import (
 
 func ExampleScanAll() {
 	type User struct {
-		ID    string
+		ID    string `db:"user_id"`
 		Name  string
 		Email string
 		Age   int
 	}
 
-	// Query rows from the database that implement dbscan.Rows interface.
+	// Query rows from the database that implement Rows interface.
 	var rows dbscan.Rows
 
 	var users []*User
@@ -24,13 +24,13 @@ func ExampleScanAll() {
 
 func ExampleScanOne() {
 	type User struct {
-		ID    string
+		ID    string `db:"user_id"`
 		Name  string
 		Email string
 		Age   int
 	}
 
-	// Query rows from the database that implement dbscan.Rows interface.
+	// Query rows from the database that implement Rows interface.
 	var rows dbscan.Rows
 
 	var user User
@@ -42,13 +42,13 @@ func ExampleScanOne() {
 
 func ExampleRowScanner() {
 	type User struct {
-		ID    string
+		ID    string `db:"user_id"`
 		Name  string
 		Email string
 		Age   int
 	}
 
-	// Query rows from the database that implement dbscan.Rows interface.
+	// Query rows from the database that implement Rows interface.
 	var rows dbscan.Rows
 
 	// Make sure rows are always closed.
@@ -71,13 +71,13 @@ func ExampleRowScanner() {
 
 func ExampleScanRow() {
 	type User struct {
-		ID    string
+		ID    string `db:"user_id"`
 		Name  string
 		Email string
 		Age   int
 	}
 
-	// Query rows from the database that implement dbscan.Rows interface.
+	// Query rows from the database that implement Rows interface.
 	var rows dbscan.Rows
 
 	// Make sure rows are always closed.

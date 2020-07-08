@@ -55,7 +55,7 @@ func getColumnToFieldIndexMap(structType reflect.Type) (map[string][]int, error)
 					column := childColumn
 					// If "db" tag is present for embedded struct
 					// use it with "." to prefix all column from the embedded struct.
-					// the default behaviour is to propagate columns as is.
+					// the default behavior is to propagate columns as is.
 					if dbTag != "" {
 						column = dbTag + "." + column
 					}
