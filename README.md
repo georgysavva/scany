@@ -105,7 +105,9 @@ scany supports Go 1.13 and higher.
 
 ## Roadmap   
 
-Customize
+* Add ability to set custom function to translate struct field to column name, 
+instead of the default to snake case function 
+* Allow to use a custom separator for embedded structs prefix, instead of the default "."
 
 ## Tests
 
