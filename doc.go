@@ -9,7 +9,7 @@ scany contains the following packages:
 
 sqlscan package works with database/sql standard library.
 
-pgxscan package works with github.com/jackc/pgx/v4 library.
+pgxscan package works with github.com/jackc/pgx library.
 
 dbscan package works with an abstract database and can be integrated with any library.
 This particular package implements core scany features and contains all the logic.
