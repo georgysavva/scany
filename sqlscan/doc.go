@@ -2,8 +2,9 @@
 // when working with database/sql library.
 /*
 Essentially, sqlscan is a wrapper around github.com/georgysavva/scany/dbscan package.
-It contains adapters and proxy functions that are meant to connect database/sql
-with dbscan functionality. sqlscan mirrors all capabilities provided by dbscan.
+sqlscan connects database/sql with dbscan functionality.
+It contains adapters that are meant to work with *sql.Rows and proxy all calls to dbscan.
+sqlscan mirrors all capabilities provided by dbscan.
 It's encouraged to read dbscan docs first to get familiar with all concepts and features.
 
 How to use
