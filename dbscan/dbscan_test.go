@@ -188,7 +188,7 @@ func TestScanAll_nonSliceDestination_returnsErr(t *testing.T) {
 	dst := &struct {
 		Foo string
 	}{}
-	expectedErr := "dbscan: destination must be a slice, got: struct { Foo string }"
+	expectedErr := "scany: destination must be a slice, got: struct { Foo string }"
 
 	err := dbscan.ScanAll(dst, rows)
 
@@ -205,7 +205,7 @@ func TestScanAll_sliceByPointerToPointerDestination_returnsErr(t *testing.T) {
 	`
 	rows := queryRows(t, query)
 	dst := new(*[]struct{ Foo string })
-	expectedErr := "dbscan: destination must be a slice, got: *[]struct { Foo string }"
+	expectedErr := "scany: destination must be a slice, got: *[]struct { Foo string }"
 
 	err := dbscan.ScanAll(dst, rows)
 
@@ -274,7 +274,7 @@ func TestScanOne_multipleRows_returnsErr(t *testing.T) {
 		) AS t (foo)
 	`
 	rows := queryRows(t, query)
-	expectedErr := "dbscan: expected 1 row, got: 3"
+	expectedErr := "scany: expected 1 row, got: 3"
 
 	dst := &struct{ Foo string }{}
 	err := dbscan.ScanOne(dst, rows)

@@ -53,7 +53,7 @@ func TestQuery_queryError_propagatesAndWrapsErr(t *testing.T) {
 			VALUES ('foo val', 'bar val'), ('foo val 2', 'bar val 2'), ('foo val 3', 'bar val 3')
 		) AS t (foo, bar)
 	`
-	expectedErr := "pgxscan: query multiple result rows: ERROR: column \"baz\" does not exist (SQLSTATE 42703)"
+	expectedErr := "scany: query multiple result rows: ERROR: column \"baz\" does not exist (SQLSTATE 42703)"
 
 	dst := &[]*testModel{}
 	err := pgxscan.Query(ctx, dst, testDB, query)
@@ -80,7 +80,7 @@ func TestQueryOne_queryError_propagatesAndWrapsErr(t *testing.T) {
 	query := `
 		SELECT 'foo val' AS foo, 'bar val' AS bar, baz
 	`
-	expectedErr := "pgxscan: query one result row: ERROR: column \"baz\" does not exist (SQLSTATE 42703)"
+	expectedErr := "scany: query one result row: ERROR: column \"baz\" does not exist (SQLSTATE 42703)"
 
 	dst := &testModel{}
 	err := pgxscan.QueryOne(ctx, dst, testDB, query)

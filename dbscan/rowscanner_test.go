@@ -258,7 +258,7 @@ func TestRowScanner_Scan_invalidStructDestination_returnsErr(t *testing.T) {
 			dst: &struct {
 				Bar string
 			}{},
-			expectedErr: "dbscan: column: 'foo': no corresponding field found, or it's unexported in " +
+			expectedErr: "scany: column: 'foo': no corresponding field found, or it's unexported in " +
 				"struct { Bar string }",
 		},
 		{
@@ -270,7 +270,7 @@ func TestRowScanner_Scan_invalidStructDestination_returnsErr(t *testing.T) {
 				foo string
 				Bar string
 			}{},
-			expectedErr: "dbscan: column: 'foo': no corresponding field found, or it's unexported in " +
+			expectedErr: "scany: column: 'foo': no corresponding field found, or it's unexported in " +
 				"struct { foo string; Bar string }",
 		},
 		{
@@ -284,7 +284,7 @@ func TestRowScanner_Scan_invalidStructDestination_returnsErr(t *testing.T) {
 				Foo string
 				Bar string
 			}{},
-			expectedErr: "dbscan: column: 'foo_nested': no corresponding field found, or it's unexported in " +
+			expectedErr: "scany: column: 'foo_nested': no corresponding field found, or it's unexported in " +
 				"struct { dbscan_test.nestedUnexported; Foo string; Bar string }",
 		},
 		{
@@ -298,7 +298,7 @@ func TestRowScanner_Scan_invalidStructDestination_returnsErr(t *testing.T) {
 				Foo    string
 				Bar    string
 			}{},
-			expectedErr: "dbscan: column: 'foo_nested': no corresponding field found, or it's unexported in " +
+			expectedErr: "scany: column: 'foo_nested': no corresponding field found, or it's unexported in " +
 				"struct { Nested dbscan_test.FooNested; Foo string; Bar string }",
 		},
 		{
@@ -310,7 +310,7 @@ func TestRowScanner_Scan_invalidStructDestination_returnsErr(t *testing.T) {
 				Foo string `db:"foo_column"`
 				Bar string `db:"foo_column"`
 			}{},
-			expectedErr: "dbscan: Column must have exactly one field pointing to it; " +
+			expectedErr: "scany: Column must have exactly one field pointing to it; " +
 				"found 2 fields with indexes [0] and [1] pointing to 'foo_column' in " +
 				"struct { Foo string \"db:\\\"foo_column\\\"\"; Bar string \"db:\\\"foo_column\\\"\" }",
 		},
@@ -323,7 +323,7 @@ func TestRowScanner_Scan_invalidStructDestination_returnsErr(t *testing.T) {
 				Foo int
 				Bar string
 			}{},
-			expectedErr: "dbscan: scan row into struct fields: can't scan into dest[0]: unable to assign to *int",
+			expectedErr: "scany: scan row into struct fields: can't scan into dest[0]: unable to assign to *int",
 		},
 		{
 			name: "non struct embedded field",
@@ -334,7 +334,7 @@ func TestRowScanner_Scan_invalidStructDestination_returnsErr(t *testing.T) {
 				string
 				Foo string
 			}{},
-			expectedErr: "dbscan: column: 'string': no corresponding field found, or it's unexported in struct { string; Foo string }",
+			expectedErr: "scany: column: 'string': no corresponding field found, or it's unexported in struct { string; Foo string }",
 		},
 	}
 	for _, tc := range cases {
@@ -453,7 +453,7 @@ func TestRowScanner_Scan_invalidMapDestination_returnsErr(t *testing.T) {
 				SELECT 'foo val' AS foo, 'bar val' AS bar
 			`,
 			dst:         &map[int]interface{}{},
-			expectedErr: "dbscan: invalid type map[int]interface {}: map must have string key, got: int",
+			expectedErr: "scany: invalid type map[int]interface {}: map must have string key, got: int",
 		},
 		{
 			name: "value type does not match with column type",
@@ -461,7 +461,7 @@ func TestRowScanner_Scan_invalidMapDestination_returnsErr(t *testing.T) {
 				SELECT 'foo val' AS foo, 'bar val' AS bar
 			`,
 			dst:         &map[string]int{},
-			expectedErr: "dbscan: scan rows into map: can't scan into dest[0]: unable to assign to *int",
+			expectedErr: "scany: scan rows into map: can't scan into dest[0]: unable to assign to *int",
 		},
 	}
 	for _, tc := range cases {
@@ -545,7 +545,7 @@ func TestRowScanner_Scan_primitiveTypeDestinationDoesNotMatchWithColumnType_retu
 		SELECT 'foo val' AS foo
 	`
 	rows := queryRows(t, query)
-	expectedErr := "dbscan: scan row value into a primitive type: can't scan into dest[0]: unable to assign to *int"
+	expectedErr := "scany: scan row value into a primitive type: can't scan into dest[0]: unable to assign to *int"
 	dst := new(int)
 	err := scan(t, dst, rows)
 	assert.EqualError(t, err, expectedErr)
@@ -557,7 +557,7 @@ func TestRowScanner_Scan_primitiveTypeDestinationRowsContainMoreThanOneColumn_re
 		SELECT 'foo val' AS foo, 'bar val' AS bar
 	`
 	rows := queryRows(t, query)
-	expectedErr := "dbscan: to scan into a primitive type, columns number must be exactly 1, got: 2"
+	expectedErr := "scany: to scan into a primitive type, columns number must be exactly 1, got: 2"
 	dst := new(string)
 	err := scan(t, dst, rows)
 	assert.EqualError(t, err, expectedErr)
@@ -576,7 +576,7 @@ func (er emptyRow) Err() error                  { return nil }
 func TestRowScanner_Scan_primitiveTypeDestinationRowsContainZeroColumns_returnsErr(t *testing.T) {
 	t.Parallel()
 	rows := emptyRow{}
-	expectedErr := "dbscan: to scan into a primitive type, columns number must be exactly 1, got: 0"
+	expectedErr := "scany: to scan into a primitive type, columns number must be exactly 1, got: 0"
 	dst := new(string)
 	err := scan(t, dst, rows)
 	assert.EqualError(t, err, expectedErr)
@@ -607,7 +607,7 @@ func TestRowScanner_Scan_rowsContainDuplicateColumns_returnsErr(t *testing.T) {
 				SELECT 'foo val' AS foo, 'foo val' AS foo
 			`
 			rows := queryRows(t, query)
-			expectedErr := "dbscan: rows contain a duplicate column 'foo'"
+			expectedErr := "scany: rows contain a duplicate column 'foo'"
 			err := scan(t, tc.dst, rows)
 			assert.EqualError(t, err, expectedErr)
 		})
@@ -626,27 +626,27 @@ func TestRowScanner_Scan_invalidDst_returnsErr(t *testing.T) {
 			dst: struct {
 				Foo string
 			}{},
-			expectedErr: "dbscan: destination must be a pointer, got: struct { Foo string }",
+			expectedErr: "scany: destination must be a pointer, got: struct { Foo string }",
 		},
 		{
 			name:        "map",
 			dst:         map[string]interface{}{},
-			expectedErr: "dbscan: destination must be a pointer, got: map[string]interface {}",
+			expectedErr: "scany: destination must be a pointer, got: map[string]interface {}",
 		},
 		{
 			name:        "slice",
 			dst:         []struct{ Foo string }{},
-			expectedErr: "dbscan: destination must be a pointer, got: []struct { Foo string }",
+			expectedErr: "scany: destination must be a pointer, got: []struct { Foo string }",
 		},
 		{
 			name:        "nil",
 			dst:         nil,
-			expectedErr: "dbscan: destination must be a non nil pointer",
+			expectedErr: "scany: destination must be a non nil pointer",
 		},
 		{
 			name:        "(*int)(nil)",
 			dst:         (*int)(nil),
-			expectedErr: "dbscan: destination must be a non nil pointer",
+			expectedErr: "scany: destination must be a non nil pointer",
 		},
 	}
 	for _, tc := range cases {
