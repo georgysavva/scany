@@ -18,7 +18,7 @@ with just one function call and don't bother with rows iteration.
 scany isn't limited to any specific database. It integrates with `database/sql`, 
 so any database with `database/sql` driver is supported. 
 It also works with [pgx](https://github.com/jackc/pgx) - specific library for PostgreSQL. 
-Apart from the out of the box support, scany can be easily extended to work with any database library.
+Apart from the out of the box support, scany can be easily extended to work with almost any database library.
 
 ## Install
 
@@ -95,7 +95,7 @@ package to work with `pgx` library.
 ## How to use with other database libraries
 
 Use [`dbscan`](https://pkg.go.dev/github.com/georgysavva/scany/dbscan) package that works with an abstract database, 
-and can be integrated with any library. 
+and can be integrated with any library that has a concept of rows. 
 This particular package implements core scany features and contains all the logic.
 Both `sqlscan` and `pgxscan` use `dbscan` internally.
 
