@@ -24,6 +24,8 @@ By default, to get the corresponding column dbscan translates field name to snak
 To override this behavior, specify the column name in the `db` field tag.
 In the example above User struct is mapped to the following columns: "user_id", "first_name", "email".
 
+Embedded structs
+
 dbscan works recursively, a struct can contain embedded structs as well.
 It allows reusing models in different queries. Structs can be embedded both by value and by a pointer.
 Note that, nested non-embedded structs aren't allowed, this decision was made due to simplicity.
@@ -49,6 +51,8 @@ dbscan uses "." as a separator, for example:
 
 Row struct is mapped to the following columns: "user_id", "email", "post.id", "post.text".
 
+Ignored struct fields
+
 In order for dbscan to work with a field it must be exported, unexported fields will be ignored.
 This applied to embedded structs too, the type that is embedded must be exported.
 
@@ -68,6 +72,8 @@ By the way, it works for embedded structs as well, for example:
 	}
 
 Comment struct is mapped to the following columns: "id", "body".
+
+Struct scanning errors
 
 In case there is no corresponding field for a column dbscan returns an error,
 this forces to only select data from the database that application needs. And another way around,
