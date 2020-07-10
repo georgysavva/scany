@@ -34,6 +34,11 @@ this simulates the behavior of major SQL databases in case of a JOIN.
 To add a prefix to all fields of the embedded struct specify it in the `db` field tag,
 dbscan uses "." as a separator, for example:
 
+	type Row struct {
+		*User
+		Post `db:"post"`
+	}
+
 	type User struct {
 		UserID string
 		Email  string
@@ -44,12 +49,33 @@ dbscan uses "." as a separator, for example:
 		Text string
 	}
 
-	type Row struct {
-		*User
-		Post `db:"post"`
+Row struct is mapped to the following columns: "user_id", "email", "post.id", "post.text".
+
+Handling custom types and NULLs
+
+dbscan supports custom types and NULLs perfectly.
+You can work with them the same way as if you would be using your database library directly.
+Under the hood, dbscan passes all types that you provide to the underlying rows.Scan()
+and if the database library supports a type, dbscan supports it automatically, for example:
+
+	type User struct {
+		OptionalBio  *string
+		OptionalAge  CustomNullInt
+		Data         CustomData
+		OptionalData *CustomData
 	}
 
-Row struct is mapped to the following columns: "user_id", "email", "post.id", "post.text".
+	type CustomNullInt struct {
+		// Any fields that this custom type needs
+	}
+
+	type CustomData struct {
+		// Any fields that this custom type needs
+	}
+
+User struct is valid and every field will be scanned properly, the only condition for this
+is that your database library can handle *string, CustomNullInt, CustomData and *CustomData types.
+
 
 Ignored struct fields
 
@@ -59,16 +85,16 @@ This applied to embedded structs too, the type that is embedded must be exported
 It's possible to explicitly mark a field as ignored for dbscan. To do this set `db:"-"` struct tag.
 By the way, it works for embedded structs as well, for example:
 
-	type Post struct {
-		ID   string
-		Text string
-	}
-
 	type Comment struct {
 		Post  `db:"-"`
 		ID    string
 		Body  string
 		Likes int `db:"-"`
+	}
+
+	type Post struct {
+		ID   string
+		Text string
 	}
 
 Comment struct is mapped to the following columns: "id", "body".
@@ -80,6 +106,11 @@ this forces to only select data from the database that application needs. And an
 if a struct contains multiple fields that are mapped to the same column,
 dbscan won't be able to make the chose to which field to assign and will return an error, for example:
 
+	type Row struct {
+		User
+		Post
+	}
+
 	type User struct {
 		ID    string
 		Email string
@@ -88,11 +119,6 @@ dbscan won't be able to make the chose to which field to assign and will return 
 	type Post struct {
 		ID   string
 		Text string
-	}
-
-	type Row struct {
-		User
-		Post
 	}
 
 Row struct is invalid since both Row.User.ID and Row.Post.ID are mapped to the "id" column.
