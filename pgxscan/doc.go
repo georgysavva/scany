@@ -26,29 +26,22 @@ it's as simple as this:
 	pgxscan.Query(ctx, &users, db, `SELECT user_id, name, email, age FROM users`)
 	// users variable now contains data from all rows.
 
-Pgx custom types
+Note about pgx custom types
 
 pgx has a concept of custom types: https://pkg.go.dev/github.com/jackc/pgx/v4?tab=doc#hdr-Custom_Type_Support.
 
-You can use them with pgxscan too, here is an example of a struct with pgtype.Text field:
+In order to use them with pgxscan you must specify your custom types by value, not by a pointer.
+Let's take the pgx custom type pgtype.Text as an example:
 
 	type User struct {
 		UserID string
-		Name   string
-		Bio    pgtype.Text
+		Name   *pgtype.Text // pgxscan won't be able to scan data into a field defined that way.
+		Bio    pgtype.Text // This is a valid use of pgx custom types, pgxscan will handle it easily.
 	}
 
-Note that you must specify pgtype.Text by value, not by a pointer. This will not work:
-
-	type User struct {
-		UserID string
-		Name   string
-		Bio    *pgtype.Text // pgxscan won't be able to scan data into a field defined that way.
-	}
-
-This happens because struct fields are always passed to the underlying pgx.Rows.Scan() as pointers,
-and if the field type is *pgtype.Text, pgx.Rows.Scan() will receive **pgtype.Text and
-pgx won't be able to handle that type, since only *pgtype.Text implements pgx custom type interface.
+This happens because struct fields are always passed to the underlying pgx.Rows.Scan() as addresses,
+and if the field type is *pgtype.Text, pgx.Rows.Scan() will receive **pgtype.Text.
+pgx can't handle that type, since only *pgtype.Text implements pgx custom type interface.
 
 Supported pgx version
 

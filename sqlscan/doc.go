@@ -25,32 +25,5 @@ it's as simple as this:
 	var users []*User
 	sqlscan.Query(ctx, &users, db, `SELECT user_id, name, email, age FROM users`)
 	// users variable now contains data from all rows.
-
-Types that implement sql Scanner
-
-sqlscan plays well with custom types that implement sql.Scanner interface, here is how you can use them:
-
-	type PostData struct {
-		Title   string
-		Text    string
-		Counter int
-	}
-
-	func (pd *PostData) Scan(value interface{}) error {
-		b, ok := value.([]byte)
-		if !ok {
-			return errors.New("Data.Scan: value isn't []byte")
-		}
-		return json.Unmarshal(b, &pd)
-	}
-
-	type Post struct {
-		PostID  string
-		OwnerID string
-		Data    *PostData
-	}
-
-Note that type implementing sql.Scanner (PostData struct in the example above)
-can be presented both by a pointer, as shown in Post struct and by value.
 */
 package sqlscan

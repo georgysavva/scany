@@ -24,6 +24,8 @@ By default, to get the corresponding column dbscan translates field name to snak
 To override this behavior, specify the column name in the `db` field tag.
 In the example above User struct is mapped to the following columns: "user_id", "first_name", "email".
 
+Embedded structs
+
 dbscan works recursively, a struct can contain embedded structs as well.
 It allows reusing models in different queries. Structs can be embedded both by value and by a pointer.
 Note that, nested non-embedded structs aren't allowed, this decision was made due to simplicity.
@@ -31,6 +33,11 @@ By default, dbscan maps fields from embedded structs to columns as-is and doesn'
 this simulates the behavior of major SQL databases in case of a JOIN.
 To add a prefix to all fields of the embedded struct specify it in the `db` field tag,
 dbscan uses "." as a separator, for example:
+
+	type Row struct {
+		*User
+		Post `db:"post"`
+	}
 
 	type User struct {
 		UserID string
@@ -42,23 +49,41 @@ dbscan uses "." as a separator, for example:
 		Text string
 	}
 
-	type Row struct {
-		*User
-		Post `db:"post"`
+Row struct is mapped to the following columns: "user_id", "email", "post.id", "post.text".
+
+Handling custom types and NULLs
+
+dbscan supports custom types and NULLs perfectly.
+You can work with them the same way as if you would be using your database library directly.
+Under the hood, dbscan passes all types that you provide to the underlying rows.Scan()
+and if the database library supports a type, dbscan supports it automatically, for example:
+
+	type User struct {
+		OptionalBio  *string
+		OptionalAge  CustomNullInt
+		Data         CustomData
+		OptionalData *CustomData
 	}
 
-Row struct is mapped to the following columns: "user_id", "email", "post.id", "post.text".
+	type CustomNullInt struct {
+		// Any fields that this custom type needs
+	}
+
+	type CustomData struct {
+		// Any fields that this custom type needs
+	}
+
+User struct is valid and every field will be scanned properly, the only condition for this
+is that your database library can handle *string, CustomNullInt, CustomData and *CustomData types.
+
+
+Ignored struct fields
 
 In order for dbscan to work with a field it must be exported, unexported fields will be ignored.
 This applied to embedded structs too, the type that is embedded must be exported.
 
 It's possible to explicitly mark a field as ignored for dbscan. To do this set `db:"-"` struct tag.
 By the way, it works for embedded structs as well, for example:
-
-	type Post struct {
-		ID   string
-		Text string
-	}
 
 	type Comment struct {
 		Post  `db:"-"`
@@ -67,12 +92,24 @@ By the way, it works for embedded structs as well, for example:
 		Likes int `db:"-"`
 	}
 
+	type Post struct {
+		ID   string
+		Text string
+	}
+
 Comment struct is mapped to the following columns: "id", "body".
+
+Struct scanning errors
 
 In case there is no corresponding field for a column dbscan returns an error,
 this forces to only select data from the database that application needs. And another way around,
 if a struct contains multiple fields that are mapped to the same column,
 dbscan won't be able to make the chose to which field to assign and will return an error, for example:
+
+	type Row struct {
+		User
+		Post
+	}
 
 	type User struct {
 		ID    string
@@ -82,11 +119,6 @@ dbscan won't be able to make the chose to which field to assign and will return 
 	type Post struct {
 		ID   string
 		Text string
-	}
-
-	type Row struct {
-		User
-		Post
 	}
 
 Row struct is invalid since both Row.User.ID and Row.Post.ID are mapped to the "id" column.
@@ -134,5 +166,11 @@ Manual rows iteration
 
 It's possible to manually control rows iteration but still use all scanning features of dbscan,
 see RowScanner for details.
+
+Implementing Rows interface
+
+dbscan can be used with any database library that has a concept of rows and can implement dbscan Rows interface.
+It's pretty likely that your rows type already implements Rows interface as-is, for example this is true for the standard *sql.Rows type.
+Or you just need a thin adapter how it was done for pgx.Rows in pgxscan, see pgxscan.RowsAdapter for details.
 */
 package dbscan
