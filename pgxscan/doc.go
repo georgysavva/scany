@@ -40,8 +40,8 @@ Let's take the pgx custom type pgtype.Text as an example:
 	}
 
 This happens because struct fields are always passed to the underlying pgx.Rows.Scan() as addresses,
-and if the field type is *pgtype.Text, pgx.Rows.Scan() will receive **pgtype.Text.
-pgx can't handle that type, since only *pgtype.Text implements pgx custom type interface.
+and if the field type is *pgtype.Text, pgx.Rows.Scan() will receive **pgtype.Text type.
+pgx can't handle **pgtype.Text, since only *pgtype.Text implements pgx custom type interface.
 
 Supported pgx version
 
