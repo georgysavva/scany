@@ -9,8 +9,9 @@ It's encouraged to read dbscan docs first to get familiar with all concepts and 
 
 How to use
 
-The most common way to use sqlscan is by calling Query or QueryOne function,
-it's as simple as this:
+The most common way to work with sqlscan is to call Select or Get functions.
+
+Use Select to query multiple records:
 
 	type User struct {
 		UserID string
@@ -21,9 +22,23 @@ it's as simple as this:
 
 	db, _ := sql.Open("postgres", "example-connection-url")
 
-	// Use Query to query multiple records.
 	var users []*User
-	sqlscan.Query(ctx, &users, db, `SELECT user_id, name, email, age FROM users`)
+	sqlscan.Select(ctx, &users, db, `SELECT user_id, name, email, age FROM users`)
 	// users variable now contains data from all rows.
+
+Use Get to query exactly one record:
+
+	type User struct {
+		UserID string
+		Name   string
+		Email  string
+		Age    int
+	}
+
+	db, _ := sql.Open("postgres", "example-connection-url")
+
+	var user User
+	sqlscan.Get(ctx, &user, db, `SELECT user_id, name, email, age FROM users WHERE user_id='bob'`)
+	// user variable now contains data from the single row.
 */
 package sqlscan

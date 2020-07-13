@@ -6,7 +6,7 @@ import (
 	"github.com/georgysavva/scany/pgxscan"
 )
 
-func ExampleQuery() {
+func ExampleSelect() {
 	type User struct {
 		ID    string `db:"user_id"`
 		Name  string
@@ -17,7 +17,7 @@ func ExampleQuery() {
 	db, _ := pgxpool.Connect(ctx, "example-connection-url")
 
 	var users []*User
-	if err := pgxscan.Query(
+	if err := pgxscan.Select(
 		ctx, &users, db, `SELECT user_id, name, email, age FROM users`,
 	); err != nil {
 		// Handle query or rows processing error.
@@ -25,7 +25,7 @@ func ExampleQuery() {
 	// users variable now contains data from all rows.
 }
 
-func ExampleQueryOne() {
+func ExampleGet() {
 	type User struct {
 		ID    string `db:"user_id"`
 		Name  string
@@ -36,8 +36,8 @@ func ExampleQueryOne() {
 	db, _ := pgxpool.Connect(ctx, "example-connection-url")
 
 	var user User
-	if err := pgxscan.QueryOne(
-		ctx, &user, db, `SELECT user_id, name, email, age FROM users WHERE id='bob'`,
+	if err := pgxscan.Get(
+		ctx, &user, db, `SELECT user_id, name, email, age FROM users WHERE user_id='bob'`,
 	); err != nil {
 		// Handle query or rows processing error.
 	}
@@ -73,7 +73,7 @@ func ExampleScanOne() {
 
 	// Query pgx.Rows from the database.
 	db, _ := pgxpool.Connect(ctx, "example-connection-url")
-	rows, _ := db.Query(ctx, `SELECT user_id, name, email, age FROM users WHERE id='bob'`)
+	rows, _ := db.Query(ctx, `SELECT user_id, name, email, age FROM users WHERE user_id='bob'`)
 
 	var user User
 	if err := pgxscan.ScanOne(&user, rows); err != nil {
