@@ -23,8 +23,8 @@ var (
 
 // Select is a high-level function that queries rows and calls the ScanAll function.
 // See ScanAll for details.
-func Select(ctx context.Context, dst interface{}, q Querier, query string, args ...interface{}) error {
-	rows, err := q.QueryContext(ctx, query, args...)
+func Select(ctx context.Context, db Querier, dst interface{}, query string, args ...interface{}) error {
+	rows, err := db.QueryContext(ctx, query, args...)
 	if err != nil {
 		return errors.Wrap(err, "scany: query multiple result rows")
 	}
@@ -34,8 +34,8 @@ func Select(ctx context.Context, dst interface{}, q Querier, query string, args 
 
 // Get is a high-level function that queries rows and calls the ScanOne function.
 // See ScanOne for details.
-func Get(ctx context.Context, dst interface{}, q Querier, query string, args ...interface{}) error {
-	rows, err := q.QueryContext(ctx, query, args...)
+func Get(ctx context.Context, db Querier, dst interface{}, query string, args ...interface{}) error {
+	rows, err := db.QueryContext(ctx, query, args...)
 	if err != nil {
 		return errors.Wrap(err, "scany: query one result row")
 	}

@@ -23,7 +23,7 @@ Use Select to query multiple records:
 	db, _ := pgxpool.Connect(ctx, "example-connection-url")
 
 	var users []*User
-	pgxscan.Select(ctx, &users, db, `SELECT user_id, name, email, age FROM users`)
+	pgxscan.Select(ctx, db, &users, `SELECT user_id, name, email, age FROM users`)
 	// users variable now contains data from all rows.
 
 Use Get to query exactly one record:
@@ -38,7 +38,7 @@ Use Get to query exactly one record:
 	db, _ := pgxpool.Connect(ctx, "example-connection-url")
 
 	var user User
-	pgxscan.Get(ctx, &user, db, `SELECT user_id, name, email, age FROM users WHERE user_id='bob'`)
+	pgxscan.Get(ctx, db, &user, `SELECT user_id, name, email, age FROM users WHERE user_id='bob'`)
 	// user variable now contains data from the single row.
 
 Note about pgx custom types

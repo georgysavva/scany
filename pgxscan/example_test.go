@@ -18,7 +18,7 @@ func ExampleSelect() {
 
 	var users []*User
 	if err := pgxscan.Select(
-		ctx, &users, db, `SELECT user_id, name, email, age FROM users`,
+		ctx, db, &users, `SELECT user_id, name, email, age FROM users`,
 	); err != nil {
 		// Handle query or rows processing error.
 	}
@@ -37,7 +37,7 @@ func ExampleGet() {
 
 	var user User
 	if err := pgxscan.Get(
-		ctx, &user, db, `SELECT user_id, name, email, age FROM users WHERE user_id='bob'`,
+		ctx, db, &user, `SELECT user_id, name, email, age FROM users WHERE user_id='bob'`,
 	); err != nil {
 		// Handle query or rows processing error.
 	}

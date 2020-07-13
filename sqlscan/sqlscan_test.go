@@ -40,7 +40,7 @@ func TestSelect(t *testing.T) {
 	}
 
 	var got []*testModel
-	err := sqlscan.Select(ctx, &got, testDB, query)
+	err := sqlscan.Select(ctx, testDB, &got, query)
 	require.NoError(t, err)
 
 	assert.Equal(t, expected, got)
@@ -57,7 +57,7 @@ func TestSelect_queryError_propagatesAndWrapsErr(t *testing.T) {
 	expectedErr := "scany: query multiple result rows: ERROR: column \"baz\" does not exist (SQLSTATE 42703)"
 
 	dst := &[]*testModel{}
-	err := sqlscan.Select(ctx, dst, testDB, query)
+	err := sqlscan.Select(ctx, testDB, dst, query)
 
 	assert.EqualError(t, err, expectedErr)
 }
@@ -70,7 +70,7 @@ func TestGet(t *testing.T) {
 	expected := testModel{Foo: "foo val", Bar: "bar val"}
 
 	var got testModel
-	err := sqlscan.Get(ctx, &got, testDB, query)
+	err := sqlscan.Get(ctx, testDB, &got, query)
 	require.NoError(t, err)
 
 	assert.Equal(t, expected, got)
@@ -84,7 +84,7 @@ func TestGet_queryError_propagatesAndWrapsErr(t *testing.T) {
 	expectedErr := "scany: query one result row: ERROR: column \"baz\" does not exist (SQLSTATE 42703)"
 
 	dst := &testModel{}
-	err := sqlscan.Get(ctx, dst, testDB, query)
+	err := sqlscan.Get(ctx, testDB, dst, query)
 
 	assert.EqualError(t, err, expectedErr)
 }
