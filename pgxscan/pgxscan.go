@@ -22,9 +22,9 @@ var (
 	_ Querier = *new(pgx.Tx)
 )
 
-// Query is a high-level function that queries rows and calls the ScanAll function.
+// Select is a high-level function that queries rows and calls the ScanAll function.
 // See ScanAll for details.
-func Query(ctx context.Context, dst interface{}, q Querier, query string, args ...interface{}) error {
+func Select(ctx context.Context, dst interface{}, q Querier, query string, args ...interface{}) error {
 	rows, err := q.Query(ctx, query, args...)
 	if err != nil {
 		return errors.Wrap(err, "scany: query multiple result rows")
@@ -33,9 +33,9 @@ func Query(ctx context.Context, dst interface{}, q Querier, query string, args .
 	return errors.WithStack(err)
 }
 
-// QueryOne is a high-level function that queries rows and calls the ScanOne function.
+// Get is a high-level function that queries rows and calls the ScanOne function.
 // See ScanOne for details.
-func QueryOne(ctx context.Context, dst interface{}, q Querier, query string, args ...interface{}) error {
+func Get(ctx context.Context, dst interface{}, q Querier, query string, args ...interface{}) error {
 	rows, err := q.Query(ctx, query, args...)
 	if err != nil {
 		return errors.Wrap(err, "scany: query one result row")

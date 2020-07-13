@@ -9,8 +9,9 @@ It's encouraged to read dbscan docs first to get familiar with all concepts and 
 
 How to use
 
-The most common way to use pgxscan is by calling Query or QueryOne function,
-it's as simple as this:
+The most common way to work with pgxscan is to call Select or Get functions.
+
+Use Select to query multiple records:
 
 	type User struct {
 		UserID string
@@ -21,10 +22,24 @@ it's as simple as this:
 
 	db, _ := pgxpool.Connect(ctx, "example-connection-url")
 
-	// Use Query to query multiple records.
 	var users []*User
-	pgxscan.Query(ctx, &users, db, `SELECT user_id, name, email, age FROM users`)
+	pgxscan.Select(ctx, &users, db, `SELECT user_id, name, email, age FROM users`)
 	// users variable now contains data from all rows.
+
+Use Get to query exactly one record:
+
+	type User struct {
+		UserID string
+		Name   string
+		Email  string
+		Age    int
+	}
+
+	db, _ := pgxpool.Connect(ctx, "example-connection-url")
+
+	var user User
+	pgxscan.Get(ctx, &user, db, `SELECT user_id, name, email, age FROM users WHERE user_id='bob'`)
+	// user variable now contains data from the single row.
 
 Note about pgx custom types
 
