@@ -23,7 +23,7 @@ Use Select to query multiple records:
 	db, _ := sql.Open("postgres", "example-connection-url")
 
 	var users []*User
-	sqlscan.Select(ctx, &users, db, `SELECT user_id, name, email, age FROM users`)
+	sqlscan.Select(ctx, db, &users, `SELECT user_id, name, email, age FROM users`)
 	// users variable now contains data from all rows.
 
 Use Get to query exactly one record:
@@ -38,7 +38,7 @@ Use Get to query exactly one record:
 	db, _ := sql.Open("postgres", "example-connection-url")
 
 	var user User
-	sqlscan.Get(ctx, &user, db, `SELECT user_id, name, email, age FROM users WHERE user_id='bob'`)
+	sqlscan.Get(ctx, db, &user, `SELECT user_id, name, email, age FROM users WHERE user_id='bob'`)
 	// user variable now contains data from the single row.
 */
 package sqlscan
