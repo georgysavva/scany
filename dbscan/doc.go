@@ -24,6 +24,9 @@ By default, to get the corresponding column dbscan translates field name to snak
 To override this behavior, specify the column name in the `db` field tag.
 In the example above User struct is mapped to the following columns: "user_id", "first_name", "email".
 
+In case there is no corresponding field for a column dbscan returns an error,
+this forces to only select data from the database that application needs.
+
 Embedded structs
 
 dbscan works recursively, a struct can contain embedded structs as well.
@@ -34,13 +37,13 @@ this simulates the behavior of major SQL databases in case of a JOIN.
 To add a prefix to all fields of the embedded struct specify it in the `db` field tag,
 dbscan uses "." as a separator, for example:
 
-	type Row struct {
+	type UserPost struct {
 		*User
 		Post `db:"post"`
 	}
 
 	type User struct {
-		UserID string
+		ID string
 		Email  string
 	}
 
@@ -49,7 +52,7 @@ dbscan uses "." as a separator, for example:
 		Text string
 	}
 
-Row struct is mapped to the following columns: "user_id", "email", "post.id", "post.text".
+UserPost struct is mapped to the following columns: "id", "email", "post.id", "post.text".
 
 Handling custom types and NULLs
 
@@ -76,7 +79,6 @@ and if the database library supports a type, dbscan supports it automatically, f
 User struct is valid and every field will be scanned properly, the only condition for this
 is that your database library can handle *string, CustomNullInt, CustomData and *CustomData types.
 
-
 Ignored struct fields
 
 In order for dbscan to work with a field it must be exported, unexported fields will be ignored.
@@ -99,29 +101,33 @@ By the way, it works for embedded structs as well, for example:
 
 Comment struct is mapped to the following columns: "id", "body".
 
-Struct scanning errors
+Ambiguous struct fields
 
-In case there is no corresponding field for a column dbscan returns an error,
-this forces to only select data from the database that application needs. And another way around,
-if a struct contains multiple fields that are mapped to the same column,
-dbscan won't be able to make the chose to which field to assign and will return an error, for example:
+If a struct contains multiple fields that are mapped to the same column,
+dbscan will assign to the outermost and topmost field, for example:
 
-	type Row struct {
+	type UserPost struct {
 		User
 		Post
 	}
 
-	type User struct {
-		ID    string
-		Email string
-	}
-
 	type Post struct {
-		ID   string
-		Text string
+		PostID string
+		Text   string
+		UserID string
 	}
 
-Row struct is invalid since both Row.User.ID and Row.Post.ID are mapped to the "id" column.
+	type User struct {
+		UserID string
+		Email  string
+	}
+
+UserPost struct is mapped to the following columns: "user_id", "email", "post_id", "text".
+But both UserPost.User.UserID and UserPost.Post.UserID are mapped to the "user_id" column,
+since the User struct is embedded above the Post struct in the UserPost type,
+UserPost.User.UserID will receive data from the "user_id" and UserPost.Post.UserID will remain empty.
+Note that you can't access it as UserPost.UserID though. it's an error for Go, and
+you need to use the full version: UserPost.User.UserID
 
 Scanning into map
 

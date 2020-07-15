@@ -4,79 +4,83 @@ import (
 	"reflect"
 	"regexp"
 	"strings"
-
-	"github.com/pkg/errors"
 )
 
 var dbStructTagKey = "db"
 
+type toTraverse struct {
+	Type         reflect.Type
+	IndexPrefix  []int
+	ColumnPrefix string
+}
+
 func getColumnToFieldIndexMap(structType reflect.Type) (map[string][]int, error) {
 	result := make(map[string][]int, structType.NumField())
+	var queue []*toTraverse
+	queue = append(queue, &toTraverse{Type: structType, IndexPrefix: nil, ColumnPrefix: ""})
+	for len(queue) > 0 {
+		traversal := queue[0]
+		queue = queue[1:]
+		structType := traversal.Type
+		for i := 0; i < structType.NumField(); i++ {
+			field := structType.Field(i)
 
-	setColumn := func(column string, index []int) error {
-		if otherIndex, ok := result[column]; ok {
-			return errors.Errorf(
-				"scany: Column must have exactly one field pointing to it; "+
-					"found 2 fields with indexes %d and %d pointing to '%s' in %v",
-				otherIndex, index, column, structType,
-			)
-		}
-		result[column] = index
-		return nil
-	}
-
-	for i := 0; i < structType.NumField(); i++ {
-		field := structType.Field(i)
-
-		if field.PkgPath != "" {
-			// Field is unexported, skip it.
-			continue
-		}
-
-		dbTag := field.Tag.Get(dbStructTagKey)
-
-		if dbTag == "-" {
-			// Field is ignored, skip it.
-			continue
-		}
-
-		if field.Anonymous {
-			childType := field.Type
-			if field.Type.Kind() == reflect.Ptr {
-				childType = field.Type.Elem()
+			if field.PkgPath != "" {
+				// Field is unexported, skip it.
+				continue
 			}
-			if childType.Kind() == reflect.Struct {
-				// Field is embedded struct or pointer to struct.
-				childMap, err := getColumnToFieldIndexMap(childType)
-				if err != nil {
-					return nil, errors.WithStack(err)
+
+			dbTag := field.Tag.Get(dbStructTagKey)
+
+			if dbTag == "-" {
+				// Field is ignored, skip it.
+				continue
+			}
+			index := append(traversal.IndexPrefix, field.Index...)
+			if field.Anonymous {
+				childType := field.Type
+				if field.Type.Kind() == reflect.Ptr {
+					childType = field.Type.Elem()
 				}
-				for childColumn, childIndex := range childMap {
-					column := childColumn
+				if childType.Kind() == reflect.Struct {
+					// Field is embedded struct or pointer to struct.
+
 					// If "db" tag is present for embedded struct
 					// use it with "." to prefix all column from the embedded struct.
 					// the default behavior is to propagate columns as is.
-					if dbTag != "" {
-						column = dbTag + "." + column
-					}
-					index := append(field.Index, childIndex...)
-					if err := setColumn(column, index); err != nil {
-						return nil, errors.WithStack(err)
-					}
+					columnPrefix := buildColumn(traversal.ColumnPrefix, dbTag)
+					queue = append(queue, &toTraverse{
+						Type:         childType,
+						IndexPrefix:  index,
+						ColumnPrefix: columnPrefix,
+					})
+					continue
 				}
-				continue
+			}
+
+			column := dbTag
+			if dbTag == "" {
+				column = toSnakeCase(field.Name)
+			}
+			finalColumn := buildColumn(traversal.ColumnPrefix, column)
+
+			if _, exists := result[finalColumn]; !exists {
+				result[finalColumn] = index
 			}
 		}
+	}
 
-		column := dbTag
-		if dbTag == "" {
-			column = toSnakeCase(field.Name)
-		}
-		if err := setColumn(column, field.Index); err != nil {
-			return nil, errors.WithStack(err)
+	return result, nil
+}
+
+func buildColumn(parts ...string) string {
+	var notEmptyParts []string
+	for _, p := range parts {
+		if p != "" {
+			notEmptyParts = append(notEmptyParts, p)
 		}
 	}
-	return result, nil
+	return strings.Join(notEmptyParts, ".")
 }
 
 func initializeNested(structValue reflect.Value, fieldIndex []int) {
