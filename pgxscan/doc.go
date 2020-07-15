@@ -14,7 +14,7 @@ The most common way to work with pgxscan is to call Select or Get functions.
 Use Select to query multiple records:
 
 	type User struct {
-		UserID string
+		ID string
 		Name   string
 		Email  string
 		Age    int
@@ -23,13 +23,13 @@ Use Select to query multiple records:
 	db, _ := pgxpool.Connect(ctx, "example-connection-url")
 
 	var users []*User
-	pgxscan.Select(ctx, db, &users, `SELECT user_id, name, email, age FROM users`)
+	pgxscan.Select(ctx, db, &users, `SELECT id, name, email, age FROM users`)
 	// users variable now contains data from all rows.
 
 Use Get to query exactly one record:
 
 	type User struct {
-		UserID string
+		ID string
 		Name   string
 		Email  string
 		Age    int
@@ -38,7 +38,7 @@ Use Get to query exactly one record:
 	db, _ := pgxpool.Connect(ctx, "example-connection-url")
 
 	var user User
-	pgxscan.Get(ctx, db, &user, `SELECT user_id, name, email, age FROM users WHERE user_id='bob'`)
+	pgxscan.Get(ctx, db, &user, `SELECT id, name, email, age FROM users WHERE id='bob'`)
 	// user variable now contains data from the single row.
 
 Note about pgx custom types
@@ -49,7 +49,7 @@ In order to use them with pgxscan you must specify your custom types by value, n
 Let's take the pgx custom type pgtype.Text as an example:
 
 	type User struct {
-		UserID string
+		ID string
 		Name   *pgtype.Text // pgxscan won't be able to scan data into a field defined that way.
 		Bio    pgtype.Text // This is a valid use of pgx custom types, pgxscan will handle it easily.
 	}

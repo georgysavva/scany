@@ -39,7 +39,7 @@ import (
 )
 
 type User struct {
-	UserID string
+	ID string
 	Name   string
 	Email  string
 	Age    int
@@ -50,7 +50,7 @@ func main() {
 	db, _ := sql.Open("postgres", "example-connection-url")
 
 	var users []*User
-	sqlscan.Select(ctx, db, &users, `SELECT user_id, name, email, age FROM users`)
+	sqlscan.Select(ctx, db, &users, `SELECT id, name, email, age FROM users`)
 	// users variable now contains data from all rows.
 }
 ```
@@ -73,7 +73,7 @@ import (
 )
 
 type User struct {
-	UserID string
+	ID string
 	Name   string
 	Email  string
 	Age    int
@@ -84,7 +84,7 @@ func main() {
 	db, _ := pgxpool.Connect(ctx, "example-connection-url")
 
 	var users []*User
-	pgxscan.Select(ctx, db, &users, `SELECT user_id, name, email, age FROM users`)
+	pgxscan.Select(ctx, db, &users, `SELECT id, name, email, age FROM users`)
 	// users variable now contains data from all rows.
 }
 ```

@@ -19,13 +19,32 @@ type BarNested struct {
 	BarNested string
 }
 
-type nestedUnexported struct {
-	FooNested string
-	BarNested string
-}
-
 type jsonObj struct {
 	Key string
+}
+
+type NestedLevel1 struct {
+	NestedLevel2
+}
+
+type NestedLevel2 struct {
+	Foo string
+}
+
+type NestedWithTagLevel1 struct {
+	NestedWithTagLevel2 `db:"nested2"`
+}
+
+type NestedWithTagLevel2 struct {
+	Bar string `db:"bar_column"`
+}
+
+type AmbiguousNested1 struct {
+	Foo string
+}
+
+type AmbiguousNested2 struct {
+	Foo string
 }
 
 func TestRowScanner_Scan_structDestination(t *testing.T) {
@@ -128,6 +147,19 @@ func TestRowScanner_Scan_structDestination(t *testing.T) {
 			},
 		},
 		{
+			name: "multiple level embedded struct",
+			query: `
+				SELECT 'foo val' AS foo, 'bar val' AS "nested1.nested2.bar_column"
+			`,
+			expected: struct {
+				NestedLevel1
+				NestedWithTagLevel1 `db:"nested1"`
+			}{
+				NestedLevel1:        NestedLevel1{NestedLevel2{Foo: "foo val"}},
+				NestedWithTagLevel1: NestedWithTagLevel1{NestedWithTagLevel2{Bar: "bar val"}},
+			},
+		},
+		{
 			name: "embedded struct by ptr is initialized and filled",
 			query: `
 				SELECT 'foo val' AS foo, 'bar val' AS bar,
@@ -174,6 +206,31 @@ func TestRowScanner_Scan_structDestination(t *testing.T) {
 				FooNested: FooNested{},
 				Foo:       "foo nested val",
 				Bar:       "bar nested val",
+			},
+		},
+		{
+			name: "ambiguous fields: scanned in the topmost field",
+			query: `
+				SELECT 'foo val' as foo
+			`,
+			expected: struct {
+				AmbiguousNested1
+				AmbiguousNested2
+			}{
+				AmbiguousNested1: AmbiguousNested1{Foo: "foo val"},
+			},
+		},
+		{
+			name: "ambiguous fields: scanned in the outermost field",
+			query: `
+				SELECT 'foo val' as foo
+			`,
+			expected: struct {
+				AmbiguousNested1
+				AmbiguousNested2
+				Foo string
+			}{
+				Foo: "foo val",
 			},
 		},
 		{
@@ -242,6 +299,11 @@ func TestRowScanner_Scan_structDestination(t *testing.T) {
 	}
 }
 
+type nestedUnexported struct {
+	FooNested string
+	BarNested string
+}
+
 func TestRowScanner_Scan_invalidStructDestination_returnsErr(t *testing.T) {
 	t.Parallel()
 	cases := []struct {
@@ -300,19 +362,6 @@ func TestRowScanner_Scan_invalidStructDestination_returnsErr(t *testing.T) {
 			}{},
 			expectedErr: "scany: column: 'foo_nested': no corresponding field found, or it's unexported in " +
 				"struct { Nested dbscan_test.FooNested; Foo string; Bar string }",
-		},
-		{
-			name: "fields contain duplicate tags",
-			query: `
-				SELECT 'foo val' AS foo_column, 'bar val' AS bar
-			`,
-			dst: &struct {
-				Foo string `db:"foo_column"`
-				Bar string `db:"foo_column"`
-			}{},
-			expectedErr: "scany: Column must have exactly one field pointing to it; " +
-				"found 2 fields with indexes [0] and [1] pointing to 'foo_column' in " +
-				"struct { Foo string \"db:\\\"foo_column\\\"\"; Bar string \"db:\\\"foo_column\\\"\" }",
 		},
 		{
 			name: "field type does not match with column type",
