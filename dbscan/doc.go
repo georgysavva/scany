@@ -43,8 +43,8 @@ dbscan uses "." as a separator, for example:
 	}
 
 	type User struct {
-		ID string
-		Email  string
+		ID    string
+		Email string
 	}
 
 	type Post struct {

@@ -14,10 +14,10 @@ The most common way to work with pgxscan is to call Select or Get functions.
 Use Select to query multiple records:
 
 	type User struct {
-		ID string
-		Name   string
-		Email  string
-		Age    int
+		ID    string
+		Name  string
+		Email string
+		Age   int
 	}
 
 	db, _ := pgxpool.Connect(ctx, "example-connection-url")
@@ -29,10 +29,10 @@ Use Select to query multiple records:
 Use Get to query exactly one record:
 
 	type User struct {
-		ID string
-		Name   string
-		Email  string
-		Age    int
+		ID    string
+		Name  string
+		Email string
+		Age   int
 	}
 
 	db, _ := pgxpool.Connect(ctx, "example-connection-url")
@@ -49,12 +49,12 @@ In order to use them with pgxscan you must specify your custom types by value, n
 Let's take the pgx custom type pgtype.Text as an example:
 
 	type User struct {
-		ID string
-		Name   *pgtype.Text // pgxscan won't be able to scan data into a field defined that way.
-		Bio    pgtype.Text // This is a valid use of pgx custom types, pgxscan will handle it easily.
+		ID   string
+		Name *pgtype.Text // pgxscan won't be able to scan data into a field defined that way.
+		Bio  pgtype.Text // This is a valid use of pgx custom types, pgxscan will handle it easily.
 	}
 
-This happens because struct fields are always passed to the underlying pgx.Rows.Scan() as addresses,
+This happens because struct fields are always passed to the underlying pgx.Rows.Scan() by pointer,
 and if the field type is *pgtype.Text, pgx.Rows.Scan() will receive **pgtype.Text type.
 pgx can't handle **pgtype.Text, since only *pgtype.Text implements pgx custom type interface.
 
