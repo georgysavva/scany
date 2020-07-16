@@ -14,10 +14,10 @@ The most common way to work with sqlscan is to call Select or Get functions.
 Use Select to query multiple records:
 
 	type User struct {
-		ID string
-		Name   string
-		Email  string
-		Age    int
+		ID    string
+		Name  string
+		Email string
+		Age   int
 	}
 
 	db, _ := sql.Open("postgres", "example-connection-url")
@@ -29,10 +29,10 @@ Use Select to query multiple records:
 Use Get to query exactly one record:
 
 	type User struct {
-		ID string
-		Name   string
-		Email  string
-		Age    int
+		ID    string
+		Name  string
+		Email string
+		Age   int
 	}
 
 	db, _ := sql.Open("postgres", "example-connection-url")

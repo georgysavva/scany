@@ -20,11 +20,11 @@ The main feature of dbscan is the ability to scan rows data into structs.
 	dbscan.ScanAll(&users, rows)
 	// users variable now contains data from all rows.
 
-By default, to get the corresponding column dbscan translates field name to snake case.
+By default, to get the corresponding database column dbscan translates struct field name to snake case.
 To override this behavior, specify the column name in the `db` field tag.
 In the example above User struct is mapped to the following columns: "user_id", "first_name", "email".
 
-In case there is no corresponding field for a column dbscan returns an error,
+If selected rows contain a column that doesn't have a corresponding struct field dbscan returns an error,
 this forces to only select data from the database that application needs.
 
 Embedded structs
@@ -32,8 +32,8 @@ Embedded structs
 dbscan works recursively, a struct can contain embedded structs as well.
 It allows reusing models in different queries. Structs can be embedded both by value and by a pointer.
 Note that, nested non-embedded structs aren't allowed, this decision was made due to simplicity.
-By default, dbscan maps fields from embedded structs to columns as-is and doesn't add any prefix,
-this simulates the behavior of major SQL databases in case of a JOIN.
+By default, dbscan maps fields from embedded structs to database columns without any prefix,
+this simulates the behavior of SQL databases in case of a JOIN.
 To add a prefix to all fields of the embedded struct specify it in the `db` field tag,
 dbscan uses "." as a separator, for example:
 
@@ -43,8 +43,8 @@ dbscan uses "." as a separator, for example:
 	}
 
 	type User struct {
-		ID string
-		Email  string
+		ID    string
+		Email string
 	}
 
 	type Post struct {
@@ -103,7 +103,7 @@ Comment struct is mapped to the following columns: "id", "body".
 
 Ambiguous struct fields
 
-If a struct contains multiple fields that are mapped to the same column,
+If a struct contains multiple fields that are mapped to the same database column,
 dbscan will assign to the outermost and topmost field, for example:
 
 	type UserPost struct {
@@ -125,14 +125,14 @@ dbscan will assign to the outermost and topmost field, for example:
 UserPost struct is mapped to the following columns: "user_id", "email", "post_id", "text".
 But both UserPost.User.UserID and UserPost.Post.UserID are mapped to the "user_id" column,
 since the User struct is embedded above the Post struct in the UserPost type,
-UserPost.User.UserID will receive data from the "user_id" and UserPost.Post.UserID will remain empty.
+UserPost.User.UserID will receive data from the "user_id" column and UserPost.Post.UserID will remain empty.
 Note that you can't access it as UserPost.UserID though. it's an error for Go, and
 you need to use the full version: UserPost.User.UserID
 
 Scanning into map
 
 Apart from scanning into structs, dbscan can handle maps,
-in that case, it uses column name as the map key and column data as the map value, for example:
+in that case, it uses database column name as the map key and column data as the map value, for example:
 
 	// Query rows from the database that implement dbscan.Rows interface.
 	var rows dbscan.Rows
