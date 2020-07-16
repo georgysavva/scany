@@ -39,10 +39,10 @@ import (
 )
 
 type User struct {
-	ID string
-	Name   string
-	Email  string
-	Age    int
+	ID    string
+	Name  string
+	Email string
+	Age   int
 }
 
 func main() {
@@ -73,10 +73,10 @@ import (
 )
 
 type User struct {
-	ID string
-	Name   string
-	Email  string
-	Age    int
+	ID    string
+	Name  string
+	Email string
+	Age   int
 }
 
 func main() {
