@@ -20,6 +20,10 @@ so any database with `database/sql` driver is supported.
 It also works with [pgx](https://github.com/jackc/pgx) - specific library for PostgreSQL. 
 Apart from the out of the box support, scany can be easily extended to work with almost any database library.
 
+Note that, scany isn't an ORM. First of all, it works only in one direction: 
+it scans data into Go objects from the database, but it can't build database queries based on those objects.
+Secondly, it doesn't know anything about relations between objects e.g: one to many, many to many.
+
 ## Install
 
 ```
