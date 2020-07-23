@@ -8,8 +8,12 @@ env:
   global:
     - GO111MODULE=on
 
+before_install:
+  - wget -qO- https://binaries.cockroachdb.com/cockroach-v20.1.3.linux-amd64.tgz | tar  xvz
+  - cp -i cockroach-v20.1.3.linux-amd64/cockroach /usr/local/bin/
+
 script:
-  - go test -v -race  -coverprofile=coverage.txt -covermode=atomic ./...
+  - go test -v -race  -coverprofile=coverage.txt -covermode=atomic ./... --cockroach-binary cockroach
 
 after_success:
   - bash <(curl -s https://codecov.io/bash)
