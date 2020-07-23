@@ -17,7 +17,7 @@ with just one function call and don't bother with rows iteration.
 
 scany isn't limited to any specific database. It integrates with `database/sql`, 
 so any database with `database/sql` driver is supported. 
-It also works with [pgx](https://github.com/jackc/pgx) native interface. 
+It also works with [pgx](https://github.com/jackc/pgx) library native interface. 
 Apart from the out of the box support, scany can be easily extended to work with almost any database library.
 
 Note that, scany isn't an ORM. First of all, it works only in one direction: 
@@ -94,7 +94,7 @@ func main() {
 ```
 
 Use [`pgxscan`](https://pkg.go.dev/github.com/georgysavva/scany/pgxscan) 
-package to work with `pgx` library. 
+package to work with `pgx` library native interface. 
 
 ## How to use with other database libraries
 
