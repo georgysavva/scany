@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
 	"github.com/georgysavva/scany/dbscan"
@@ -589,7 +588,7 @@ func TestRowScanner_Scan_primitiveTypeDestination(t *testing.T) {
 
 func TestRowScanner_Scan_primitiveTypeDestinationDoesNotMatchWithColumnType_returnsErr(t *testing.T) {
 	t.Parallel()
-	query := `
+	const query = `
 		SELECT 'foo val' AS foo
 	`
 	rows := queryRows(t, query)
@@ -601,7 +600,7 @@ func TestRowScanner_Scan_primitiveTypeDestinationDoesNotMatchWithColumnType_retu
 
 func TestRowScanner_Scan_primitiveTypeDestinationRowsContainMoreThanOneColumn_returnsErr(t *testing.T) {
 	t.Parallel()
-	query := `
+	const query = `
 		SELECT 'foo val' AS foo, 'bar val' AS bar
 	`
 	rows := queryRows(t, query)
@@ -651,7 +650,7 @@ func TestRowScanner_Scan_rowsContainDuplicateColumns_returnsErr(t *testing.T) {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			query := `
+			const query = `
 				SELECT 'foo val' AS foo, 'foo val' AS foo
 			`
 			rows := queryRows(t, query)
@@ -710,7 +709,7 @@ func TestRowScanner_Scan_invalidDst_returnsErr(t *testing.T) {
 
 func TestRowScanner_Scan_startCalledExactlyOnce(t *testing.T) {
 	t.Parallel()
-	query := `
+	const query = `
 			SELECT *
 			FROM (
 				VALUES ('foo val'), ('foo val 2'), ('foo val 3')
@@ -718,22 +717,10 @@ func TestRowScanner_Scan_startCalledExactlyOnce(t *testing.T) {
 		`
 	rows := queryRows(t, query)
 	defer rows.Close()
-	mockStart := dbscan.NewMockStartScannerFunc()
-	rs := dbscan.NewRowScannerWithStart(rows, mockStart.Execute)
-	mockStart.On("Execute", rs, mock.AnythingOfType("reflect.Value")).Return(nil).Run(func(args mock.Arguments) {
-		rs := args.Get(0).(*dbscan.RowScanner)
-		columns := []string{"foo"}
-		columnToFieldIndex := map[string][]int{"foo": {0}}
-		dbscan.PatchRowScanner(rs, columns, columnToFieldIndex, nil /* mapElementType */)
-	})
-	for rows.Next() {
-		dst := &struct {
-			Foo string
-		}{}
-		err := rs.Scan(dst)
-		require.NoError(t, err)
-	}
-	requireNoRowsErrorsAndClose(t, rows)
 
-	mockStart.AssertNumberOfCalls(t, "Execute", 1)
+	columns := []string{"foo"}
+	columnToFieldIndex := map[string][]int{"foo": {0}}
+	dbscan.DoTestRowScannerStartCalledExactlyOnce(t, rows, columns, columnToFieldIndex, nil /* mapElementType */)
+
+	requireNoRowsErrorsAndClose(t, rows)
 }
