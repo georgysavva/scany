@@ -4,6 +4,8 @@ import (
 	"reflect"
 )
 
+func NewMockStartScannerFunc() *mockStartScannerFunc { return &mockStartScannerFunc{} }
+
 func NewRowScannerWithStart(rows Rows, start startScannerFunc) *RowScanner {
 	return &RowScanner{rows: rows, start: start}
 }

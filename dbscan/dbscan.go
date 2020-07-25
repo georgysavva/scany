@@ -167,6 +167,8 @@ func scanSliceElement(rs *RowScanner, sliceMeta *sliceDestinationMeta) error {
 
 type startScannerFunc func(rs *RowScanner, dstValue reflect.Value) error
 
+//go:generate mockery --name startScannerFunc --inpackage
+
 // RowScanner embraces Rows and exposes the Scan method
 // that allows scanning data from the current row into the destination.
 // The first time the Scan method is called

@@ -8,7 +8,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/georgysavva/scany/dbscan"
-	"github.com/georgysavva/scany/internal/mocks"
 )
 
 type FooNested struct {
@@ -719,7 +718,7 @@ func TestRowScanner_Scan_startCalledExactlyOnce(t *testing.T) {
 		`
 	rows := queryRows(t, query)
 	defer rows.Close()
-	mockStart := &mocks.StartScannerFunc{}
+	mockStart := dbscan.NewMockStartScannerFunc()
 	rs := dbscan.NewRowScannerWithStart(rows, mockStart.Execute)
 	mockStart.On("Execute", rs, mock.AnythingOfType("reflect.Value")).Return(nil).Run(func(args mock.Arguments) {
 		rs := args.Get(0).(*dbscan.RowScanner)
