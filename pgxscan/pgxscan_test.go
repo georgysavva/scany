@@ -26,7 +26,7 @@ type testModel struct {
 
 func TestSelect(t *testing.T) {
 	t.Parallel()
-	query := `
+	const query = `
 		SELECT *
 		FROM (
 			VALUES ('foo val', 'bar val'), ('foo val 2', 'bar val 2'), ('foo val 3', 'bar val 3')
@@ -47,7 +47,7 @@ func TestSelect(t *testing.T) {
 
 func TestSelect_queryError_propagatesAndWrapsErr(t *testing.T) {
 	t.Parallel()
-	query := `
+	const query = `
 		SELECT foo, bar, baz
 		FROM (
 			VALUES ('foo val', 'bar val'), ('foo val 2', 'bar val 2'), ('foo val 3', 'bar val 3')
@@ -63,7 +63,7 @@ func TestSelect_queryError_propagatesAndWrapsErr(t *testing.T) {
 
 func TestGet(t *testing.T) {
 	t.Parallel()
-	query := `
+	const query = `
 		SELECT 'foo val' AS foo, 'bar val' AS bar
 	`
 	expected := testModel{Foo: "foo val", Bar: "bar val"}
@@ -77,7 +77,7 @@ func TestGet(t *testing.T) {
 
 func TestGet_queryError_propagatesAndWrapsErr(t *testing.T) {
 	t.Parallel()
-	query := `
+	const query = `
 		SELECT 'foo val' AS foo, 'bar val' AS bar, baz
 	`
 	expectedErr := "scany: query one result row: ERROR: column \"baz\" does not exist (SQLSTATE 42703)"
@@ -90,7 +90,7 @@ func TestGet_queryError_propagatesAndWrapsErr(t *testing.T) {
 
 func TestScanAll(t *testing.T) {
 	t.Parallel()
-	query := `
+	const query = `
 		SELECT *
 		FROM (
 			VALUES ('foo val', 'bar val'), ('foo val 2', 'bar val 2'), ('foo val 3', 'bar val 3')
@@ -113,7 +113,7 @@ func TestScanAll(t *testing.T) {
 
 func TestScanOne(t *testing.T) {
 	t.Parallel()
-	query := `
+	const query = `
 		SELECT 'foo val' AS foo, 'bar val' AS bar
 	`
 	expected := testModel{Foo: "foo val", Bar: "bar val"}
@@ -129,7 +129,7 @@ func TestScanOne(t *testing.T) {
 
 func TestScanOne_noRows_returnsNotFoundErr(t *testing.T) {
 	t.Parallel()
-	query := `
+	const query = `
 		SELECT NULL AS foo, NULL AS bar LIMIT 0;
 	`
 	rows, err := testDB.Query(ctx, query)
@@ -143,7 +143,7 @@ func TestScanOne_noRows_returnsNotFoundErr(t *testing.T) {
 
 func TestRowScanner_Scan(t *testing.T) {
 	t.Parallel()
-	query := `
+	const query = `
 		SELECT 'foo val' AS foo, 'bar val' AS bar
 	`
 	rows, err := testDB.Query(ctx, query)
@@ -163,7 +163,7 @@ func TestRowScanner_Scan(t *testing.T) {
 
 func TestScanRow(t *testing.T) {
 	t.Parallel()
-	query := `
+	const query = `
 		SELECT 'foo val' AS foo, 'bar val' AS bar
 	`
 	rows, err := testDB.Query(ctx, query)

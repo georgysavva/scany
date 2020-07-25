@@ -14,7 +14,7 @@ type toTraverse struct {
 	ColumnPrefix string
 }
 
-func getColumnToFieldIndexMap(structType reflect.Type) (map[string][]int, error) {
+func getColumnToFieldIndexMap(structType reflect.Type) map[string][]int {
 	result := make(map[string][]int, structType.NumField())
 	var queue []*toTraverse
 	queue = append(queue, &toTraverse{Type: structType, IndexPrefix: nil, ColumnPrefix: ""})
@@ -70,7 +70,7 @@ func getColumnToFieldIndexMap(structType reflect.Type) (map[string][]int, error)
 		}
 	}
 
-	return result, nil
+	return result
 }
 
 func buildColumn(parts ...string) string {
