@@ -6,7 +6,6 @@ linters:
     - dupl
     - errcheck
     - exhaustive
-    #    - exportloopref
     - goconst
     - gocritic
     - gocyclo
