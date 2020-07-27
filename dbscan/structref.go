@@ -102,9 +102,6 @@ var (
 	matchAllCapRe   = regexp.MustCompile("([a-z0-9])([A-Z])")
 )
 
-func tmp() {
-}
-
 func toSnakeCase(str string) string {
 	snake := matchFirstCapRe.ReplaceAllString(str, "${1}_${2}")
 	snake = matchAllCapRe.ReplaceAllString(snake, "${1}_${2}")
