@@ -14,7 +14,7 @@ type toTraverse struct {
 	ColumnPrefix string
 }
 
-func getColumnToFieldIndexMap(structType reflect.Type) (map[string][]int, error) {
+func getColumnToFieldIndexMap(structType reflect.Type) map[string][]int {
 	result := make(map[string][]int, structType.NumField())
 	var queue []*toTraverse
 	queue = append(queue, &toTraverse{Type: structType, IndexPrefix: nil, ColumnPrefix: ""})
@@ -70,7 +70,7 @@ func getColumnToFieldIndexMap(structType reflect.Type) (map[string][]int, error)
 		}
 	}
 
-	return result, nil
+	return result
 }
 
 func buildColumn(parts ...string) string {
@@ -97,8 +97,10 @@ func initializeNested(structValue reflect.Value, fieldIndex []int) {
 	}
 }
 
-var matchFirstCapRe = regexp.MustCompile("(.)([A-Z][a-z]+)")
-var matchAllCapRe = regexp.MustCompile("([a-z0-9])([A-Z])")
+var (
+	matchFirstCapRe = regexp.MustCompile("(.)([A-Z][a-z]+)")
+	matchAllCapRe   = regexp.MustCompile("([a-z0-9])([A-Z])")
+)
 
 func toSnakeCase(str string) string {
 	snake := matchFirstCapRe.ReplaceAllString(str, "${1}_${2}")

@@ -157,7 +157,7 @@ func TestScanAll(t *testing.T) {
 
 func TestScanAll_nonEmptySlice_resetsDestinationSlice(t *testing.T) {
 	t.Parallel()
-	query := `
+	const query = `
 		SELECT *
 		FROM (
 			VALUES ('foo val'), ('foo val 2'), ('foo val 3')
@@ -178,7 +178,7 @@ func TestScanAll_nonEmptySlice_resetsDestinationSlice(t *testing.T) {
 
 func TestScanAll_nonSliceDestination_returnsErr(t *testing.T) {
 	t.Parallel()
-	query := `
+	const query = `
 		SELECT *
 		FROM (
 			VALUES ('foo val'), ('foo val 2'), ('foo val 3')
@@ -197,7 +197,7 @@ func TestScanAll_nonSliceDestination_returnsErr(t *testing.T) {
 
 func TestScanAll_sliceByPointerToPointerDestination_returnsErr(t *testing.T) {
 	t.Parallel()
-	query := `
+	const query = `
 		SELECT *
 		FROM (
 			VALUES ('foo val'), ('foo val 2'), ('foo val 3')
@@ -214,7 +214,7 @@ func TestScanAll_sliceByPointerToPointerDestination_returnsErr(t *testing.T) {
 
 func TestScanAll_closedRows(t *testing.T) {
 	t.Parallel()
-	query := `
+	const query = `
 		SELECT *
 		FROM (
 			VALUES ('foo val'), ('foo val 2'), ('foo val 3')
@@ -234,7 +234,7 @@ func TestScanAll_closedRows(t *testing.T) {
 
 func TestScanOne(t *testing.T) {
 	t.Parallel()
-	query := `
+	const query = `
 		SELECT 'foo val' AS foo, 'bar val' AS bar
 	`
 	rows := queryRows(t, query)
@@ -253,7 +253,7 @@ func TestScanOne(t *testing.T) {
 
 func TestScanOne_zeroRows_returnsNotFoundErr(t *testing.T) {
 	t.Parallel()
-	query := `
+	const query = `
 		SELECT NULL AS foo LIMIT 0;
 	`
 	rows := queryRows(t, query)
@@ -267,7 +267,7 @@ func TestScanOne_zeroRows_returnsNotFoundErr(t *testing.T) {
 
 func TestScanOne_multipleRows_returnsErr(t *testing.T) {
 	t.Parallel()
-	query := `
+	const query = `
 		SELECT *
 		FROM (
 			VALUES ('foo val'), ('foo val 2'), ('foo val 3')
@@ -284,7 +284,7 @@ func TestScanOne_multipleRows_returnsErr(t *testing.T) {
 
 func TestScanRow(t *testing.T) {
 	t.Parallel()
-	query := `
+	const query = `
 		SELECT 'foo val' AS foo, 'bar val' AS bar
 	`
 	rows := queryRows(t, query)

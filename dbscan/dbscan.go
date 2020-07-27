@@ -54,10 +54,10 @@ func ScanOne(dst interface{}, rows Rows) error {
 // NotFound returns true if err is a not found error.
 // This error is returned by ScanOne if there were no rows.
 func NotFound(err error) bool {
-	return errors.Is(err, notFoundErr)
+	return errors.Is(err, errNotFound)
 }
 
-var notFoundErr = errors.New("scany: no row was found")
+var errNotFound = errors.New("scany: no row was found")
 
 type sliceDestinationMeta struct {
 	val             reflect.Value
@@ -103,7 +103,7 @@ func processRows(dst interface{}, rows Rows, multipleRows bool) error {
 	exactlyOneRow := !multipleRows
 	if exactlyOneRow {
 		if rowsAffected == 0 {
-			return errors.WithStack(notFoundErr)
+			return errors.WithStack(errNotFound)
 		} else if rowsAffected > 1 {
 			return errors.Errorf("scany: expected 1 row, got: %d", rowsAffected)
 		}
@@ -166,6 +166,8 @@ func scanSliceElement(rs *RowScanner, sliceMeta *sliceDestinationMeta) error {
 }
 
 type startScannerFunc func(rs *RowScanner, dstValue reflect.Value) error
+
+//go:generate mockery --name startScannerFunc --inpackage
 
 // RowScanner embraces Rows and exposes the Scan method
 // that allows scanning data from the current row into the destination.
@@ -243,11 +245,12 @@ func (rs *RowScanner) doScan(dstValue reflect.Value) error {
 		rs.started = true
 	}
 	var err error
-	if dstValue.Kind() == reflect.Struct {
+	switch dstValue.Kind() {
+	case reflect.Struct:
 		err = rs.scanStruct(dstValue)
-	} else if dstValue.Kind() == reflect.Map {
+	case reflect.Map:
 		err = rs.scanMap(dstValue)
-	} else {
+	default:
 		err = rs.scanPrimitive(dstValue)
 	}
 	return errors.WithStack(err)
@@ -263,9 +266,8 @@ func startScanner(rs *RowScanner, dstValue reflect.Value) error {
 		return errors.WithStack(err)
 	}
 	if dstValue.Kind() == reflect.Struct {
-		var err error
-		rs.columnToFieldIndex, err = getColumnToFieldIndexMap(dstValue.Type())
-		return errors.WithStack(err)
+		rs.columnToFieldIndex = getColumnToFieldIndexMap(dstValue.Type())
+		return nil
 	}
 	if dstValue.Kind() == reflect.Map {
 		mapType := dstValue.Type()

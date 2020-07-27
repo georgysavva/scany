@@ -1,0 +1,39 @@
+linters:
+  enable:
+    - bodyclose
+    - deadcode
+    - dogsled
+    - dupl
+    - errcheck
+    - exhaustive
+    - goconst
+    - gocritic
+    - gocyclo
+    - godot
+    - goerr113
+    - gofmt
+    - gofumpt
+    - goimports
+    - golint
+    - gomnd
+    - gosec
+    - gosimple
+    - govet
+    - ineffassign
+    - misspell
+    - nakedret
+    - noctx
+    - nolintlint
+    - scopelint
+    - sqlclosecheck
+    - staticcheck
+    - structcheck
+    - testpackage
+    - unconvert
+    - unparam
+    - unused
+    - varcheck
+
+linters-settings:
+  exhaustive:
+    default-signifies-exhaustive: true
