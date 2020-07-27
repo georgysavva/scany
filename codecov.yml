@@ -1,2 +1,2 @@
 ignore:
-  - "^mock_*.go"
+  - "mock_*.go"
