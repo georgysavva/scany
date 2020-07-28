@@ -1,4 +1,5 @@
 linters:
+  disable-all: true
   enable:
     - bodyclose
     - deadcode
@@ -6,12 +7,12 @@ linters:
     - dupl
     - errcheck
     - exhaustive
+    - gochecknoinits
     - goconst
     - gocritic
     - gocyclo
     - godot
     - goerr113
-    - gofmt
     - gofumpt
     - goimports
     - golint
@@ -20,6 +21,7 @@ linters:
     - gosimple
     - govet
     - ineffassign
+    - lll
     - misspell
     - nakedret
     - noctx
@@ -34,6 +36,47 @@ linters:
     - unused
     - varcheck
 
+  # don't enable:
+  # - asciicheck
+  # - depguard
+  # - exportloopref
+  # - funlen
+  # - gochecknoglobals
+  # - gocognit
+  # - godox
+  # - gofmt
+  # - goheader
+  # - gomodguard
+  # - goprintffuncname
+  # - interfacer
+  # - maligned
+  # - nestif
+  # - prealloc
+  # - rowserrcheck
+  # - stylecheck
+  # - whitespace
+  # - wsl
+
 linters-settings:
   exhaustive:
     default-signifies-exhaustive: true
+  goconst:
+    min-occurrences: 2
+  godot:
+    check-all: true
+  goimports:
+    local-prefixes: github.com/georgysavva/scany
+  misspell:
+    locale: US
+  unparam:
+    check-exported: true
+
+issues:
+  exclude-use-default: false
+  exclude-rules:
+    - linters:
+        - errcheck
+      text: Error return value of .((os\.)?std(out|err)\..*|.*Close|.*Flush|os\.Remove(All)?|.*print(f|ln)?|os\.(Un)?Setenv). is not checked
+      path: (example_test\.go|example_[0-9A-Za-z_-]+_test\.go)
+
+  max-same-issues: 0

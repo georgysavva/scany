@@ -11,6 +11,23 @@ import (
 	"github.com/georgysavva/scany/pgxscan"
 )
 
+type testModel struct {
+	Foo string
+	Bar string
+}
+
+const (
+	multipleRowsQuery = `
+		SELECT *
+		FROM (
+			VALUES ('foo val', 'bar val'), ('foo val 2', 'bar val 2'), ('foo val 3', 'bar val 3')
+		) AS t (foo, bar)
+	`
+	singleRowsQuery = `
+		SELECT 'foo val' AS foo, 'bar val' AS bar
+	`
+)
+
 func makeStrPtr(v string) *string { return &v }
 
 func queryRows(t *testing.T, query string) dbscan.Rows {
@@ -22,7 +39,7 @@ func queryRows(t *testing.T, query string) dbscan.Rows {
 }
 
 func scan(t *testing.T, dst interface{}, rows dbscan.Rows) error {
-	defer rows.Close()
+	defer rows.Close() // nolint: errcheck
 	rs := dbscan.NewRowScanner(rows)
 	rows.Next()
 	if err := rs.Scan(dst); err != nil {

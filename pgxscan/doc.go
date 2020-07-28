@@ -60,6 +60,6 @@ pgx can't handle **pgtype.Text, since only *pgtype.Text implements pgx custom ty
 
 Supported pgx version
 
-pgxscan only works with pgx v4. So the import path of your pgx must be: github.com/jackc/pgx/v4
+pgxscan only works with pgx v4. So the import path of your pgx must be: "github.com/jackc/pgx/v4".
 */
 package pgxscan

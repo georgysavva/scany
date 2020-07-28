@@ -381,7 +381,8 @@ func TestRowScanner_Scan_invalidStructDestination_returnsErr(t *testing.T) {
 				string
 				Foo string
 			}{},
-			expectedErr: "scany: column: 'string': no corresponding field found, or it's unexported in struct { string; Foo string }",
+			expectedErr: "scany: column: 'string': no corresponding field found, " +
+				"or it's unexported in struct { string; Foo string }",
 		},
 	}
 	for _, tc := range cases {
@@ -495,17 +496,15 @@ func TestRowScanner_Scan_invalidMapDestination_returnsErr(t *testing.T) {
 		expectedErr string
 	}{
 		{
-			name: "non string key",
-			query: `
-				SELECT 'foo val' AS foo, 'bar val' AS bar
-			`,
+			name:        "non string key",
+			query:       singleRowsQuery,
 			dst:         &map[int]interface{}{},
 			expectedErr: "scany: invalid type map[int]interface {}: map must have string key, got: int",
 		},
 		{
 			name: "value type does not match with column type",
 			query: `
-				SELECT 'foo val' AS foo, 'bar val' AS bar
+				SELECT 'foo val' AS foo
 			`,
 			dst:         &map[string]int{},
 			expectedErr: "scany: scan rows into map: can't scan into dest[0]: unable to assign to *int",
@@ -588,7 +587,7 @@ func TestRowScanner_Scan_primitiveTypeDestination(t *testing.T) {
 
 func TestRowScanner_Scan_primitiveTypeDestinationDoesNotMatchWithColumnType_returnsErr(t *testing.T) {
 	t.Parallel()
-	const query = `
+	query := `
 		SELECT 'foo val' AS foo
 	`
 	rows := queryRows(t, query)
@@ -600,8 +599,8 @@ func TestRowScanner_Scan_primitiveTypeDestinationDoesNotMatchWithColumnType_retu
 
 func TestRowScanner_Scan_primitiveTypeDestinationRowsContainMoreThanOneColumn_returnsErr(t *testing.T) {
 	t.Parallel()
-	const query = `
-		SELECT 'foo val' AS foo, 'bar val' AS bar
+	query := `
+		SELECT '1 val' AS column1, '2 val' AS column2
 	`
 	rows := queryRows(t, query)
 	expectedErr := "scany: to scan into a primitive type, columns number must be exactly 1, got: 2"
@@ -650,7 +649,7 @@ func TestRowScanner_Scan_rowsContainDuplicateColumns_returnsErr(t *testing.T) {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			const query = `
+			query := `
 				SELECT 'foo val' AS foo, 'foo val' AS foo
 			`
 			rows := queryRows(t, query)
@@ -709,18 +708,5 @@ func TestRowScanner_Scan_invalidDst_returnsErr(t *testing.T) {
 
 func TestRowScanner_Scan_startCalledExactlyOnce(t *testing.T) {
 	t.Parallel()
-	const query = `
-			SELECT *
-			FROM (
-				VALUES ('foo val'), ('foo val 2'), ('foo val 3')
-			) AS t (foo)
-		`
-	rows := queryRows(t, query)
-	defer rows.Close()
-
-	columns := []string{"foo"}
-	columnToFieldIndex := map[string][]int{"foo": {0}}
-	dbscan.DoTestRowScannerStartCalledExactlyOnce(t, rows, columns, columnToFieldIndex, nil /* mapElementType */)
-
-	requireNoRowsErrorsAndClose(t, rows)
+	dbscan.DoTestRowScannerStartCalledExactlyOnce(t, queryRows)
 }

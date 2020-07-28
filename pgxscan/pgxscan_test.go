@@ -24,14 +24,20 @@ type testModel struct {
 	Bar string
 }
 
-func TestSelect(t *testing.T) {
-	t.Parallel()
-	const query = `
+const (
+	multipleRowsQuery = `
 		SELECT *
 		FROM (
 			VALUES ('foo val', 'bar val'), ('foo val 2', 'bar val 2'), ('foo val 3', 'bar val 3')
 		) AS t (foo, bar)
 	`
+	singleRowsQuery = `
+		SELECT 'foo val' AS foo, 'bar val' AS bar
+	`
+)
+
+func TestSelect(t *testing.T) {
+	t.Parallel()
 	expected := []*testModel{
 		{Foo: "foo val", Bar: "bar val"},
 		{Foo: "foo val 2", Bar: "bar val 2"},
@@ -39,7 +45,7 @@ func TestSelect(t *testing.T) {
 	}
 
 	var got []*testModel
-	err := pgxscan.Select(ctx, testDB, &got, query)
+	err := pgxscan.Select(ctx, testDB, &got, multipleRowsQuery)
 	require.NoError(t, err)
 
 	assert.Equal(t, expected, got)
@@ -47,7 +53,7 @@ func TestSelect(t *testing.T) {
 
 func TestSelect_queryError_propagatesAndWrapsErr(t *testing.T) {
 	t.Parallel()
-	const query = `
+	query := `
 		SELECT foo, bar, baz
 		FROM (
 			VALUES ('foo val', 'bar val'), ('foo val 2', 'bar val 2'), ('foo val 3', 'bar val 3')
@@ -63,13 +69,10 @@ func TestSelect_queryError_propagatesAndWrapsErr(t *testing.T) {
 
 func TestGet(t *testing.T) {
 	t.Parallel()
-	const query = `
-		SELECT 'foo val' AS foo, 'bar val' AS bar
-	`
 	expected := testModel{Foo: "foo val", Bar: "bar val"}
 
 	var got testModel
-	err := pgxscan.Get(ctx, testDB, &got, query)
+	err := pgxscan.Get(ctx, testDB, &got, singleRowsQuery)
 	require.NoError(t, err)
 
 	assert.Equal(t, expected, got)
@@ -77,7 +80,7 @@ func TestGet(t *testing.T) {
 
 func TestGet_queryError_propagatesAndWrapsErr(t *testing.T) {
 	t.Parallel()
-	const query = `
+	query := `
 		SELECT 'foo val' AS foo, 'bar val' AS bar, baz
 	`
 	expectedErr := "scany: query one result row: ERROR: column \"baz\" does not exist (SQLSTATE 42703)"
@@ -90,18 +93,12 @@ func TestGet_queryError_propagatesAndWrapsErr(t *testing.T) {
 
 func TestScanAll(t *testing.T) {
 	t.Parallel()
-	const query = `
-		SELECT *
-		FROM (
-			VALUES ('foo val', 'bar val'), ('foo val 2', 'bar val 2'), ('foo val 3', 'bar val 3')
-		) AS t (foo, bar)
-	`
 	expected := []*testModel{
 		{Foo: "foo val", Bar: "bar val"},
 		{Foo: "foo val 2", Bar: "bar val 2"},
 		{Foo: "foo val 3", Bar: "bar val 3"},
 	}
-	rows, err := testDB.Query(ctx, query)
+	rows, err := testDB.Query(ctx, multipleRowsQuery)
 	require.NoError(t, err)
 
 	var got []*testModel
@@ -113,11 +110,8 @@ func TestScanAll(t *testing.T) {
 
 func TestScanOne(t *testing.T) {
 	t.Parallel()
-	const query = `
-		SELECT 'foo val' AS foo, 'bar val' AS bar
-	`
 	expected := testModel{Foo: "foo val", Bar: "bar val"}
-	rows, err := testDB.Query(ctx, query)
+	rows, err := testDB.Query(ctx, singleRowsQuery)
 	require.NoError(t, err)
 
 	var got testModel
@@ -129,7 +123,7 @@ func TestScanOne(t *testing.T) {
 
 func TestScanOne_noRows_returnsNotFoundErr(t *testing.T) {
 	t.Parallel()
-	const query = `
+	query := `
 		SELECT NULL AS foo, NULL AS bar LIMIT 0;
 	`
 	rows, err := testDB.Query(ctx, query)
@@ -143,10 +137,7 @@ func TestScanOne_noRows_returnsNotFoundErr(t *testing.T) {
 
 func TestRowScanner_Scan(t *testing.T) {
 	t.Parallel()
-	const query = `
-		SELECT 'foo val' AS foo, 'bar val' AS bar
-	`
-	rows, err := testDB.Query(ctx, query)
+	rows, err := testDB.Query(ctx, singleRowsQuery)
 	require.NoError(t, err)
 	defer rows.Close()
 	rs := pgxscan.NewRowScanner(rows)
@@ -163,10 +154,7 @@ func TestRowScanner_Scan(t *testing.T) {
 
 func TestScanRow(t *testing.T) {
 	t.Parallel()
-	const query = `
-		SELECT 'foo val' AS foo, 'bar val' AS bar
-	`
-	rows, err := testDB.Query(ctx, query)
+	rows, err := testDB.Query(ctx, singleRowsQuery)
 	require.NoError(t, err)
 	defer rows.Close()
 	rows.Next()

@@ -176,7 +176,8 @@ see RowScanner for details.
 Implementing Rows interface
 
 dbscan can be used with any database library that has a concept of rows and can implement dbscan Rows interface.
-It's pretty likely that your rows type already implements Rows interface as-is, for example this is true for the standard *sql.Rows type.
+It's pretty likely that your rows type already implements Rows interface as-is,
+for example this is true for the standard *sql.Rows type.
 Or you just need a thin adapter how it was done for pgx.Rows in pgxscan, see pgxscan.RowsAdapter for details.
 */
 package dbscan

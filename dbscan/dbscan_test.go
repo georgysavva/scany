@@ -157,19 +157,14 @@ func TestScanAll(t *testing.T) {
 
 func TestScanAll_nonEmptySlice_resetsDestinationSlice(t *testing.T) {
 	t.Parallel()
-	const query = `
-		SELECT *
-		FROM (
-			VALUES ('foo val'), ('foo val 2'), ('foo val 3')
-		) AS t (foo)
-	`
-	type model struct {
-		Foo string
+	rows := queryRows(t, multipleRowsQuery)
+	expected := []*testModel{
+		{Foo: "foo val", Bar: "bar val"},
+		{Foo: "foo val 2", Bar: "bar val 2"},
+		{Foo: "foo val 3", Bar: "bar val 3"},
 	}
-	rows := queryRows(t, query)
-	expected := []*model{{Foo: "foo val"}, {Foo: "foo val 2"}, {Foo: "foo val 3"}}
 
-	got := []*model{{Foo: "junk data"}, {Foo: "junk data 2"}}
+	got := []*testModel{{Foo: "foo junk val", Bar: "bar junk val"}}
 	err := dbscan.ScanAll(&got, rows)
 	require.NoError(t, err)
 
@@ -178,17 +173,9 @@ func TestScanAll_nonEmptySlice_resetsDestinationSlice(t *testing.T) {
 
 func TestScanAll_nonSliceDestination_returnsErr(t *testing.T) {
 	t.Parallel()
-	const query = `
-		SELECT *
-		FROM (
-			VALUES ('foo val'), ('foo val 2'), ('foo val 3')
-		) AS t (foo)
-	`
-	rows := queryRows(t, query)
-	dst := &struct {
-		Foo string
-	}{}
-	expectedErr := "scany: destination must be a slice, got: struct { Foo string }"
+	rows := queryRows(t, multipleRowsQuery)
+	dst := &testModel{}
+	expectedErr := "scany: destination must be a slice, got: dbscan_test.testModel"
 
 	err := dbscan.ScanAll(dst, rows)
 
@@ -197,15 +184,9 @@ func TestScanAll_nonSliceDestination_returnsErr(t *testing.T) {
 
 func TestScanAll_sliceByPointerToPointerDestination_returnsErr(t *testing.T) {
 	t.Parallel()
-	const query = `
-		SELECT *
-		FROM (
-			VALUES ('foo val'), ('foo val 2'), ('foo val 3')
-		) AS t (foo)
-	`
-	rows := queryRows(t, query)
-	dst := new(*[]struct{ Foo string })
-	expectedErr := "scany: destination must be a slice, got: *[]struct { Foo string }"
+	rows := queryRows(t, multipleRowsQuery)
+	dst := new(*[]testModel)
+	expectedErr := "scany: destination must be a slice, got: *[]dbscan_test.testModel"
 
 	err := dbscan.ScanAll(dst, rows)
 
@@ -214,18 +195,12 @@ func TestScanAll_sliceByPointerToPointerDestination_returnsErr(t *testing.T) {
 
 func TestScanAll_closedRows(t *testing.T) {
 	t.Parallel()
-	const query = `
-		SELECT *
-		FROM (
-			VALUES ('foo val'), ('foo val 2'), ('foo val 3')
-		) AS t (foo)
-	`
-	rows := queryRows(t, query)
+	rows := queryRows(t, multipleRowsQuery)
 	for rows.Next() {
 	}
 	requireNoRowsErrorsAndClose(t, rows)
 
-	var got []struct{ Foo string }
+	var got []testModel
 	err := dbscan.ScanAll(&got, rows)
 	require.NoError(t, err)
 
@@ -234,17 +209,10 @@ func TestScanAll_closedRows(t *testing.T) {
 
 func TestScanOne(t *testing.T) {
 	t.Parallel()
-	const query = `
-		SELECT 'foo val' AS foo, 'bar val' AS bar
-	`
-	rows := queryRows(t, query)
-	type model struct {
-		Foo string
-		Bar string
-	}
-	expected := model{Foo: "foo val", Bar: "bar val"}
+	rows := queryRows(t, singleRowsQuery)
+	expected := testModel{Foo: "foo val", Bar: "bar val"}
 
-	got := model{}
+	got := testModel{}
 	err := dbscan.ScanOne(&got, rows)
 	require.NoError(t, err)
 
@@ -253,7 +221,7 @@ func TestScanOne(t *testing.T) {
 
 func TestScanOne_zeroRows_returnsNotFoundErr(t *testing.T) {
 	t.Parallel()
-	const query = `
+	query := `
 		SELECT NULL AS foo LIMIT 0;
 	`
 	rows := queryRows(t, query)
@@ -267,16 +235,10 @@ func TestScanOne_zeroRows_returnsNotFoundErr(t *testing.T) {
 
 func TestScanOne_multipleRows_returnsErr(t *testing.T) {
 	t.Parallel()
-	const query = `
-		SELECT *
-		FROM (
-			VALUES ('foo val'), ('foo val 2'), ('foo val 3')
-		) AS t (foo)
-	`
-	rows := queryRows(t, query)
+	rows := queryRows(t, multipleRowsQuery)
 	expectedErr := "scany: expected 1 row, got: 3"
 
-	dst := &struct{ Foo string }{}
+	dst := &testModel{}
 	err := dbscan.ScanOne(dst, rows)
 
 	assert.EqualError(t, err, expectedErr)
@@ -284,19 +246,12 @@ func TestScanOne_multipleRows_returnsErr(t *testing.T) {
 
 func TestScanRow(t *testing.T) {
 	t.Parallel()
-	const query = `
-		SELECT 'foo val' AS foo, 'bar val' AS bar
-	`
-	rows := queryRows(t, query)
-	defer rows.Close()
-	type model struct {
-		Foo string
-		Bar string
-	}
+	rows := queryRows(t, singleRowsQuery)
+	defer rows.Close() // nolint: errcheck
 	rows.Next()
-	expected := model{Foo: "foo val", Bar: "bar val"}
+	expected := testModel{Foo: "foo val", Bar: "bar val"}
 
-	var got model
+	var got testModel
 	err := dbscan.ScanRow(&got, rows)
 	require.NoError(t, err)
 	requireNoRowsErrorsAndClose(t, rows)

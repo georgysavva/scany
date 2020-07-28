@@ -66,7 +66,7 @@ type sliceDestinationMeta struct {
 }
 
 func processRows(dst interface{}, rows Rows, multipleRows bool) error {
-	defer rows.Close()
+	defer rows.Close() // nolint: errcheck
 	var sliceMeta *sliceDestinationMeta
 	if multipleRows {
 		var err error
