@@ -54,6 +54,7 @@ linters:
   # - prealloc
   # - rowserrcheck
   # - stylecheck
+  # - typecheck
   # - whitespace
   # - wsl
 

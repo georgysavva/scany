@@ -49,23 +49,19 @@ func ExampleRowScanner() {
 	}
 
 	// Query rows from the database that implement Rows interface.
+	// You should also take care of handling rows error after iteration and closing them.
 	var rows dbscan.Rows
 
-	// Make sure rows are always closed.
-	defer rows.Close()
 	rs := dbscan.NewRowScanner(rows)
+
 	for rows.Next() {
+
 		var user User
 		if err := rs.Scan(&user); err != nil {
 			// Handle row scanning error.
 		}
 		// user variable now contains data from the current row.
-	}
-	if err := rows.Err(); err != nil {
-		// Handle rows final error.
-	}
-	if err := rows.Close(); err != nil {
-		// Handle rows closing error.
+
 	}
 }
 
@@ -78,21 +74,16 @@ func ExampleScanRow() {
 	}
 
 	// Query rows from the database that implement Rows interface.
+	// You should also take care of handling rows error after iteration and closing them.
 	var rows dbscan.Rows
 
-	// Make sure rows are always closed.
-	defer rows.Close()
 	for rows.Next() {
+
 		var user User
 		if err := dbscan.ScanRow(&user, rows); err != nil {
 			// Handle row scanning error.
 		}
 		// user variable now contains data from the current row.
-	}
-	if err := rows.Err(); err != nil {
-		// Handle rows final error.
-	}
-	if err := rows.Close(); err != nil {
-		// Handle rows closing error.
+
 	}
 }
