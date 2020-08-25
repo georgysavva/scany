@@ -3,7 +3,7 @@
 dbscan works with abstract Rows interface and doesn't depend on any specific database or a library.
 If a type implements Rows it can leverage the full functionality of this package.
 
-Scanning into struct
+Mapping struct field to database column
 
 The main feature of dbscan is the ability to scan rows data into structs.
 
@@ -54,7 +54,7 @@ dbscan uses "." as a separator, for example:
 
 UserPost struct is mapped to the following columns: "id", "email", "post.id", "post.text".
 
-Handling custom types and NULLs
+NULLs and custom types
 
 dbscan supports custom types and NULLs perfectly.
 You can work with them the same way as if you would be using your database library directly.

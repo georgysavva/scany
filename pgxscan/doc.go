@@ -5,7 +5,8 @@ Essentially, pgxscan is a wrapper around github.com/georgysavva/scany/dbscan pac
 pgxscan connects github.com/jackc/pgx/v4 native interface with dbscan functionality.
 It contains adapters that are meant to work with pgx.Rows and proxy all calls to dbscan.
 pgxscan mirrors all capabilities provided by dbscan.
-It's encouraged to read dbscan docs first to get familiar with all concepts and features.
+It's encouraged to read dbscan docs first to get familiar with all concepts and features:
+https://pkg.go.dev/github.com/georgysavva/scany/dbscan
 
 How to use
 

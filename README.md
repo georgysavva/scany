@@ -25,6 +25,14 @@ Note that, scany isn't an ORM. First of all, it works only in one direction:
 it scans data into Go objects from the database, but it can't build database queries based on those objects.
 Secondly, it doesn't know anything about relations between objects e.g: one to many, many to many.
 
+## Features
+
+* Custom database column name via struct tag
+* Embedded structs 
+* NULLs and custom types support
+* Omitted struct fields
+* Apart from structs, support for other destination types: maps, slices and etc.
+
 ## Install
 
 ```
