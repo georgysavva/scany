@@ -2,12 +2,15 @@ package pgxscan_test
 
 import (
 	"context"
+	stderrors "errors"
 	"flag"
 	"os"
 	"testing"
 
 	"github.com/cockroachdb/cockroach-go/v2/testserver"
+	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -91,6 +94,19 @@ func TestGet_queryError_propagatesAndWrapsErr(t *testing.T) {
 	assert.EqualError(t, err, expectedErr)
 }
 
+func TestGet_noRows_returnsNotFoundErr(t *testing.T) {
+	t.Parallel()
+	query := `
+		SELECT NULL AS foo, NULL AS bar LIMIT 0;
+	`
+	var got testModel
+	err := pgxscan.Get(ctx, testDB, &got, query)
+
+	assert.True(t, pgxscan.NotFound(err))
+	assert.True(t, errors.Is(err, pgx.ErrNoRows))
+	assert.True(t, stderrors.Is(err, pgx.ErrNoRows))
+}
+
 func TestScanAll(t *testing.T) {
 	t.Parallel()
 	expected := []*testModel{
@@ -133,6 +149,8 @@ func TestScanOne_noRows_returnsNotFoundErr(t *testing.T) {
 	err = pgxscan.ScanOne(&got, rows)
 
 	assert.True(t, pgxscan.NotFound(err))
+	assert.True(t, errors.Is(err, pgx.ErrNoRows))
+	assert.True(t, stderrors.Is(err, pgx.ErrNoRows))
 }
 
 func TestRowScanner_Scan(t *testing.T) {

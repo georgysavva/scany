@@ -55,12 +55,18 @@ func ScanAll(dst interface{}, rows pgx.Rows) error {
 // See dbscan.ScanOne for details.
 func ScanOne(dst interface{}, rows pgx.Rows) error {
 	err := dbscan.ScanOne(dst, NewRowsAdapter(rows))
+	if NotFound(err) {
+		return errors.WithStack(pgx.ErrNoRows)
+	}
 	return errors.WithStack(err)
 }
 
 // NotFound is a wrapper around the dbscan.NotFound function.
 // See dbscan.NotFound for details.
 func NotFound(err error) bool {
+	if errors.Is(err, pgx.ErrNoRows) {
+		return true
+	}
 	return dbscan.NotFound(err)
 }
 

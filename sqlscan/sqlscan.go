@@ -54,12 +54,18 @@ func ScanAll(dst interface{}, rows *sql.Rows) error {
 // See dbscan.ScanOne for details.
 func ScanOne(dst interface{}, rows *sql.Rows) error {
 	err := dbscan.ScanOne(dst, rows)
+	if NotFound(err) {
+		return errors.WithStack(sql.ErrNoRows)
+	}
 	return errors.WithStack(err)
 }
 
 // NotFound is a wrapper around the dbscan.NotFound function.
 // See dbscan.NotFound for details.
 func NotFound(err error) bool {
+	if errors.Is(err, sql.ErrNoRows) {
+		return true
+	}
 	return dbscan.NotFound(err)
 }
 
