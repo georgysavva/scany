@@ -37,6 +37,9 @@ const (
 	singleRowsQuery = `
 		SELECT 'foo val' AS foo, 'bar val' AS bar
 	`
+	noRowsQuery = `
+		SELECT NULL AS foo, NULL AS bar LIMIT 0;
+    `
 )
 
 func TestSelect(t *testing.T) {
@@ -96,11 +99,8 @@ func TestGet_queryError_propagatesAndWrapsErr(t *testing.T) {
 
 func TestGet_noRows_returnsNotFoundErr(t *testing.T) {
 	t.Parallel()
-	query := `
-		SELECT NULL AS foo, NULL AS bar LIMIT 0;
-	`
 	var got testModel
-	err := pgxscan.Get(ctx, testDB, &got, query)
+	err := pgxscan.Get(ctx, testDB, &got, noRowsQuery)
 
 	assert.True(t, pgxscan.NotFound(err))
 	assert.True(t, errors.Is(err, pgx.ErrNoRows))
@@ -139,10 +139,7 @@ func TestScanOne(t *testing.T) {
 
 func TestScanOne_noRows_returnsNotFoundErr(t *testing.T) {
 	t.Parallel()
-	query := `
-		SELECT NULL AS foo, NULL AS bar LIMIT 0;
-	`
-	rows, err := testDB.Query(ctx, query)
+	rows, err := testDB.Query(ctx, noRowsQuery)
 	require.NoError(t, err)
 
 	var got testModel

@@ -37,6 +37,9 @@ const (
 	singleRowsQuery = `
 		SELECT 'foo val' AS foo, 'bar val' AS bar
 	`
+	noRowsQuery = `
+		SELECT NULL AS foo, NULL AS bar LIMIT 0;
+    `
 )
 
 func TestSelect(t *testing.T) {
@@ -96,11 +99,8 @@ func TestGet_queryError_propagatesAndWrapsErr(t *testing.T) {
 
 func TestGet_noRows_returnsNotFoundErr(t *testing.T) {
 	t.Parallel()
-	query := `
-		SELECT NULL AS foo, NULL AS bar LIMIT 0;
-	`
 	var got testModel
-	err := sqlscan.Get(ctx, testDB, &got, query)
+	err := sqlscan.Get(ctx, testDB, &got, noRowsQuery)
 
 	assert.True(t, sqlscan.NotFound(err))
 	assert.True(t, errors.Is(err, sql.ErrNoRows))
@@ -139,10 +139,7 @@ func TestScanOne(t *testing.T) {
 
 func TestScanOne_noRows_returnsNotFoundErr(t *testing.T) {
 	t.Parallel()
-	query := `
-		SELECT NULL AS foo, NULL AS bar LIMIT 0;
-	`
-	rows, err := testDB.Query(query)
+	rows, err := testDB.Query(noRowsQuery)
 	require.NoError(t, err)
 
 	var got testModel
