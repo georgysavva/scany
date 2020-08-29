@@ -97,16 +97,6 @@ func TestGet_queryError_propagatesAndWrapsErr(t *testing.T) {
 	assert.EqualError(t, err, expectedErr)
 }
 
-func TestGet_noRows_returnsNotFoundErr(t *testing.T) {
-	t.Parallel()
-	var got testModel
-	err := sqlscan.Get(ctx, testDB, &got, noRowsQuery)
-
-	assert.True(t, sqlscan.NotFound(err))
-	assert.True(t, errors.Is(err, sql.ErrNoRows))
-	assert.True(t, stderrors.Is(err, sql.ErrNoRows))
-}
-
 func TestScanAll(t *testing.T) {
 	t.Parallel()
 	expected := []*testModel{

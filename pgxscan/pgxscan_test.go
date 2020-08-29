@@ -97,16 +97,6 @@ func TestGet_queryError_propagatesAndWrapsErr(t *testing.T) {
 	assert.EqualError(t, err, expectedErr)
 }
 
-func TestGet_noRows_returnsNotFoundErr(t *testing.T) {
-	t.Parallel()
-	var got testModel
-	err := pgxscan.Get(ctx, testDB, &got, noRowsQuery)
-
-	assert.True(t, pgxscan.NotFound(err))
-	assert.True(t, errors.Is(err, pgx.ErrNoRows))
-	assert.True(t, stderrors.Is(err, pgx.ErrNoRows))
-}
-
 func TestScanAll(t *testing.T) {
 	t.Parallel()
 	expected := []*testModel{
