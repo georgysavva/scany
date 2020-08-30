@@ -2,12 +2,15 @@ package pgxscan_test
 
 import (
 	"context"
+	stderrors "errors"
 	"flag"
 	"os"
 	"testing"
 
 	"github.com/cockroachdb/cockroach-go/v2/testserver"
+	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -34,6 +37,9 @@ const (
 	singleRowsQuery = `
 		SELECT 'foo val' AS foo, 'bar val' AS bar
 	`
+	noRowsQuery = `
+		SELECT NULL AS foo, NULL AS bar LIMIT 0;
+    `
 )
 
 func TestSelect(t *testing.T) {
@@ -123,16 +129,15 @@ func TestScanOne(t *testing.T) {
 
 func TestScanOne_noRows_returnsNotFoundErr(t *testing.T) {
 	t.Parallel()
-	query := `
-		SELECT NULL AS foo, NULL AS bar LIMIT 0;
-	`
-	rows, err := testDB.Query(ctx, query)
+	rows, err := testDB.Query(ctx, noRowsQuery)
 	require.NoError(t, err)
 
 	var got testModel
 	err = pgxscan.ScanOne(&got, rows)
 
 	assert.True(t, pgxscan.NotFound(err))
+	assert.True(t, errors.Is(err, pgx.ErrNoRows))
+	assert.True(t, stderrors.Is(err, pgx.ErrNoRows))
 }
 
 func TestRowScanner_Scan(t *testing.T) {

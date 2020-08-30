@@ -3,12 +3,14 @@ package sqlscan_test
 import (
 	"context"
 	"database/sql"
+	stderrors "errors"
 	"flag"
 	"os"
 	"testing"
 
 	"github.com/cockroachdb/cockroach-go/v2/testserver"
 	_ "github.com/jackc/pgx/v4/stdlib"
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -35,6 +37,9 @@ const (
 	singleRowsQuery = `
 		SELECT 'foo val' AS foo, 'bar val' AS bar
 	`
+	noRowsQuery = `
+		SELECT NULL AS foo, NULL AS bar LIMIT 0;
+    `
 )
 
 func TestSelect(t *testing.T) {
@@ -124,16 +129,15 @@ func TestScanOne(t *testing.T) {
 
 func TestScanOne_noRows_returnsNotFoundErr(t *testing.T) {
 	t.Parallel()
-	query := `
-		SELECT NULL AS foo, NULL AS bar LIMIT 0;
-	`
-	rows, err := testDB.Query(query)
+	rows, err := testDB.Query(noRowsQuery)
 	require.NoError(t, err)
 
 	var got testModel
 	err = sqlscan.ScanOne(&got, rows)
 
 	assert.True(t, sqlscan.NotFound(err))
+	assert.True(t, errors.Is(err, sql.ErrNoRows))
+	assert.True(t, stderrors.Is(err, sql.ErrNoRows))
 }
 
 func TestRowScanner_Scan(t *testing.T) {
