@@ -51,8 +51,8 @@ func ScanAll(dst interface{}, rows *sql.Rows) error {
 }
 
 // ScanOne is a wrapper around the dbscan.ScanOne function.
-// See dbscan.ScanOne for details. If no rows are found we
-// return an `sql.ErrNoRows` error, otherwise nil.
+// See dbscan.ScanOne for details. If no rows are found it
+// returns an sql.ErrNoRows error.
 func ScanOne(dst interface{}, rows *sql.Rows) error {
 	err := dbscan.ScanOne(dst, rows)
 	if dbscan.NotFound(err) {

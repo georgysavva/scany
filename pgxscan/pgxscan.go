@@ -52,8 +52,8 @@ func ScanAll(dst interface{}, rows pgx.Rows) error {
 }
 
 // ScanOne is a wrapper around the dbscan.ScanOne function.
-// See dbscan.ScanOne for details. If no rows are found we
-// return a `pgx.ErrNoRows` error, otherwise nil.
+// See dbscan.ScanOne for details. If no rows are found it
+// returns a pgx.ErrNoRows error.
 func ScanOne(dst interface{}, rows pgx.Rows) error {
 	err := dbscan.ScanOne(dst, NewRowsAdapter(rows))
 	if dbscan.NotFound(err) {
