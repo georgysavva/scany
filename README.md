@@ -112,6 +112,12 @@ and can be integrated with any library that has a concept of rows.
 This particular package implements core scany features and contains all the logic.
 Both `sqlscan` and `pgxscan` use `dbscan` internally.
 
+## Comparisson with [sqlx](https://github.com/jmoiron/sqlx)
+
+* sqlx only works with `database/sql` standard library. scany isn't limited only to `database/sql`, it also supports [pgx](https://github.com/jackc/pgx) native interface and can be extended to work with any database library independent of `database/sql`
+* In terms of scanning and mapping abilities, scany provides all [features](https://github.com/georgysavva/scany#features) of sqlx
+* scany has a simpler API and much fewer concepts, so it's easier to start working with
+
 ## Supported Go versions 
 
 scany supports Go 1.13 and higher.
