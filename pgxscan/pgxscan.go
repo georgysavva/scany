@@ -19,7 +19,7 @@ type Querier interface {
 var (
 	_ Querier = &pgxpool.Pool{}
 	_ Querier = &pgx.Conn{}
-	_ Querier = *new(pgx.Tx)
+	_ Querier = pgx.Tx(nil)
 )
 
 // Select is a high-level function that queries rows and calls the ScanAll function.
