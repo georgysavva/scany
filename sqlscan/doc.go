@@ -4,42 +4,15 @@
 Essentially, sqlscan is a wrapper around github.com/georgysavva/scany/dbscan package.
 sqlscan connects database/sql with dbscan functionality.
 It contains adapters that are meant to work with *sql.Rows and proxy all calls to dbscan.
-sqlscan mirrors all capabilities provided by dbscan.
+sqlscan provides all capabilities available in dbscan.
 It's encouraged to read dbscan docs first to get familiar with all concepts and features:
 https://pkg.go.dev/github.com/georgysavva/scany/dbscan
 
-How to use
+Querying rows
 
-The most common way to work with sqlscan is to call Select or Get functions.
-
-Use Select to query multiple records:
-
-	type User struct {
-		ID    string
-		Name  string
-		Email string
-		Age   int
-	}
-
-	db, _ := sql.Open("postgres", "example-connection-url")
-
-	var users []*User
-	sqlscan.Select(ctx, db, &users, `SELECT id, name, email, age FROM users`)
-	// users variable now contains data from all rows.
-
-Use Get to query exactly one record:
-
-	type User struct {
-		ID    string
-		Name  string
-		Email string
-		Age   int
-	}
-
-	db, _ := sql.Open("postgres", "example-connection-url")
-
-	var user User
-	sqlscan.Get(ctx, db, &user, `SELECT id, name, email, age FROM users WHERE id='bob'`)
-	// user variable now contains data from the single row.
+sqlscan can query rows and work with *sql.DB, *sql.Conn or *sql.Tx directly.
+To support this it has two high-level functions Select and Get,
+they accept anything that implements Querier interface and query rows from it.
+This means that they can be used with *sql.DB, *sql.Conn or *sql.Tx.
 */
 package sqlscan

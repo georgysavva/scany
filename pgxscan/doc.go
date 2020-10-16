@@ -4,43 +4,16 @@
 Essentially, pgxscan is a wrapper around github.com/georgysavva/scany/dbscan package.
 pgxscan connects github.com/jackc/pgx/v4 native interface with dbscan functionality.
 It contains adapters that are meant to work with pgx.Rows and proxy all calls to dbscan.
-pgxscan mirrors all capabilities provided by dbscan.
+pgxscan provides all capabilities available in dbscan.
 It's encouraged to read dbscan docs first to get familiar with all concepts and features:
 https://pkg.go.dev/github.com/georgysavva/scany/dbscan
 
-How to use
+Querying rows
 
-The most common way to work with pgxscan is to call Select or Get functions.
-
-Use Select to query multiple records:
-
-	type User struct {
-		ID    string
-		Name  string
-		Email string
-		Age   int
-	}
-
-	db, _ := pgxpool.Connect(ctx, "example-connection-url")
-
-	var users []*User
-	pgxscan.Select(ctx, db, &users, `SELECT id, name, email, age FROM users`)
-	// users variable now contains data from all rows.
-
-Use Get to query exactly one record:
-
-	type User struct {
-		ID    string
-		Name  string
-		Email string
-		Age   int
-	}
-
-	db, _ := pgxpool.Connect(ctx, "example-connection-url")
-
-	var user User
-	pgxscan.Get(ctx, db, &user, `SELECT id, name, email, age FROM users WHERE id='bob'`)
-	// user variable now contains data from the single row.
+pgxscan can query rows and work with *pgxpool.Pool, *pgx.Conn or pgx.Tx directly.
+To support this it has two high-level functions Select and Get,
+they accept anything that implements Querier interface and query rows from it.
+This means that they can be used with *pgxpool.Pool, *pgx.Conn or pgx.Tx.
 
 Note about pgx custom types
 
