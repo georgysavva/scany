@@ -2,6 +2,7 @@ package dbscan_test
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -255,6 +256,17 @@ func TestRowScanner_Scan_structDestination(t *testing.T) {
 			}{
 				FooJSON: &jsonObj{Key: "key val"},
 				Foo:     "foo val",
+			},
+		},
+		{
+			name: "time field is filled from a timestamp column",
+			query: `
+				SELECT '2020-10-16 09:36:59+00:00'::timestamp AS foo
+			`,
+			expected: struct {
+				Foo time.Time
+			}{
+				Foo: time.Date(2020, 10, 16, 9, 36, 59, 0, time.UTC),
 			},
 		},
 		{
