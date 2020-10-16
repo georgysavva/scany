@@ -22,7 +22,7 @@ var (
 	_ Querier = pgx.Tx(nil)
 )
 
-// Select is a high-level function that queries rows and calls the ScanAll function.
+// Select is a high-level function that queries rows from Querier and calls the ScanAll function.
 // See ScanAll for details.
 func Select(ctx context.Context, db Querier, dst interface{}, query string, args ...interface{}) error {
 	rows, err := db.Query(ctx, query, args...)
@@ -33,7 +33,7 @@ func Select(ctx context.Context, db Querier, dst interface{}, query string, args
 	return errors.WithStack(err)
 }
 
-// Get is a high-level function that queries rows and calls the ScanOne function.
+// Get is a high-level function that queries rows from Querier and calls the ScanOne function.
 // See ScanOne for details.
 func Get(ctx context.Context, db Querier, dst interface{}, query string, args ...interface{}) error {
 	rows, err := db.Query(ctx, query, args...)
