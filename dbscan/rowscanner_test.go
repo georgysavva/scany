@@ -139,7 +139,7 @@ func TestRowScanner_Scan_structDestination(t *testing.T) {
 			},
 		},
 		{
-			name: "embedded struct with tag is filled from columns with prefix",
+			name: "embedded struct with tag is filled from columns with prefix from the tag",
 			query: `
 				SELECT 'foo val' AS foo, 'bar val' AS bar,
 					'foo nested val' as "foo_nested.foo_nested"
@@ -157,7 +157,7 @@ func TestRowScanner_Scan_structDestination(t *testing.T) {
 			},
 		},
 		{
-			name: "nested struct with tag is filled from columns with prefix",
+			name: "nested struct with tag is filled from columns with prefix from the tag",
 			query: `
 				SELECT 'foo val' AS foo, 'bar val' AS bar,
 					'foo nested val' as "foo_nested_prefix.foo_nested"

@@ -28,7 +28,7 @@ Secondly, it doesn't know anything about relations between objects e.g: one to m
 ## Features
 
 * Custom database column name via struct tag
-* Embedded structs 
+* Reusing structs via nesting or embedding 
 * NULLs and custom types support
 * Omitted struct fields
 * Apart from structs, support for other destination types: maps, slices and etc.

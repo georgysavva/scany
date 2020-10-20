@@ -27,24 +27,23 @@ In the example above User struct is mapped to the following columns: "user_id", 
 If selected rows contain a column that doesn't have a corresponding struct field dbscan returns an error,
 this forces to only select data from the database that application needs.
 
-Embedded structs
+Reusing structs
 
-dbscan works recursively, a struct can contain embedded structs as well.
-It allows reusing models in different queries. Structs can be embedded both by value and by a pointer.
-Note that, nested non-embedded structs aren't allowed, this decision was made due to simplicity.
-By default, dbscan maps fields from embedded structs to database columns without any prefix,
-this simulates the behavior of SQL databases in case of a JOIN.
-To add a prefix to all fields of the embedded struct specify it in the `db` field tag,
-dbscan uses "." as a separator, for example:
+dbscan works recursively, a struct can contain embedded or nested structs as well.
+It allows reusing models in different queries. Structs can be embedded or nested both by value and by a pointer.
+If you don't specify the `db` tag, dbscan maps fields from nested structs to database columns
+with the struct field name translated to snake case as the prefix,
+on the opposite, fields from embedded structs are mapped to database column without any prefix.
+dbscan uses "." to separate the prefix. Here is an example:
 
 	type UserPost struct {
 		*User
-		Post `db:"post"`
+		Post Post
 	}
 
 	type User struct {
-		ID    string
-		Email string
+		UserID string
+		Email  string
 	}
 
 	type Post struct {
@@ -52,7 +51,33 @@ dbscan uses "." as a separator, for example:
 		Text string
 	}
 
-UserPost struct is mapped to the following columns: "id", "email", "post.id", "post.text".
+UserPost struct is mapped to the following columns: "user_id", "email", "post.id", "post.text".
+
+To add a prefix to an embedded struct or change the prefix of a nested struct specify it in the `db` field tag.
+You can also use the empty tag `db:""` to remove the prefix of a nested struct. Here is an example:
+
+	type UserPostComment struct {
+		*User   `db:"user"`
+		Post    Post    `db:"p"`
+		Comment Comment `db:""`
+	}
+
+	type User struct {
+		UserID string
+		Email  string
+	}
+
+	type Post struct {
+		ID   string
+		Text string
+	}
+
+	type Comment struct {
+		CommentBody string
+	}
+
+UserPostComment struct is mapped to the following columns:
+"user.user_id", "user.email", "p.id", "p.text", "comment_body".
 
 NULLs and custom types
 
@@ -82,10 +107,10 @@ is that your database library can handle *string, CustomNullInt, CustomData and 
 Ignored struct fields
 
 In order for dbscan to work with a field it must be exported, unexported fields will be ignored.
-This applied to embedded structs too, the type that is embedded must be exported.
+The only exception is embedded structs, the type that is embedded might be unexported.
 
 It's possible to explicitly mark a field as ignored for dbscan. To do this set `db:"-"` struct tag.
-By the way, it works for embedded structs as well, for example:
+By the way, it works for nested and embedded structs as well, for example:
 
 	type Comment struct {
 		Post  `db:"-"`
