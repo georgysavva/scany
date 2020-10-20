@@ -25,47 +25,48 @@ func getColumnToFieldIndexMap(structType reflect.Type) map[string][]int {
 		for i := 0; i < structType.NumField(); i++ {
 			field := structType.Field(i)
 
-			if field.PkgPath != "" {
+			if field.PkgPath != "" && !field.Anonymous {
 				// Field is unexported, skip it.
 				continue
 			}
 
-			dbTag := field.Tag.Get(dbStructTagKey)
+			dbTag, dbTagPresent := field.Tag.Lookup(dbStructTagKey)
 
 			if dbTag == "-" {
 				// Field is ignored, skip it.
 				continue
 			}
 			index := append(traversal.IndexPrefix, field.Index...)
-			if field.Anonymous {
-				childType := field.Type
-				if field.Type.Kind() == reflect.Ptr {
-					childType = field.Type.Elem()
-				}
-				if childType.Kind() == reflect.Struct {
-					// Field is embedded struct or pointer to struct.
 
+			columnPart := dbTag
+			if !dbTagPresent {
+				columnPart = toSnakeCase(field.Name)
+			}
+			if !field.Anonymous {
+				column := buildColumn(traversal.ColumnPrefix, columnPart)
+
+				if _, exists := result[column]; !exists {
+					result[column] = index
+				}
+			}
+
+			childType := field.Type
+			if field.Type.Kind() == reflect.Ptr {
+				childType = field.Type.Elem()
+			}
+			if childType.Kind() == reflect.Struct {
+				if field.Anonymous {
 					// If "db" tag is present for embedded struct
 					// use it with "." to prefix all column from the embedded struct.
 					// the default behavior is to propagate columns as is.
-					columnPrefix := buildColumn(traversal.ColumnPrefix, dbTag)
-					queue = append(queue, &toTraverse{
-						Type:         childType,
-						IndexPrefix:  index,
-						ColumnPrefix: columnPrefix,
-					})
-					continue
+					columnPart = dbTag
 				}
-			}
-
-			column := dbTag
-			if dbTag == "" {
-				column = toSnakeCase(field.Name)
-			}
-			finalColumn := buildColumn(traversal.ColumnPrefix, column)
-
-			if _, exists := result[finalColumn]; !exists {
-				result[finalColumn] = index
+				columnPrefix := buildColumn(traversal.ColumnPrefix, columnPart)
+				queue = append(queue, &toTraverse{
+					Type:         childType,
+					IndexPrefix:  index,
+					ColumnPrefix: columnPrefix,
+				})
 			}
 		}
 	}
