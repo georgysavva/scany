@@ -18,12 +18,13 @@ type BarNested struct {
 	BarNested string
 }
 
-type jsonObj struct {
+type JsonObj struct {
 	Key string
 }
 
 type NestedLevel1 struct {
 	NestedLevel2
+	Nested2 NestedLevel2
 }
 
 type NestedLevel2 struct {
@@ -31,11 +32,12 @@ type NestedLevel2 struct {
 }
 
 type NestedWithTagLevel1 struct {
-	NestedWithTagLevel2 `db:"nested2"`
+	NestedWithTagLevel2 `db:"nested2_tag_embedded"`
+	Nested2Tag          NestedWithTagLevel2 `db:"nested2_tag"`
 }
 
 type NestedWithTagLevel2 struct {
-	Bar string `db:"bar_column"`
+	Foo string `db:"foo_column"`
 }
 
 type AmbiguousNested1 struct {
@@ -93,20 +95,7 @@ func TestRowScanner_Scan_structDestination(t *testing.T) {
 			},
 		},
 		{
-			name: "field with ignore tag isn't filled",
-			query: `
-				SELECT 'foo val' AS foo
-			`,
-			expected: struct {
-				Foo string `db:"-"`
-				Bar string `db:"foo"`
-			}{
-				Foo: "",
-				Bar: "foo val",
-			},
-		},
-		{
-			name: "embedded struct is filled from columns without prefix",
+			name: "embedded structs are filled from columns without prefix",
 			query: `
 				SELECT 'foo val' AS foo, 'bar val' AS bar,
 					'foo nested val' as foo_nested, 'bar nested val' as bar_nested
@@ -128,13 +117,35 @@ func TestRowScanner_Scan_structDestination(t *testing.T) {
 			},
 		},
 		{
+			name: "nested structs without tag are filled from columns with snake case prefix",
+			query: `
+				SELECT 'foo val' AS foo, 'bar val' AS bar,
+					'foo nested val' as "foo_nested.foo_nested", 'bar nested val' as "bar_nested.bar_nested"
+			`,
+			expected: struct {
+				FooNested FooNested
+				BarNested BarNested
+				Foo       string
+				Bar       string
+			}{
+				FooNested: FooNested{
+					FooNested: "foo nested val",
+				},
+				BarNested: BarNested{
+					BarNested: "bar nested val",
+				},
+				Foo: "foo val",
+				Bar: "bar val",
+			},
+		},
+		{
 			name: "embedded struct with tag is filled from columns with prefix",
 			query: `
 				SELECT 'foo val' AS foo, 'bar val' AS bar,
-					'foo nested val' as "nested.foo_nested"
+					'foo nested val' as "foo_nested.foo_nested"
 			`,
 			expected: struct {
-				FooNested `db:"nested"`
+				FooNested `db:"foo_nested"`
 				Foo       string
 				Bar       string
 			}{
@@ -146,30 +157,17 @@ func TestRowScanner_Scan_structDestination(t *testing.T) {
 			},
 		},
 		{
-			name: "multiple level embedded struct",
-			query: `
-				SELECT 'foo val' AS foo, 'bar val' AS "nested1.nested2.bar_column"
-			`,
-			expected: struct {
-				NestedLevel1
-				NestedWithTagLevel1 `db:"nested1"`
-			}{
-				NestedLevel1:        NestedLevel1{NestedLevel2{Foo: "foo val"}},
-				NestedWithTagLevel1: NestedWithTagLevel1{NestedWithTagLevel2{Bar: "bar val"}},
-			},
-		},
-		{
-			name: "embedded struct by ptr is initialized and filled",
+			name: "nested struct with tag is filled from columns with prefix",
 			query: `
 				SELECT 'foo val' AS foo, 'bar val' AS bar,
-					'foo nested val' as foo_nested
+					'foo nested val' as "foo_nested_prefix.foo_nested"
 			`,
 			expected: struct {
-				*FooNested
-				Foo string
-				Bar string
+				FooNested FooNested `db:"foo_nested_prefix"`
+				Foo       string
+				Bar       string
 			}{
-				FooNested: &FooNested{
+				FooNested: FooNested{
 					FooNested: "foo nested val",
 				},
 				Foo: "foo val",
@@ -177,34 +175,132 @@ func TestRowScanner_Scan_structDestination(t *testing.T) {
 			},
 		},
 		{
-			name: "embedded struct by ptr isn't initialized if not filled",
+			name: "nested struct with empty tag is filled from columns without prefix",
+			query: `
+				SELECT 'foo val' AS foo, 'bar val' AS bar,
+					'foo nested val' as "foo_nested"
+			`,
+			expected: struct {
+				FooNested FooNested `db:""`
+				Foo       string
+				Bar       string
+			}{
+				FooNested: FooNested{
+					FooNested: "foo nested val",
+				},
+				Foo: "foo val",
+				Bar: "bar val",
+			},
+		},
+		{
+			name: "embedded struct is unexported",
+			query: `
+				SELECT 'foo val' AS foo, 'bar val' AS bar,
+					'foo nested val' as foo_nested, 'bar nested val' as bar_nested
+			`,
+			expected: struct {
+				nestedUnexported
+				Foo string
+				Bar string
+			}{
+				nestedUnexported: nestedUnexported{
+					FooNested: "foo nested val",
+					BarNested: "bar nested val",
+				},
+				Foo: "foo val",
+				Bar: "bar val",
+			},
+		},
+		{
+			name: "nested struct is unexported",
+			query: `
+				SELECT 'foo val' AS foo, 'bar val' AS bar,
+					'foo nested val' as "nested.foo_nested", 'bar nested val' as "nested.bar_nested"
+			`,
+			expected: struct {
+				Nested nestedUnexported
+				Foo    string
+				Bar    string
+			}{
+				Nested: nestedUnexported{
+					FooNested: "foo nested val",
+					BarNested: "bar nested val",
+				},
+				Foo: "foo val",
+				Bar: "bar val",
+			},
+		},
+		{
+			name: "multiple level nested structs",
+			query: `
+				SELECT 'foo val 1' AS "foo", 'foo val 2' AS "nested2.foo", 
+				'foo val 3' AS "nested1_tag_embedded.nested2_tag_embedded.foo_column",
+				'foo val 4' AS "nested1_tag_embedded.nested2_tag.foo_column",
+				'foo val 5' AS "nested1.foo", 'foo val 6' AS "nested1.nested2.foo", 
+				'foo val 7' AS "nested1_tag.nested2_tag_embedded.foo_column",
+				'foo val 8' AS "nested1_tag.nested2_tag.foo_column"
+			`,
+			expected: struct {
+				NestedLevel1
+				NestedWithTagLevel1 `db:"nested1_tag_embedded"`
+				Nested1             NestedLevel1
+				Nested1Tag          NestedWithTagLevel1 `db:"nested1_tag"`
+			}{
+				NestedLevel1: NestedLevel1{
+					NestedLevel2: NestedLevel2{Foo: "foo val 1"},
+					Nested2:      NestedLevel2{Foo: "foo val 2"},
+				},
+				NestedWithTagLevel1: NestedWithTagLevel1{
+					NestedWithTagLevel2: NestedWithTagLevel2{Foo: "foo val 3"},
+					Nested2Tag:          NestedWithTagLevel2{Foo: "foo val 4"},
+				},
+				Nested1: NestedLevel1{
+					NestedLevel2: NestedLevel2{Foo: "foo val 5"},
+					Nested2:      NestedLevel2{Foo: "foo val 6"},
+				},
+				Nested1Tag: NestedWithTagLevel1{
+					NestedWithTagLevel2: NestedWithTagLevel2{Foo: "foo val 7"},
+					Nested2Tag:          NestedWithTagLevel2{Foo: "foo val 8"},
+				},
+			},
+		},
+		{
+			name: "nested structs by ptr are initialized and filled",
+			query: `
+				SELECT 'foo val' AS foo, 'bar val' AS bar,
+					'foo nested val' as foo_nested, 'bar nested val' as "bar_nested.bar_nested"
+			`,
+			expected: struct {
+				*FooNested
+				BarNested *BarNested
+				Foo       string
+				Bar       string
+			}{
+				FooNested: &FooNested{
+					FooNested: "foo nested val",
+				},
+				BarNested: &BarNested{
+					BarNested: "bar nested val",
+				},
+				Foo: "foo val",
+				Bar: "bar val",
+			},
+		},
+		{
+			name: "nested structs by ptr are not initialized if not filled",
 			query: `
 				SELECT 'foo val' AS foo, 'bar val' AS bar
 			`,
 			expected: struct {
 				*FooNested
-				Foo string
-				Bar string
+				BarNested *BarNested
+				Foo       string
+				Bar       string
 			}{
 				FooNested: nil,
+				BarNested: nil,
 				Foo:       "foo val",
 				Bar:       "bar val",
-			},
-		},
-		{
-			name: "embedded struct with ignore tag isn't filled",
-			query: `
-				SELECT 'foo nested val' as "nested.foo_nested", 
-					'bar nested val' as "nested.bar_nested"
-			`,
-			expected: struct {
-				FooNested `db:"-"`
-				Foo       string `db:"nested.foo_nested"`
-				Bar       string `db:"nested.bar_nested"`
-			}{
-				FooNested: FooNested{},
-				Foo:       "foo nested val",
-				Bar:       "bar nested val",
 			},
 		},
 		{
@@ -233,28 +329,28 @@ func TestRowScanner_Scan_structDestination(t *testing.T) {
 			},
 		},
 		{
-			name: "nested struct is filled from a json column",
+			name: "struct field is filled from a json column",
 			query: `
 				SELECT '{"key": "key val"}'::JSON AS foo_json, 'foo val' AS foo
 			`,
 			expected: struct {
-				FooJSON jsonObj
+				FooJSON JsonObj
 				Foo     string
 			}{
-				FooJSON: jsonObj{Key: "key val"},
+				FooJSON: JsonObj{Key: "key val"},
 				Foo:     "foo val",
 			},
 		},
 		{
-			name: "nested struct by ptr is filled from a json column",
+			name: "struct field by ptr is filled from a json column",
 			query: `
 				SELECT '{"key": "key val"}'::JSON AS foo_json, 'foo val' AS foo
 			`,
 			expected: struct {
-				FooJSON *jsonObj
+				FooJSON *JsonObj
 				Foo     string
 			}{
-				FooJSON: &jsonObj{Key: "key val"},
+				FooJSON: &JsonObj{Key: "key val"},
 				Foo:     "foo val",
 			},
 		},
@@ -346,32 +442,51 @@ func TestRowScanner_Scan_invalidStructDestination_returnsErr(t *testing.T) {
 				"struct { foo string; Bar string }",
 		},
 		{
-			name: "embedded struct is unexported",
+			name: "field with ignore tag isn't filled",
 			query: `
-				SELECT 'foo val' AS foo, 'bar val' AS bar,
-					'foo nested val' as foo_nested, 'bar nested val' as bar_nested
+				SELECT 'foo val' AS foo
 			`,
 			dst: &struct {
-				nestedUnexported
-				Foo string
-				Bar string
+				Foo string `db:"-"`
 			}{},
-			expectedErr: "scany: column: 'foo_nested': no corresponding field found, or it's unexported in " +
-				"struct { dbscan_test.nestedUnexported; Foo string; Bar string }",
+			expectedErr: "scany: column: 'foo': no corresponding field found, or it's unexported in " +
+				"struct { Foo string \"db:\\\"-\\\"\" }",
 		},
 		{
-			name: "nested non embedded structs aren't allowed",
+			name: "nested struct field is unexported",
 			query: `
 				SELECT 'foo val' AS foo, 'bar val' AS bar,
-					'foo nested val' as foo_nested, 'bar nested val' as bar_nested
+					'foo nested val' as "foo_nested.foo_nested"
 			`,
 			dst: &struct {
-				Nested FooNested
-				Foo    string
-				Bar    string
+				fooNested FooNested
+				Foo       string
+				Bar       string
+			}{},
+			expectedErr: "scany: column: 'foo_nested.foo_nested': no corresponding field found, or it's unexported in " +
+				"struct { fooNested dbscan_test.FooNested; Foo string; Bar string }",
+		},
+		{
+			name: "embedded struct with ignore tag isn't filled",
+			query: `
+				SELECT 'foo nested val' as "foo_nested" 
+			`,
+			dst: &struct {
+				FooNested `db:"-"`
 			}{},
 			expectedErr: "scany: column: 'foo_nested': no corresponding field found, or it's unexported in " +
-				"struct { Nested dbscan_test.FooNested; Foo string; Bar string }",
+				"struct { dbscan_test.FooNested \"db:\\\"-\\\"\" }",
+		},
+		{
+			name: "nested struct with ignore tag isn't filled",
+			query: `
+				SELECT 'foo nested val' as "foo_nested.foo_nested" 
+			`,
+			dst: &struct {
+				FooNested FooNested `db:"-"`
+			}{},
+			expectedErr: "scany: column: 'foo_nested.foo_nested': no corresponding field found, or it's unexported in " +
+				"struct { FooNested dbscan_test.FooNested \"db:\\\"-\\\"\" }",
 		},
 		{
 			name: "field type does not match with column type",
@@ -390,11 +505,23 @@ func TestRowScanner_Scan_invalidStructDestination_returnsErr(t *testing.T) {
 				SELECT 'foo val' AS foo, 'text' AS string
 			`,
 			dst: &struct {
-				string
-				Foo string
+				string `db:"string"`
+				Foo    string
 			}{},
 			expectedErr: "scany: column: 'string': no corresponding field found, " +
-				"or it's unexported in struct { string; Foo string }",
+				"or it's unexported in struct { string \"db:\\\"string\\\"\"; Foo string }",
+		},
+		{
+			name: "embedded struct as destination field",
+			query: `
+				SELECT '{"key": "key val"}'::JSON AS foo_json, 'foo val' AS foo
+			`,
+			dst: &struct {
+				JsonObj `db:"foo_json"`
+				Foo     string
+			}{},
+			expectedErr: "scany: column: 'foo_json': no corresponding field found, " +
+				"or it's unexported in struct { dbscan_test.JsonObj \"db:\\\"foo_json\\\"\"; Foo string }",
 		},
 	}
 	for _, tc := range cases {
@@ -450,7 +577,7 @@ func TestRowScanner_Scan_mapDestination(t *testing.T) {
 			query: `
 				SELECT '{"key": "key val"}'::JSON AS foo_json, '{"key": "key val 2"}'::JSON AS bar_json
 			`,
-			expected: map[string]jsonObj{
+			expected: map[string]JsonObj{
 				"foo_json": {Key: "key val"},
 				"bar_json": {Key: "key val 2"},
 			},
@@ -460,7 +587,7 @@ func TestRowScanner_Scan_mapDestination(t *testing.T) {
 			query: `
 				SELECT '{"key": "key val"}'::JSON AS foo_json, NULL AS bar_json
 			`,
-			expected: map[string]*jsonObj{
+			expected: map[string]*JsonObj{
 				"foo_json": {Key: "key val"},
 				"bar_json": nil,
 			},
@@ -574,7 +701,7 @@ func TestRowScanner_Scan_primitiveTypeDestination(t *testing.T) {
 				SELECT '{"key": "key val"}'::JSON AS foo_json
 			`,
 
-			expected: &jsonObj{Key: "key val"},
+			expected: &JsonObj{Key: "key val"},
 		},
 		{
 			name: "map by ptr treated as primitive type",
