@@ -33,7 +33,7 @@ dbscan works recursively, a struct can contain embedded or nested structs as wel
 It allows reusing models in different queries. Structs can be embedded or nested both by value and by a pointer.
 If you don't specify the `db` tag, dbscan maps fields from nested structs to database columns
 with the struct field name translated to snake case as the prefix,
-on the opposite, fields from embedded structs are mapped to database column without any prefix.
+on the opposite, fields from embedded structs are mapped to database columns without any prefix.
 dbscan uses "." to separate the prefix. Here is an example:
 
 	type UserPost struct {
