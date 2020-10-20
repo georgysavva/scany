@@ -18,7 +18,7 @@ type BarNested struct {
 	BarNested string
 }
 
-type JsonObj struct {
+type JSONObj struct {
 	Key string
 }
 
@@ -334,10 +334,10 @@ func TestRowScanner_Scan_structDestination(t *testing.T) {
 				SELECT '{"key": "key val"}'::JSON AS foo_json, 'foo val' AS foo
 			`,
 			expected: struct {
-				FooJSON JsonObj
+				FooJSON JSONObj
 				Foo     string
 			}{
-				FooJSON: JsonObj{Key: "key val"},
+				FooJSON: JSONObj{Key: "key val"},
 				Foo:     "foo val",
 			},
 		},
@@ -347,10 +347,10 @@ func TestRowScanner_Scan_structDestination(t *testing.T) {
 				SELECT '{"key": "key val"}'::JSON AS foo_json, 'foo val' AS foo
 			`,
 			expected: struct {
-				FooJSON *JsonObj
+				FooJSON *JSONObj
 				Foo     string
 			}{
-				FooJSON: &JsonObj{Key: "key val"},
+				FooJSON: &JSONObj{Key: "key val"},
 				Foo:     "foo val",
 			},
 		},
@@ -517,11 +517,11 @@ func TestRowScanner_Scan_invalidStructDestination_returnsErr(t *testing.T) {
 				SELECT '{"key": "key val"}'::JSON AS foo_json, 'foo val' AS foo
 			`,
 			dst: &struct {
-				JsonObj `db:"foo_json"`
+				JSONObj `db:"foo_json"`
 				Foo     string
 			}{},
 			expectedErr: "scany: column: 'foo_json': no corresponding field found, " +
-				"or it's unexported in struct { dbscan_test.JsonObj \"db:\\\"foo_json\\\"\"; Foo string }",
+				"or it's unexported in struct { dbscan_test.JSONObj \"db:\\\"foo_json\\\"\"; Foo string }",
 		},
 	}
 	for _, tc := range cases {
@@ -577,7 +577,7 @@ func TestRowScanner_Scan_mapDestination(t *testing.T) {
 			query: `
 				SELECT '{"key": "key val"}'::JSON AS foo_json, '{"key": "key val 2"}'::JSON AS bar_json
 			`,
-			expected: map[string]JsonObj{
+			expected: map[string]JSONObj{
 				"foo_json": {Key: "key val"},
 				"bar_json": {Key: "key val 2"},
 			},
@@ -587,7 +587,7 @@ func TestRowScanner_Scan_mapDestination(t *testing.T) {
 			query: `
 				SELECT '{"key": "key val"}'::JSON AS foo_json, NULL AS bar_json
 			`,
-			expected: map[string]*JsonObj{
+			expected: map[string]*JSONObj{
 				"foo_json": {Key: "key val"},
 				"bar_json": nil,
 			},
@@ -701,7 +701,7 @@ func TestRowScanner_Scan_primitiveTypeDestination(t *testing.T) {
 				SELECT '{"key": "key val"}'::JSON AS foo_json
 			`,
 
-			expected: &JsonObj{Key: "key val"},
+			expected: &JSONObj{Key: "key val"},
 		},
 		{
 			name: "map by ptr treated as primitive type",
