@@ -36,7 +36,10 @@ func getColumnToFieldIndexMap(structType reflect.Type) map[string][]int {
 				// Field is ignored, skip it.
 				continue
 			}
-			index := append(traversal.IndexPrefix, field.Index...)
+
+			index := make([]int, len(traversal.IndexPrefix), len(traversal.IndexPrefix)+len(field.Index))
+			copy(index, traversal.IndexPrefix)
+			index = append(index, field.Index...)
 
 			columnPart := dbTag
 			if !dbTagPresent {
