@@ -22,6 +22,14 @@ type JSONObj struct {
 	Key string
 }
 
+type DeepNested struct {
+	NestedLevel0
+}
+
+type NestedLevel0 struct {
+	NestedLevel1
+}
+
 type NestedLevel1 struct {
 	NestedLevel2
 	Nested2 NestedLevel2
@@ -29,6 +37,7 @@ type NestedLevel1 struct {
 
 type NestedLevel2 struct {
 	Foo string
+	Bar string
 }
 
 type NestedWithTagLevel1 struct {
@@ -389,6 +398,22 @@ func TestRowScanner_Scan_structDestination(t *testing.T) {
 			}{
 				FooJSON: &map[string]interface{}{"key": "key val"},
 				Foo:     "foo val",
+			},
+		},
+		{
+			name: "deeply nested structure is properly mapped",
+			query: `
+				SELECT 'foo val' AS foo, 'bar val' AS bar
+			`,
+			expected: DeepNested{
+				NestedLevel0: NestedLevel0{
+					NestedLevel1: NestedLevel1{
+						NestedLevel2: NestedLevel2{
+							Foo: "foo val",
+							Bar: "bar val",
+						},
+					},
+				},
 			},
 		},
 	}
