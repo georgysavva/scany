@@ -22,22 +22,23 @@ type JSONObj struct {
 	Key string
 }
 
-type DeepNested struct {
-	NestedLevel0
-}
-
-type NestedLevel0 struct {
-	NestedLevel1
-}
-
 type NestedLevel1 struct {
 	NestedLevel2
 	Nested2 NestedLevel2
 }
 
 type NestedLevel2 struct {
+	NestedLevel3
 	Foo string
-	Bar string
+}
+
+type NestedLevel3 struct {
+	NestedLevel4
+}
+
+type NestedLevel4 struct {
+	DeepNested1 string
+	DeepNested2 string
 }
 
 type NestedWithTagLevel1 struct {
@@ -403,14 +404,14 @@ func TestRowScanner_Scan_structDestination(t *testing.T) {
 		{
 			name: "deeply nested structure is properly mapped",
 			query: `
-				SELECT 'foo val' AS foo, 'bar val' AS bar
+				SELECT 'deep_nested1 val' AS deep_nested1, 'deep_nested2 val' AS deep_nested2
 			`,
-			expected: DeepNested{
-				NestedLevel0: NestedLevel0{
-					NestedLevel1: NestedLevel1{
-						NestedLevel2: NestedLevel2{
-							Foo: "foo val",
-							Bar: "bar val",
+			expected: NestedLevel1{
+				NestedLevel2: NestedLevel2{
+					NestedLevel3: NestedLevel3{
+						NestedLevel4: NestedLevel4{
+							DeepNested1: "deep_nested1 val",
+							DeepNested2: "deep_nested2 val",
 						},
 					},
 				},
