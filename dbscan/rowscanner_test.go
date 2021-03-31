@@ -28,7 +28,17 @@ type NestedLevel1 struct {
 }
 
 type NestedLevel2 struct {
+	NestedLevel3
 	Foo string
+}
+
+type NestedLevel3 struct {
+	NestedLevel4
+}
+
+type NestedLevel4 struct {
+	DeepNested1 string
+	DeepNested2 string
 }
 
 type NestedWithTagLevel1 struct {
@@ -389,6 +399,22 @@ func TestRowScanner_Scan_structDestination(t *testing.T) {
 			}{
 				FooJSON: &map[string]interface{}{"key": "key val"},
 				Foo:     "foo val",
+			},
+		},
+		{
+			name: "deeply nested structure is properly mapped",
+			query: `
+				SELECT 'deep_nested1 val' AS deep_nested1, 'deep_nested2 val' AS deep_nested2
+			`,
+			expected: NestedLevel1{
+				NestedLevel2: NestedLevel2{
+					NestedLevel3: NestedLevel3{
+						NestedLevel4: NestedLevel4{
+							DeepNested1: "deep_nested1 val",
+							DeepNested2: "deep_nested2 val",
+						},
+					},
+				},
 			},
 		},
 	}
