@@ -7,16 +7,20 @@ linters:
     - dupl
     - errcheck
     - exhaustive
+    - exportloopref
+    - funlen
     - gochecknoinits
     - goconst
     - gocritic
     - gocyclo
     - godot
     - goerr113
+    - gofmt
     - gofumpt
     - goimports
     - golint
     - gomnd
+    - goprintffuncname
     - gosec
     - gosimple
     - govet
@@ -26,15 +30,17 @@ linters:
     - nakedret
     - noctx
     - nolintlint
-    - scopelint
+    - rowserrcheck
     - sqlclosecheck
     - staticcheck
     - structcheck
+    - stylecheck
     - testpackage
     - unconvert
     - unparam
     - unused
     - varcheck
+    - whitespace
 
   # don't enable:
   # - asciicheck
@@ -61,23 +67,57 @@ linters:
 linters-settings:
   exhaustive:
     default-signifies-exhaustive: true
+  dupl:
+    threshold: 100
+  funlen:
+    lines: 100
+    statements: 50
   goconst:
+    min-len: 2
     min-occurrences: 2
+  gocritic:
+    enabled-tags:
+      - diagnostic
+      - opinionated
+      - style
+      - performance
+    disabled-checks:
+      - whyNoLint
+  gocyclo:
+    min-complexity: 15
   godot:
     check-all: true
   goimports:
     local-prefixes: github.com/georgysavva/scany
+  golint:
+    min-confidence: 0
+  gomnd:
+    settings:
+      mnd:
+        # don't include the "operation" and "assign"
+        checks: argument,case,condition,return
+  govet:
+    check-shadowing: true
   misspell:
     locale: US
+  nolintlint:
+    allow-unused: false
   unparam:
     check-exported: true
 
 issues:
   exclude-use-default: false
+  exclude:
+    - "should have a package comment, unless it's in another file for this package"
   exclude-rules:
     - linters:
         - errcheck
-      text: Error return value of .((os\.)?std(out|err)\..*|.*Close|.*Flush|os\.Remove(All)?|.*print(f|ln)?|os\.(Un)?Setenv). is not checked
+        - gosec
+        - rowserrcheck
       path: (example_test\.go|example_[0-9A-Za-z_-]+_test\.go)
+    - linters:
+        - funlen
+        - rowserrcheck
+      path: _test\.go
 
   max-same-issues: 0

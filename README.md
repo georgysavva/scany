@@ -12,16 +12,16 @@ Go favors simplicity, and it's pretty common to work with a database via driver 
 It provides great control and efficiency in your queries, but here is a problem: 
 you need to manually iterate over database rows and scan data from all columns into a corresponding destination.
 It can be error-prone verbose and just tedious. 
-scany aims to solve this problem, 
-it allows developers to scan complex data from a database into Go structs and other composite types 
+scany aims to solve this problem. 
+It allows developers to scan complex data from a database into Go structs and other composite types 
 with just one function call and don't bother with rows iteration.
 
 scany isn't limited to any specific database. It integrates with `database/sql`, 
 so any database with `database/sql` driver is supported. 
 It also works with [pgx](https://github.com/jackc/pgx) library native interface. 
-Apart from the out of the box support, scany can be easily extended to work with almost any database library.
+Apart from the out-of-the-box support, scany can be easily extended to work with almost any database library.
 
-Note that, scany isn't an ORM. First of all, it works only in one direction: 
+Note that scany isn't an ORM. First of all, it works only in one direction: 
 it scans data into Go objects from the database, but it can't build database queries based on those objects.
 Secondly, it doesn't know anything about relations between objects e.g: one to many, many to many.
 
@@ -31,7 +31,7 @@ Secondly, it doesn't know anything about relations between objects e.g: one to m
 * Reusing structs via nesting or embedding 
 * NULLs and custom types support
 * Omitted struct fields
-* Apart from structs, support for other destination types: maps, slices and etc.
+* Apart from structs, support for other destination types: maps, slices, etc.
 
 ## Install
 
@@ -112,9 +112,10 @@ and can be integrated with any library that has a concept of rows.
 This particular package implements core scany features and contains all the logic.
 Both `sqlscan` and `pgxscan` use `dbscan` internally.
 
-## Comparisson with [sqlx](https://github.com/jmoiron/sqlx)
+## Comparison with [sqlx](https://github.com/jmoiron/sqlx)
 
-* sqlx only works with `database/sql` standard library. scany isn't limited only to `database/sql`, it also supports [pgx](https://github.com/jackc/pgx) native interface and can be extended to work with any database library independent of `database/sql`
+* sqlx only works with `database/sql` standard library. scany isn't limited only to `database/sql`. 
+  It also supports [pgx](https://github.com/jackc/pgx) native interface and can be extended to work with any database library independent of `database/sql`
 * In terms of scanning and mapping abilities, scany provides all [features](https://github.com/georgysavva/scany#features) of sqlx
 * scany has a simpler API and much fewer concepts, so it's easier to start working with
 
@@ -124,19 +125,37 @@ scany supports Go 1.13 and higher.
 
 ## Roadmap   
 
-* Add ability to set custom function to translate struct field to column name, 
+* Add ability to set custom function to translate struct field to the column name, 
 instead of the default to snake case function 
 * Allow to use a custom separator for embedded structs prefix, instead of the default "."
 
 ## Tests
 
-The only thing you need to run tests locally is an internet connection, 
-it's required to download and cache the database binary.
-Just type `go test ./...` inside scany root directory and let the code do the rest. 
+The easiest way to run the tests is:
+```
+go test ./...
+``` 
+scany runs a CockroachDB server to execute its tests.
+It will download, cache and run the CockroachDB binary for you.
+It's very convenient since the only requirement to run the tests is an internet connection. 
+Alternatively, 
+you can [download](https://www.cockroachlabs.com/docs/v20.2/install-cockroachdb-mac) the CockroachDB binary yourself 
+and pass the path to the binary into tests: 
+```
+go test ./... -cockroach-binary cockroach
+```
+
+## golangci-lint
+
+This project uses `golangci-lint` v1.38.0.
+
+To run the linter locally do the following:
+1. [Install](https://golangci-lint.run/usage/install/) `golangci-lint` program
+2. In the project root type: `golangci-lint run`
 
 ## Contributing 
 
-Every feature request or question is appreciated. Don't hesitate, just post an issue or PR.
+Every feature request or question is appreciated. Don't hesitate. Just post an issue or PR.
 
 ## License
 

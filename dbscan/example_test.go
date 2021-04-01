@@ -55,13 +55,11 @@ func ExampleRowScanner() {
 	rs := dbscan.NewRowScanner(rows)
 
 	for rows.Next() {
-
 		var user User
 		if err := rs.Scan(&user); err != nil {
 			// Handle row scanning error.
 		}
 		// user variable now contains data from the current row.
-
 	}
 }
 
@@ -78,12 +76,10 @@ func ExampleScanRow() {
 	var rows dbscan.Rows
 
 	for rows.Next() {
-
 		var user User
 		if err := dbscan.ScanRow(&user, rows); err != nil {
 			// Handle row scanning error.
 		}
 		// user variable now contains data from the current row.
-
 	}
 }
