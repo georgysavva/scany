@@ -61,7 +61,7 @@ func allocateDestination(v interface{}) interface{} {
 	return dst
 }
 
-func assertDestinationEqual(t *testing.T, expected interface{}, dst interface{}) {
+func assertDestinationEqual(t *testing.T, expected, dst interface{}) {
 	t.Helper()
 	got := reflect.ValueOf(dst).Elem().Interface()
 	assert.Equal(t, expected, got)
