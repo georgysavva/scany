@@ -6,7 +6,7 @@ import (
 
 func ExampleScanAll() {
 	type User struct {
-		ID    string `db:"user_id"`
+		ID    string `db:"user_id,other_tag_value"`
 		Name  string
 		Email string
 		Age   int
