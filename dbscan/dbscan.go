@@ -296,10 +296,7 @@ func (rs *RowScanner) scanStruct(structValue reflect.Value) error {
 	for i, column := range rs.columns {
 		fieldIndex, ok := rs.columnToFieldIndex[column]
 		if !ok {
-			return errors.Errorf(
-				"scany: column: '%s': no corresponding field found, or it's unexported in %v",
-				column, structValue.Type(),
-			)
+			continue
 		}
 		// Struct may contain embedded structs by ptr that defaults to nil.
 		// In order to scan values into a nested field,
