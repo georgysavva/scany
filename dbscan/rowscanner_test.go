@@ -58,6 +58,12 @@ type AmbiguousNested2 struct {
 	Foo string
 }
 
+type NestedAnonymous struct {
+	CustomString
+}
+
+type CustomString string
+
 func TestRowScanner_Scan_structDestination(t *testing.T) {
 	t.Parallel()
 	cases := []struct {
@@ -269,10 +275,10 @@ func TestRowScanner_Scan_structDestination(t *testing.T) {
 		{
 			name: "multiple level nested structs",
 			query: `
-				SELECT 'foo val 1' AS "foo", 'foo val 2' AS "nested2.foo", 
+				SELECT 'foo val 1' AS "foo", 'foo val 2' AS "nested2.foo",
 				'foo val 3' AS "nested1_tag_embedded.nested2_tag_embedded.foo_column",
 				'foo val 4' AS "nested1_tag_embedded.nested2_tag.foo_column",
-				'foo val 5' AS "nested1.foo", 'foo val 6' AS "nested1.nested2.foo", 
+				'foo val 5' AS "nested1.foo", 'foo val 6' AS "nested1.nested2.foo",
 				'foo val 7' AS "nested1_tag.nested2_tag_embedded.foo_column",
 				'foo val 8' AS "nested1_tag.nested2_tag.foo_column"
 			`,
@@ -453,6 +459,23 @@ func TestRowScanner_Scan_structDestination(t *testing.T) {
 							DeepNested2: "deep_nested2 val",
 						},
 					},
+				},
+			},
+		},
+		{
+			name: "nested anonymous mapping parent name",
+			query: `
+				SELECT 'nested_anonymous1 val' AS "foo", 'nested_anonymous2 val' AS "faa"
+			`,
+			expected: struct {
+				Foo NestedAnonymous
+				Faa *NestedAnonymous
+			}{
+				Foo: NestedAnonymous{
+					"nested_anonymous1 val",
+				},
+				Faa: &NestedAnonymous{
+					"nested_anonymous2 val",
 				},
 			},
 		},

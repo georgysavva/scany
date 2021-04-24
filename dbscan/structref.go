@@ -53,6 +53,8 @@ func getColumnToFieldIndexMap(structType reflect.Type) map[string][]int {
 				if _, exists := result[column]; !exists {
 					result[column] = index
 				}
+			} else if structType.NumField() == 1 {
+				result[traversal.ColumnPrefix] = index
 			}
 
 			childType := field.Type
