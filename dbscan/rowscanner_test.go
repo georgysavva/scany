@@ -445,76 +445,6 @@ func TestRowScanner_Scan_invalidStructDestination_returnsErr(t *testing.T) {
 		expectedErr string
 	}{
 		{
-			name: "doesn't have a corresponding field",
-			query: `
-				SELECT 'foo val' AS foo, 'bar val' AS bar
-			`,
-			dst: &struct {
-				Bar string
-			}{},
-			expectedErr: "scany: column: 'foo': no corresponding field found, or it's unexported in " +
-				"struct { Bar string }",
-		},
-		{
-			name: "the corresponding field is unexported",
-			query: `
-				SELECT 'foo val' AS foo, 'bar val' AS bar
-			`,
-			dst: &struct {
-				foo string
-				Bar string
-			}{},
-			expectedErr: "scany: column: 'foo': no corresponding field found, or it's unexported in " +
-				"struct { foo string; Bar string }",
-		},
-		{
-			name: "field with ignore tag isn't filled",
-			query: `
-				SELECT 'foo val' AS foo
-			`,
-			dst: &struct {
-				Foo string `db:"-"`
-			}{},
-			expectedErr: "scany: column: 'foo': no corresponding field found, or it's unexported in " +
-				"struct { Foo string \"db:\\\"-\\\"\" }",
-		},
-		{
-			name: "nested struct field is unexported",
-			query: `
-				SELECT 'foo val' AS foo, 'bar val' AS bar,
-					'foo nested val' as "foo_nested.foo_nested"
-			`,
-			dst: &struct {
-				fooNested FooNested
-				Foo       string
-				Bar       string
-			}{},
-			expectedErr: "scany: column: 'foo_nested.foo_nested': no corresponding field found, or it's unexported in " +
-				"struct { fooNested dbscan_test.FooNested; Foo string; Bar string }",
-		},
-		{
-			name: "embedded struct with ignore tag isn't filled",
-			query: `
-				SELECT 'foo nested val' as "foo_nested" 
-			`,
-			dst: &struct {
-				FooNested `db:"-"`
-			}{},
-			expectedErr: "scany: column: 'foo_nested': no corresponding field found, or it's unexported in " +
-				"struct { dbscan_test.FooNested \"db:\\\"-\\\"\" }",
-		},
-		{
-			name: "nested struct with ignore tag isn't filled",
-			query: `
-				SELECT 'foo nested val' as "foo_nested.foo_nested" 
-			`,
-			dst: &struct {
-				FooNested FooNested `db:"-"`
-			}{},
-			expectedErr: "scany: column: 'foo_nested.foo_nested': no corresponding field found, or it's unexported in " +
-				"struct { FooNested dbscan_test.FooNested \"db:\\\"-\\\"\" }",
-		},
-		{
 			name: "field type does not match with column type",
 			query: `
 				SELECT 'foo val' AS foo, 'bar val' AS bar
@@ -524,30 +454,6 @@ func TestRowScanner_Scan_invalidStructDestination_returnsErr(t *testing.T) {
 				Bar string
 			}{},
 			expectedErr: "scany: scan row into struct fields: can't scan into dest[0]: unable to assign to *int",
-		},
-		{
-			name: "non struct embedded field",
-			query: `
-				SELECT 'foo val' AS foo, 'text' AS string
-			`,
-			dst: &struct {
-				string `db:"string"`
-				Foo    string
-			}{},
-			expectedErr: "scany: column: 'string': no corresponding field found, " +
-				"or it's unexported in struct { string \"db:\\\"string\\\"\"; Foo string }",
-		},
-		{
-			name: "embedded struct as destination field",
-			query: `
-				SELECT '{"key": "key val"}'::JSON AS foo_json, 'foo val' AS foo
-			`,
-			dst: &struct {
-				JSONObj `db:"foo_json"`
-				Foo     string
-			}{},
-			expectedErr: "scany: column: 'foo_json': no corresponding field found, " +
-				"or it's unexported in struct { dbscan_test.JSONObj \"db:\\\"foo_json\\\"\"; Foo string }",
 		},
 	}
 	for _, tc := range cases {
