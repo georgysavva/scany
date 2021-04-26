@@ -92,6 +92,19 @@ func TestRowScanner_Scan_structDestination(t *testing.T) {
 			},
 		},
 		{
+			name: "fields with tag are filled from columns via tag that has multiple comma delimited values",
+			query: `
+				SELECT 'foo val' AS foo_column, 'bar val' AS bar_column
+			`,
+			expected: struct {
+				Foo string `db:"foo_column,other_tag_value"`
+				Bar string `db:"bar_column"`
+			}{
+				Foo: "foo val",
+				Bar: "bar val",
+			},
+		},
+		{
 			name: "string field by ptr",
 			query: `
 				SELECT 'foo val' AS foo, 'bar val' AS bar
