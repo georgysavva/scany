@@ -27,6 +27,11 @@ In the example above User struct is mapped to the following columns: "user_id", 
 If selected rows contain a column that doesn't have a corresponding struct field dbscan returns an error,
 this forces to only select data from the database that application needs.
 
+dbscan supports commas "," in the struct tag name.
+That makes it compatible with the struct tag formats of other libraries.
+dbscan splits the tag name by "," and uses the first part as the column name.
+So `db:"user_id,other_tag_value"` struct tag is equivalent to `db:"user_id"` for dbscan.
+
 Reusing structs
 
 dbscan works recursively, a struct can contain embedded or nested structs as well.
