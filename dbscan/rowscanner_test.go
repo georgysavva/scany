@@ -1,6 +1,7 @@
 package dbscan_test
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -63,6 +64,20 @@ type NestedAnonymous struct {
 }
 
 type CustomString string
+
+func (cs *CustomString) Scan(src interface{}) error {
+	switch src := src.(type) {
+	case nil:
+		return nil
+
+	case string:
+		*cs = CustomString(src)
+
+	default:
+		return fmt.Errorf("Scan: unable to scan type %T into CustomString", src)
+	}
+	return nil
+}
 
 func TestRowScanner_Scan_structDestination(t *testing.T) {
 	t.Parallel()

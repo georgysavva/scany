@@ -307,7 +307,11 @@ func (rs *RowScanner) scanStruct(structValue reflect.Value) error {
 		initializeNested(structValue, fieldIndex)
 
 		fieldVal := structValue.FieldByIndex(fieldIndex)
-		scans[i] = fieldVal.Addr().Interface()
+		if fieldVal.Kind() == reflect.Ptr && fieldVal.Elem().CanAddr() {
+			scans[i] = fieldVal.Elem().Addr().Interface()
+		} else {
+			scans[i] = fieldVal.Addr().Interface()
+		}
 	}
 	err := rs.rows.Scan(scans...)
 	return errors.Wrap(err, "scany: scan row into struct fields")
