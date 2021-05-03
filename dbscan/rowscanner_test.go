@@ -118,6 +118,19 @@ func TestRowScanner_Scan_structDestination(t *testing.T) {
 			},
 		},
 		{
+			name: "string field by ptr NULL value",
+			query: `
+				SELECT NULL AS foo, 'bar val' AS bar
+			`,
+			expected: struct {
+				Foo *string
+				Bar string
+			}{
+				Foo: nil,
+				Bar: "bar val",
+			},
+		},
+		{
 			name: "embedded structs are filled from columns without prefix",
 			query: `
 				SELECT 'foo val' AS foo, 'bar val' AS bar,
@@ -374,6 +387,19 @@ func TestRowScanner_Scan_structDestination(t *testing.T) {
 				Foo     string
 			}{
 				FooJSON: &JSONObj{Key: "key val"},
+				Foo:     "foo val",
+			},
+		},
+		{
+			name: "struct field by ptr is filled from a json column with NULL value",
+			query: `
+				SELECT NULL::JSON AS foo_json, 'foo val' AS foo
+			`,
+			expected: struct {
+				FooJSON *JSONObj
+				Foo     string
+			}{
+				FooJSON: nil,
 				Foo:     "foo val",
 			},
 		},
