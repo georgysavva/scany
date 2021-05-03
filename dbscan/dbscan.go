@@ -1,6 +1,7 @@
 package dbscan
 
 import (
+	"database/sql"
 	"reflect"
 
 	"github.com/pkg/errors"
@@ -292,6 +293,8 @@ func startScanner(rs *RowScanner, dstValue reflect.Value) error {
 }
 
 func (rs *RowScanner) scanStruct(structValue reflect.Value) error {
+	scannerType := reflect.TypeOf((*sql.Scanner)(nil)).Elem()
+
 	scans := make([]interface{}, len(rs.columns))
 	for i, column := range rs.columns {
 		fieldIndex, ok := rs.columnToFieldIndex[column]
@@ -307,7 +310,9 @@ func (rs *RowScanner) scanStruct(structValue reflect.Value) error {
 		initializeNested(structValue, fieldIndex)
 
 		fieldVal := structValue.FieldByIndex(fieldIndex)
-		if fieldVal.Kind() == reflect.Ptr && fieldVal.Elem().CanAddr() {
+		if fieldVal.Kind() == reflect.Ptr &&
+			fieldVal.Elem().CanAddr() &&
+			fieldVal.Elem().Addr().Type().Implements(scannerType) {
 			scans[i] = fieldVal.Elem().Addr().Interface()
 		} else {
 			scans[i] = fieldVal.Addr().Interface()
