@@ -1,4 +1,4 @@
-package dbscan
+package structref
 
 import (
 	"reflect"
@@ -14,8 +14,10 @@ type toTraverse struct {
 	ColumnPrefix string
 }
 
-func getColumnToFieldIndexMap(structType reflect.Type) map[string][]int {
+// GetColumnToFieldIndexMap containing where columns should be mapped.
+func GetColumnToFieldIndexMap(structType reflect.Type) map[string][]int {
 	result := make(map[string][]int, structType.NumField())
+	jsonColumns := map[string]struct{}{}
 	var queue []*toTraverse
 	queue = append(queue, &toTraverse{Type: structType, IndexPrefix: nil, ColumnPrefix: ""})
 	for len(queue) > 0 {
@@ -31,8 +33,9 @@ func getColumnToFieldIndexMap(structType reflect.Type) map[string][]int {
 			}
 
 			dbTag, dbTagPresent := field.Tag.Lookup(dbStructTagKey)
+			var options tagOptions
 			if dbTagPresent {
-				dbTag = strings.Split(dbTag, ",")[0]
+				dbTag, options = parseTag(dbTag)
 			}
 			if dbTag == "-" {
 				// Field is ignored, skip it.
@@ -47,13 +50,6 @@ func getColumnToFieldIndexMap(structType reflect.Type) map[string][]int {
 			if !dbTagPresent {
 				columnPart = toSnakeCase(field.Name)
 			}
-			if !field.Anonymous {
-				column := buildColumn(traversal.ColumnPrefix, columnPart)
-
-				if _, exists := result[column]; !exists {
-					result[column] = index
-				}
-			}
 
 			childType := field.Type
 			if field.Type.Kind() == reflect.Ptr {
@@ -66,12 +62,28 @@ func getColumnToFieldIndexMap(structType reflect.Type) map[string][]int {
 					// the default behavior is to propagate columns as is.
 					columnPart = dbTag
 				}
-				columnPrefix := buildColumn(traversal.ColumnPrefix, columnPart)
-				queue = append(queue, &toTraverse{
-					Type:         childType,
-					IndexPrefix:  index,
-					ColumnPrefix: columnPrefix,
-				})
+			}
+
+			column := buildColumn(traversal.ColumnPrefix, columnPart)
+			if childType.Kind() == reflect.Struct {
+				if options.Contains("json") {
+					jsonColumns[column] = struct{}{}
+				} else {
+					queue = append(queue, &toTraverse{
+						Type:         childType,
+						IndexPrefix:  index,
+						ColumnPrefix: column,
+					})
+				}
+			}
+			if !field.Anonymous {
+				_, self := jsonColumns[column]
+				_, parent := jsonColumns[traversal.ColumnPrefix]
+				if !self || !parent {
+					if _, exists := result[column]; !exists {
+						result[column] = index
+					}
+				}
 			}
 		}
 	}
@@ -87,20 +99,6 @@ func buildColumn(parts ...string) string {
 		}
 	}
 	return strings.Join(notEmptyParts, ".")
-}
-
-func initializeNested(structValue reflect.Value, fieldIndex []int) {
-	i := fieldIndex[0]
-	field := structValue.Field(i)
-
-	// Create a new instance of a struct and set it to field,
-	// if field is a nil pointer to a struct.
-	if field.Kind() == reflect.Ptr && field.Type().Elem().Kind() == reflect.Struct && field.IsNil() {
-		field.Set(reflect.New(field.Type().Elem()))
-	}
-	if len(fieldIndex) > 1 {
-		initializeNested(reflect.Indirect(field), fieldIndex[1:])
-	}
 }
 
 var (
