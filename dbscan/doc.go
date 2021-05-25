@@ -37,7 +37,7 @@ Reusing structs
 dbscan works recursively. A struct can contain embedded or nested structs as well.
 It allows reusing models in different queries. Structs can be embedded or nested both by value and by a pointer.
 If you don't specify the `db` tag, dbscan maps fields from nested structs to database columns
-with the struct field name translated to snake case as the prefix. 
+with the struct field name translated to snake case as the prefix.
 On the opposite, fields from embedded structs are mapped to database columns without any prefix.
 dbscan uses "." to separate the prefix. Here is an example:
 
@@ -195,8 +195,10 @@ from which column to select and will return an error.
 Support for Row type
 
 dbscan doesn't support a single row type like Row, which you might see in many database libraries.
-This is because the Row type doesn't expose the required information to do the mapping between columns and the Go destination.
-So dbscan can only work with Rows type, and it provides a convenient function ScanOne to handle a single row case; see ScanOne for details.
+This is because the Row type doesn't expose the required information to do the mapping between columns
+and the Go destination.
+So dbscan can only work with Rows type, and it provides a convenient function ScanOne to handle a single row case;
+see ScanOne for details.
 
 Rows processing
 
@@ -212,7 +214,8 @@ see RowScanner for details.
 Implementing Rows interface
 
 dbscan can be used with any database library with a concept of rows and can implement dbscan Rows interface.
-It's pretty likely that your rows type already implements the Rows interface as-is. For example, this is true for the standard *sql.Rows type.
+It's pretty likely that your rows type already implements the Rows interface as-is.
+For example, this is true for the standard *sql.Rows type.
 Or you just need a thin adapter as it is done for pgx.Rows in pgxscan, see pgxscan.RowsAdapter for details.
 */
 package dbscan
