@@ -31,7 +31,7 @@ Secondly, it doesn't know anything about relations between objects e.g: one to m
 * Reusing structs via nesting or embedding 
 * NULLs and custom types support
 * Omitted struct fields
-* Apart from structs, support for other destination types: maps, slices, etc.
+* Apart from structs, support for maps and Go primitive types as the destination.
 
 ## Install
 
