@@ -192,7 +192,7 @@ type ScannableString struct {
 	string
 }
 
-func (ss *ScannableString) Scan(src interface{}) error {
+func (ss *ScannableString) Scan(src interface{}) (_ error) {
 	ss.string = src.(string)
 	return nil
 }
@@ -229,7 +229,7 @@ func TestRowScanner_Scan_NULLableScannerType(t *testing.T) {
 			t.Parallel()
 			rows, err := testDB.Query(tc.query)
 			require.NoError(t, err)
-			defer rows.Close()
+			defer rows.Close() // nolint: errcheck
 			rs := sqlscan.NewRowScanner(rows)
 			rows.Next()
 
