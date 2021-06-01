@@ -188,6 +188,61 @@ func TestRowScanner_Scan_closedRows(t *testing.T) {
 	assert.EqualError(t, err, "scany: get rows columns: sql: Rows are closed")
 }
 
+type ScannableString struct {
+	string
+}
+
+func (ss *ScannableString) Scan(src interface{}) error {
+	ss.string = src.(string)
+	return nil
+}
+
+func TestRowScanner_Scan_NULLableScannerType(t *testing.T) {
+	t.Parallel()
+	type Destination struct {
+		FooByPtr *ScannableString
+		FooByVal ScannableString
+	}
+	for _, tc := range []struct {
+		name     string
+		query    string
+		expected *Destination
+	}{
+		{
+			name:  "NULL value",
+			query: `SELECT NULL as foo_by_ptr, NULL as foo_by_val`,
+			expected: &Destination{
+				FooByPtr: nil,
+				FooByVal: ScannableString{""},
+			},
+		},
+		{
+			name:  "non NULL value",
+			query: `SELECT 'foo value 1' as foo_by_ptr, 'foo value 2' as foo_by_val`,
+			expected: &Destination{
+				FooByPtr: &ScannableString{"foo value 1"},
+				FooByVal: ScannableString{"foo value 2"},
+			},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			rows, err := testDB.Query(tc.query)
+			require.NoError(t, err)
+			defer rows.Close() // nolint: errcheck
+			rs := sqlscan.NewRowScanner(rows)
+			rows.Next()
+
+			got := &Destination{}
+			err = rs.Scan(got)
+			require.NoError(t, err)
+			require.NoError(t, rows.Err())
+
+			assert.Equal(t, tc.expected, got)
+		})
+	}
+}
+
 func requireNoRowsErrorsAndClose(t *testing.T, rows *sql.Rows) {
 	t.Helper()
 	require.NoError(t, rows.Err())
