@@ -102,8 +102,6 @@ linters-settings:
     locale: US
   nolintlint:
     allow-unused: false
-  unparam:
-    check-exported: true
 
 issues:
   exclude-use-default: false

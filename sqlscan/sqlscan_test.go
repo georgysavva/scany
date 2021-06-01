@@ -192,7 +192,7 @@ type ScannableString struct {
 	string
 }
 
-func (ss *ScannableString) Scan(src interface{}) (_ error) {
+func (ss *ScannableString) Scan(src interface{}) error {
 	ss.string = src.(string)
 	return nil
 }
