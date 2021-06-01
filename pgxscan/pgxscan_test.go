@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/cockroachdb/cockroach-go/v2/testserver"
+	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/pkg/errors"
@@ -155,6 +156,46 @@ func TestRowScanner_Scan(t *testing.T) {
 	require.NoError(t, rows.Err())
 
 	assert.Equal(t, expected, got)
+}
+
+func TestRowScanner_Scan_NULLableScannerType(t *testing.T) {
+	t.Parallel()
+	type Destination struct {
+		Foo pgtype.Text
+	}
+	for _, tc := range []struct {
+		name     string
+		query    string
+		expected *Destination
+	}{
+		{
+			name:     "NULL value",
+			query:    `SELECT NULL as foo`,
+			expected: &Destination{Foo: pgtype.Text{Status: pgtype.Null}},
+		},
+		{
+			name:     "non NULL value",
+			query:    `SELECT 'foo value' as foo`,
+			expected: &Destination{Foo: pgtype.Text{String: "foo value", Status: pgtype.Present}},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			rows, err := testDB.Query(ctx, tc.query)
+			require.NoError(t, err)
+			defer rows.Close()
+			rs := pgxscan.NewRowScanner(rows)
+			rows.Next()
+
+			got := &Destination{}
+			err = rs.Scan(got)
+			require.NoError(t, err)
+			require.NoError(t, rows.Err())
+
+			assert.Equal(t, tc.expected, got)
+		})
+	}
 }
 
 func TestScanRow(t *testing.T) {
