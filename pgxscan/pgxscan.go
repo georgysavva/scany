@@ -47,7 +47,6 @@ func Get(ctx context.Context, db Querier, dst interface{}, query string, args ..
 // ScanAll is a wrapper around the dbscan.ScanAll function.
 // See dbscan.ScanAll for details.
 func ScanAll(dst interface{}, rows pgx.Rows) error {
-
 	err := dbscan.ScanAll(dst, NewRowsAdapter(rows))
 	return errors.WithStack(err)
 }
