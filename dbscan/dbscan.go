@@ -258,6 +258,7 @@ func (rs *RowScanner) doScan(dstValue reflect.Value) error {
 
 func startScanner(rs *RowScanner, dstValue reflect.Value) error {
 	var err error
+
 	rs.columns, err = rs.rows.Columns()
 	if err != nil {
 		return errors.Wrap(err, "scany: get rows columns")
