@@ -96,3 +96,53 @@ func TestGetColumnToFieldIndexMap(t *testing.T) {
 		})
 	}
 }
+
+func TestWildcardCache(t *testing.T) {
+	old := columnToField
+	t.Cleanup(func() {
+		columnToField = old // Restore default caching.
+	})
+
+	const maxCached = 3
+	columnToField = newLRU(maxCached)
+
+	mocks := []interface{}{
+		struct {
+			Automatic string
+			Tagged    string `db:"tagged"`
+			OneTwo    string // OneTwo should be one_two in the database.
+			CamelCase string `db:"CamelCase"` // CamelCase should not be normalized to camel_case.
+			Ignored   string `db:"-"`
+		}{},
+		struct {
+			Number int
+		}{},
+		struct {
+			A string
+			B string
+			C string
+		}{},
+		struct {
+			Name string
+		}{},
+		struct {
+			Name string
+			Age  int
+		}{},
+	}
+	for _, m := range mocks {
+		structType := reflect.Indirect(reflect.ValueOf(m)).Type()
+		orig := GetColumnToFieldIndexMap(structType)
+		cached := GetColumnToFieldIndexMap(structType)
+
+		if !reflect.DeepEqual(orig, cached) {
+			t.Errorf("expected cached value %q to be equal to original %q and not empty", cached, orig)
+		}
+		if columnToField.l.Len() != len(columnToField.m) {
+			t.Error("cache doubly linked list and map length should match")
+		}
+		if len(columnToField.m) > maxCached {
+			t.Errorf("cache should contain %d once full, got %d instead", maxCached, len(columnToField.m))
+		}
+	}
+}

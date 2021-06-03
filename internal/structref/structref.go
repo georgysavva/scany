@@ -1,9 +1,11 @@
 package structref
 
 import (
+	"container/list"
 	"reflect"
 	"regexp"
 	"strings"
+	"sync"
 )
 
 var dbStructTagKey = "db"
@@ -16,6 +18,58 @@ type toTraverse struct {
 
 // GetColumnToFieldIndexMap containing where columns should be mapped.
 func GetColumnToFieldIndexMap(structType reflect.Type) map[string][]int {
+	columnToField.mu.Lock()
+	defer columnToField.mu.Unlock()
+	if cache, ok := columnToField.m[structType]; ok {
+		columnToField.l.MoveToFront(cache)
+		return cache.Value.(*columnToFieldElement).Columns
+	}
+
+	// If we don't have the data cached yet, continue.
+	if columnToField.l.Len() == columnToField.max {
+		oldest := columnToField.l.Back()
+		columnToField.l.Remove(oldest)
+		delete(columnToField.m, oldest.Value.(*columnToFieldElement).Type)
+	}
+	// Get the columns, cache, and return it.
+	elem := &columnToFieldElement{
+		Type:    structType,
+		Columns: getColumnToFieldIndexMap(structType),
+	}
+	columnToField.m[structType] = columnToField.l.PushFront(elem)
+	return elem.Columns
+}
+
+// lru used to implement a least recently used cache for the Fields function.
+type lru struct {
+	max int // max number of elements on cache
+
+	mu sync.Mutex // guards following
+	m  map[reflect.Type]*list.Element
+	l  *list.List
+}
+
+func newLRU(max int) *lru {
+	return &lru{
+		max: max,
+		m:   map[reflect.Type]*list.Element{},
+		l:   list.New(),
+	}
+}
+
+// columnToFieldSize should contain a capacity high enough for most applications,
+// but low enough to mitigate a memory leak.
+const columnToFieldSize = 1000
+
+// Start LRU cache.
+var columnToField = newLRU(columnToFieldSize)
+
+type columnToFieldElement struct {
+	Type    reflect.Type
+	Columns map[string][]int
+}
+
+func getColumnToFieldIndexMap(structType reflect.Type) map[string][]int {
 	result := make(map[string][]int, structType.NumField())
 	jsonColumns := map[string]struct{}{}
 	var queue []*toTraverse
