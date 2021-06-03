@@ -38,14 +38,14 @@ jobs:
       - name: Go Build Cache
         uses: actions/cache@v2
         with:
-          path: ${{ steps.go-cache-paths.outputs.go-build }}
+          path: $(go env GOCACHE)
           key: ${{ runner.os }}-go-build-${{ hashFiles('**/go.sum') }}
 
       # Cache go mod cache, used to speedup builds
       - name: Go Mod Cache
         uses: actions/cache@v2
         with:
-          path: ${{ steps.go-cache-paths.outputs.go-mod }}
+          path: ~/go/pkg/mod
           key: ${{ runner.os }}-go-mod-${{ hashFiles('**/go.sum') }}
       - name: Test
         run: go test -v -race  -coverprofile=coverage.txt -covermode=atomic ./... --cockroach-binary cockroach
