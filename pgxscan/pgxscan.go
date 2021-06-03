@@ -33,6 +33,10 @@ func Select(ctx context.Context, db Querier, dst interface{}, query string, args
 	return errors.WithStack(err)
 }
 
+func get() {
+
+}
+
 // Get is a high-level function that queries rows from Querier and calls the ScanOne function.
 // See ScanOne for details.
 func Get(ctx context.Context, db Querier, dst interface{}, query string, args ...interface{}) error {
