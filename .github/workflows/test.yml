@@ -47,5 +47,6 @@ jobs:
         with:
           path: ~/go/pkg/mod
           key: ${{ runner.os }}-go-mod-${{ hashFiles('**/go.sum') }}
+
       - name: Test
         run: go test -v -race  -coverprofile=coverage.txt -covermode=atomic ./... --cockroach-binary cockroach
