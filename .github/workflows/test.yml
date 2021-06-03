@@ -1,0 +1,65 @@
+name: Test
+
+on:
+  push:
+    tags:
+      - v*
+    branches:
+      - master
+  pull_request:
+
+jobs:
+  test:
+    strategy:
+      matrix:
+        go-version: [1.13.x, 1.14.x, 1.15.x, 1.16.x]
+    env:
+      GO: ${{ matrix.go-version }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download CockroachDB Binary
+        run: |
+          wget -qO- https://binaries.cockroachdb.com/cockroach-v20.1.3.linux-amd64.tgz | tar  xvz
+          sudo cp -i cockroach-v20.1.3.linux-amd64/cockroach /usr/local/bin/
+
+      - name: Install Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{ matrix.go-version }}
+
+      # Get values for cache paths to be used in later steps
+      - id: go-cache-paths
+        run: |
+          echo "::set-output name=go-build::$(go env GOCACHE)"
+          echo "::set-output name=go-mod::$(go env GOMODCACHE)"
+
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      # Cache go build cache, used to speedup go test
+      - name: Go Build Cache
+        uses: actions/cache@v2
+        with:
+          path: $(go env GOCACHE)
+          key: ${{ runner.os }}-go-build-${{ hashFiles('**/go.sum') }}
+
+      # Cache go mod cache, used to speedup builds
+      - name: Go Mod Cache
+        uses: actions/cache@v2
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-go-mod-${{ hashFiles('**/go.sum') }}
+
+      - name: Test
+        run: go test -v -race  -coverprofile=coverage.txt -covermode=atomic ./... --cockroach-binary cockroach
+
+      - name: Upload Codecov
+        uses: codecov/codecov-action@v1
+        with:
+          files: ./coverage.txt
+          flags: unittests
+          env_vars: GO
+          name: codecov-umbrella
+          fail_ci_if_error: true
+          path_to_write_report: ./codecov_report.txt
+          verbose: true
