@@ -13,6 +13,8 @@ jobs:
     strategy:
       matrix:
         go-version: [1.13.x, 1.14.x, 1.15.x, 1.16.x]
+    env:
+      GO: ${{ matrix.go-version }}
     runs-on: ubuntu-latest
     steps:
       - name: Download CockroachDB Binary
@@ -50,3 +52,14 @@ jobs:
 
       - name: Test
         run: go test -v -race  -coverprofile=coverage.txt -covermode=atomic ./... --cockroach-binary cockroach
+
+      - name: Upload Codecov
+        uses: codecov/codecov-action@v1
+        with:
+          files: ./coverage.txt
+          flags: unittests
+          env_vars: GO
+          name: codecov-umbrella
+          fail_ci_if_error: true
+          path_to_write_report: ./codecov_report.txt
+          verbose: true
