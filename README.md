@@ -1,6 +1,6 @@
 # scany
 
-![Tests Status](https://github.com/georgysavva/scany/actions/workflows/test.yml/badge.svg?branch=master)
+[![Tests Status](https://github.com/georgysavva/scany/actions/workflows/test.yml/badge.svg?branch=master)](https://github.com/georgysavva/scany/actions/workflows/test.yml)
 [![Go Report Card](https://goreportcard.com/badge/github.com/georgysavva/scany)](https://goreportcard.com/report/github.com/georgysavva/scany)
 [![codecov](https://codecov.io/gh/georgysavva/scany/branch/master/graph/badge.svg)](https://codecov.io/gh/georgysavva/scany)
 [![PkgGoDev](https://pkg.go.dev/badge/github.com/georgysavva/scany)](https://pkg.go.dev/github.com/georgysavva/scany)
