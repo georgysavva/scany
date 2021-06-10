@@ -120,7 +120,7 @@ features and contains all the logic. Both `sqlscan` and `pgxscan` use `dbscan` i
 
 ## Project documentation
 
-For detailed project documentation see GitHub [wiki](https://github.com/georgysavva/scany/wiki).
+For detailed project documentation see GitHub [Wiki](https://github.com/georgysavva/scany/wiki).
 
 ## Contributing
 
