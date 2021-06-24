@@ -57,7 +57,15 @@ func Wildcard(v interface{}) string {
 
 // Fields returns column names for a SQL table that can be queried by a given Go struct.
 func Fields(v interface{}) []string {
-	rv := reflect.Indirect(reflect.ValueOf(v)).Type()
+	if v == nil {
+		return nil
+	}
+	var rv reflect.Type
+	if reflect.TypeOf(v).Kind() == reflect.Ptr {
+		rv = reflect.TypeOf(v).Elem()
+	} else {
+		rv = reflect.Indirect(reflect.ValueOf(v)).Type()
+	}
 	type column struct {
 		indices []int
 		name    string

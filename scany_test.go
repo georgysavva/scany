@@ -85,6 +85,7 @@ type NestedMock struct {
 
 func TestWildcard(t *testing.T) {
 	t.Parallel()
+	var uninitializedPointer *jsonMock
 	testCases := []struct {
 		v    interface{}
 		desc string
@@ -196,6 +197,16 @@ func TestWildcard(t *testing.T) {
 			v:    &jsonMock{},
 			desc: "json",
 			want: `"id","name","code","is_active","theme","created_at","modified_at"`,
+		},
+		{
+			v:    uninitializedPointer,
+			desc: "uninitializedPointer",
+			want: `"id","name","code","is_active","theme","created_at","modified_at"`,
+		},
+		{
+			v:    nil,
+			desc: "nil",
+			want: "",
 		},
 		{
 			v:    &HasNestedMock{},
