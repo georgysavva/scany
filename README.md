@@ -122,9 +122,11 @@ features and contains all the logic. Both `sqlscan` and `pgxscan` use `dbscan` i
 
 For detailed project documentation see GitHub [Wiki](https://github.com/georgysavva/scany/wiki).
 
-## Contributing
+## How to contribute
 
-Every feature request or question is appreciated. Don't hesitate. Just post an issue or PR.
+- If you have an idea or a question, just post a pull request or an issue. Every feedback is appreciated.
+- If you want to help but don't know-how. All issues that you can work on are marked as `"help wanted"`. Discover all `"help wanted"` issues [here](https://github.com/georgysavva/scany/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22).
+
 
 ## License
 
