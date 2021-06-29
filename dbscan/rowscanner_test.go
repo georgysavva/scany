@@ -1,6 +1,7 @@
 package dbscan_test
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -56,6 +57,26 @@ type AmbiguousNested1 struct {
 
 type AmbiguousNested2 struct {
 	Foo string
+}
+
+type NestedAnonymous struct {
+	CustomString
+}
+
+type CustomString string
+
+func (cs *CustomString) Scan(src interface{}) error {
+	switch src := src.(type) {
+	case nil:
+		return nil
+
+	case string:
+		*cs = CustomString(src)
+
+	default:
+		return fmt.Errorf("Scan: unable to scan type %T into CustomString", src)
+	}
+	return nil
 }
 
 func TestRowScanner_Scan_structDestination(t *testing.T) {
@@ -269,10 +290,10 @@ func TestRowScanner_Scan_structDestination(t *testing.T) {
 		{
 			name: "multiple level nested structs",
 			query: `
-				SELECT 'foo val 1' AS "foo", 'foo val 2' AS "nested2.foo", 
+				SELECT 'foo val 1' AS "foo", 'foo val 2' AS "nested2.foo",
 				'foo val 3' AS "nested1_tag_embedded.nested2_tag_embedded.foo_column",
 				'foo val 4' AS "nested1_tag_embedded.nested2_tag.foo_column",
-				'foo val 5' AS "nested1.foo", 'foo val 6' AS "nested1.nested2.foo", 
+				'foo val 5' AS "nested1.foo", 'foo val 6' AS "nested1.nested2.foo",
 				'foo val 7' AS "nested1_tag.nested2_tag_embedded.foo_column",
 				'foo val 8' AS "nested1_tag.nested2_tag.foo_column"
 			`,
@@ -453,6 +474,21 @@ func TestRowScanner_Scan_structDestination(t *testing.T) {
 							DeepNested2: "deep_nested2 val",
 						},
 					},
+				},
+			},
+		},
+		{
+			name: "struct nullable nested anonymous",
+			query: `
+				SELECT NULL AS "foo", 'nested_anonymous val' AS "bar"
+			`,
+			expected: struct {
+				Foo *NestedAnonymous
+				Bar *NestedAnonymous
+			}{
+				Foo: nil,
+				Bar: &NestedAnonymous{
+					"nested_anonymous val",
 				},
 			},
 		},
