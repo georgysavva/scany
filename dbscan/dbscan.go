@@ -4,6 +4,8 @@ import (
 	"reflect"
 
 	"github.com/pkg/errors"
+
+	"github.com/georgysavva/scany/internal/structref"
 )
 
 // Rows is an abstract database rows that dbscan can iterate over and get the data from.
@@ -266,7 +268,7 @@ func startScanner(rs *RowScanner, dstValue reflect.Value) error {
 		return errors.WithStack(err)
 	}
 	if dstValue.Kind() == reflect.Struct {
-		rs.columnToFieldIndex = getColumnToFieldIndexMap(dstValue.Type())
+		rs.columnToFieldIndex = structref.GetColumnToFieldIndexMap(dstValue.Type())
 		return nil
 	}
 	if dstValue.Kind() == reflect.Map {
@@ -311,6 +313,20 @@ func (rs *RowScanner) scanStruct(structValue reflect.Value) error {
 	}
 	err := rs.rows.Scan(scans...)
 	return errors.Wrap(err, "scany: scan row into struct fields")
+}
+
+func initializeNested(structValue reflect.Value, fieldIndex []int) {
+	i := fieldIndex[0]
+	field := structValue.Field(i)
+
+	// Create a new instance of a struct and set it to field,
+	// if field is a nil pointer to a struct.
+	if field.Kind() == reflect.Ptr && field.Type().Elem().Kind() == reflect.Struct && field.IsNil() {
+		field.Set(reflect.New(field.Type().Elem()))
+	}
+	if len(fieldIndex) > 1 {
+		initializeNested(reflect.Indirect(field), fieldIndex[1:])
+	}
 }
 
 func (rs *RowScanner) scanMap(mapValue reflect.Value) error {
