@@ -1,8 +1,10 @@
 package dbscan
 
 import (
+	"reflect"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
@@ -39,4 +41,42 @@ func DoTestRowScannerStartCalledExactlyOnce(t *testing.T, queryRows queryRowsFun
 	require.NoError(t, rows.Close())
 
 	mockStart.AssertNumberOfCalls(t, "Execute", 1)
+}
+
+func TestColumnToFieldIndexMap(t *testing.T) {
+	type Node struct {
+		ID     string
+		Parent *Node
+	}
+
+	type User struct {
+		ID   int
+		Name string
+	}
+
+	type UserNode struct {
+		User
+		*Node
+		CreatedBy *string
+	}
+
+	type testCase struct {
+		structType   reflect.Type
+		expectedCols []string
+	}
+
+	MaxStructRecursionLevel = 2
+	testCases := []testCase{
+		{reflect.TypeOf(Node{}), []string{"id", "parent", "parent.id", "parent.parent"}},
+		{reflect.TypeOf(User{}), []string{"id", "name"}},
+		{reflect.TypeOf(UserNode{}), []string{"id", "name", "created_by", "parent", "parent.id", "parent.parent"}},
+	}
+	for _, tc := range testCases {
+		colIdxMap := getColumnToFieldIndexMap(tc.structType)
+		assert.Len(t, colIdxMap, len(tc.expectedCols))
+		for _, col := range tc.expectedCols {
+			_, exist := colIdxMap[col]
+			assert.True(t, exist)
+		}
+	}
 }

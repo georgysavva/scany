@@ -8,6 +8,9 @@ import (
 
 var dbStructTagKey = "db"
 
+// Maximum recursion level for same struct type
+var MaxStructRecursionLevel int = 2
+
 type toTraverse struct {
 	Type         reflect.Type
 	IndexPrefix  []int
@@ -18,10 +21,23 @@ func getColumnToFieldIndexMap(structType reflect.Type) map[string][]int {
 	result := make(map[string][]int, structType.NumField())
 	var queue []*toTraverse
 	queue = append(queue, &toTraverse{Type: structType, IndexPrefix: nil, ColumnPrefix: ""})
+
+	visitedTypes := make(map[reflect.Type]int)
 	for len(queue) > 0 {
 		traversal := queue[0]
 		queue = queue[1:]
 		structType := traversal.Type
+
+		// remember visited types and number of visits.
+		if structType.Kind() == reflect.Struct {
+			if visitCount, visited := visitedTypes[structType]; !visited {
+				visitedTypes[structType] = 1
+			} else if visitCount < MaxStructRecursionLevel {
+				visitedTypes[structType] = visitCount + 1
+			} else {
+				continue
+			}
+		}
 		for i := 0; i < structType.NumField(); i++ {
 			field := structType.Field(i)
 
@@ -56,8 +72,8 @@ func getColumnToFieldIndexMap(structType reflect.Type) map[string][]int {
 			}
 
 			childType := field.Type
-			if field.Type.Kind() == reflect.Ptr {
-				childType = field.Type.Elem()
+			for childType.Kind() == reflect.Ptr {
+				childType = childType.Elem()
 			}
 			if childType.Kind() == reflect.Struct {
 				if field.Anonymous {
