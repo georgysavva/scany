@@ -22,40 +22,78 @@ var (
 	_ Querier = pgx.Tx(nil)
 )
 
+func Select(ctx context.Context, db Querier, dst interface{}, query string, args ...interface{}) error {
+	return errors.WithStack(DefaultAPI.Select(ctx, db, dst, query, args...))
+}
+
+func Get(ctx context.Context, db Querier, dst interface{}, query string, args ...interface{}) error {
+	return errors.WithStack(DefaultAPI.Get(ctx, db, dst, query, args...))
+}
+
+func ScanAll(dst interface{}, rows pgx.Rows) error {
+	return errors.WithStack(DefaultAPI.ScanAll(dst, rows))
+}
+
+func ScanOne(dst interface{}, rows pgx.Rows) error {
+	return errors.WithStack(DefaultAPI.ScanOne(dst, rows))
+}
+
+// RowScanner is a wrapper around the dbscan.RowScanner type.
+// See dbscan.RowScanner for details.
+type RowScanner struct {
+	*dbscan.RowScanner
+}
+
+func NewRowScanner(rows pgx.Rows) *RowScanner {
+	return DefaultAPI.NewRowScanner(rows)
+}
+func ScanRow(dst interface{}, rows pgx.Rows) error {
+	return DefaultAPI.ScanRow(dst, rows)
+}
+
+type API struct {
+	dbscanAPI *dbscan.API
+}
+
+func NewAPI(dbscanAPI *dbscan.API) *API {
+	api := &API{dbscanAPI: dbscanAPI}
+	return api
+}
+
 // Select is a high-level function that queries rows from Querier and calls the ScanAll function.
 // See ScanAll for details.
-func Select(ctx context.Context, db Querier, dst interface{}, query string, args ...interface{}) error {
+func (api *API) Select(ctx context.Context, db Querier, dst interface{}, query string, args ...interface{}) error {
 	rows, err := db.Query(ctx, query, args...)
 	if err != nil {
 		return errors.Wrap(err, "scany: query multiple result rows")
 	}
-	err = ScanAll(dst, rows)
+	err = api.ScanAll(dst, rows)
 	return errors.WithStack(err)
 }
 
 // Get is a high-level function that queries rows from Querier and calls the ScanOne function.
 // See ScanOne for details.
-func Get(ctx context.Context, db Querier, dst interface{}, query string, args ...interface{}) error {
+func (api *API) Get(ctx context.Context, db Querier, dst interface{}, query string, args ...interface{}) error {
 	rows, err := db.Query(ctx, query, args...)
 	if err != nil {
 		return errors.Wrap(err, "scany: query one result row")
 	}
-	err = ScanOne(dst, rows)
+	err = api.ScanOne(dst, rows)
 	return errors.WithStack(err)
 }
 
 // ScanAll is a wrapper around the dbscan.ScanAll function.
 // See dbscan.ScanAll for details.
-func ScanAll(dst interface{}, rows pgx.Rows) error {
-	err := dbscan.ScanAll(dst, NewRowsAdapter(rows))
+func (api *API) ScanAll(dst interface{}, rows pgx.Rows) error {
+	err := api.dbscanAPI.ScanAll(dst, NewRowsAdapter(rows))
 	return errors.WithStack(err)
 }
 
 // ScanOne is a wrapper around the dbscan.ScanOne function.
 // See dbscan.ScanOne for details. If no rows are found it
 // returns a pgx.ErrNoRows error.
-func ScanOne(dst interface{}, rows pgx.Rows) error {
-	err := dbscan.ScanOne(dst, NewRowsAdapter(rows))
+func (api *API) ScanOne(dst interface{}, rows pgx.Rows) error {
+	err := api.dbscanAPI.ScanOne(dst, NewRowsAdapter(rows))
 	if dbscan.NotFound(err) {
 		return errors.WithStack(pgx.ErrNoRows)
 	}
@@ -68,22 +106,16 @@ func NotFound(err error) bool {
 	return errors.Is(err, pgx.ErrNoRows)
 }
 
-// RowScanner is a wrapper around the dbscan.RowScanner type.
-// See dbscan.RowScanner for details.
-type RowScanner struct {
-	*dbscan.RowScanner
-}
-
 // NewRowScanner returns a new RowScanner instance.
-func NewRowScanner(rows pgx.Rows) *RowScanner {
+func (api *API) NewRowScanner(rows pgx.Rows) *RowScanner {
 	ra := NewRowsAdapter(rows)
-	return &RowScanner{RowScanner: dbscan.NewRowScanner(ra)}
+	return &RowScanner{RowScanner: api.dbscanAPI.NewRowScanner(ra)}
 }
 
 // ScanRow is a wrapper around the dbscan.ScanRow function.
 // See dbscan.ScanRow for details.
-func ScanRow(dst interface{}, rows pgx.Rows) error {
-	err := dbscan.ScanRow(dst, NewRowsAdapter(rows))
+func (api *API) ScanRow(dst interface{}, rows pgx.Rows) error {
+	err := api.dbscanAPI.ScanRow(dst, NewRowsAdapter(rows))
 	return errors.WithStack(err)
 }
 
@@ -112,3 +144,5 @@ func (ra RowsAdapter) Close() error {
 	ra.Rows.Close()
 	return nil
 }
+
+var DefaultAPI = NewAPI(dbscan.DefaultAPI)
