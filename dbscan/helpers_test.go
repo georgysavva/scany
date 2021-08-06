@@ -44,7 +44,6 @@ func getAPI() *dbscan.API {
 
 func scan(t *testing.T, dst interface{}, rows dbscan.Rows) error {
 	defer rows.Close() // nolint: errcheck
-	api := getAPI()
 	rs := api.NewRowScanner(rows)
 	rows.Next()
 	if err := rs.Scan(dst); err != nil {

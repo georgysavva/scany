@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/cockroachdb/cockroach-go/v2/testserver"
+	"github.com/georgysavva/scany/dbscan"
 	_ "github.com/jackc/pgx/v4/stdlib"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
@@ -20,6 +21,7 @@ import (
 var (
 	testDB *sql.DB
 	ctx    = context.Background()
+	api    *sqlscan.API
 )
 
 type testModel struct {
@@ -51,7 +53,7 @@ func TestSelect(t *testing.T) {
 	}
 
 	var got []*testModel
-	err := sqlscan.Select(ctx, testDB, &got, multipleRowsQuery)
+	err := api.Select(ctx, testDB, &got, multipleRowsQuery)
 	require.NoError(t, err)
 
 	assert.Equal(t, expected, got)
@@ -68,7 +70,7 @@ func TestSelect_queryError_propagatesAndWrapsErr(t *testing.T) {
 	expectedErr := "scany: query multiple result rows: ERROR: column \"baz\" does not exist (SQLSTATE 42703)"
 
 	dst := &[]*testModel{}
-	err := sqlscan.Select(ctx, testDB, dst, query)
+	err := api.Select(ctx, testDB, dst, query)
 
 	assert.EqualError(t, err, expectedErr)
 }
@@ -78,7 +80,7 @@ func TestGet(t *testing.T) {
 	expected := testModel{Foo: "foo val", Bar: "bar val"}
 
 	var got testModel
-	err := sqlscan.Get(ctx, testDB, &got, singleRowsQuery)
+	err := api.Get(ctx, testDB, &got, singleRowsQuery)
 	require.NoError(t, err)
 
 	assert.Equal(t, expected, got)
@@ -92,7 +94,7 @@ func TestGet_queryError_propagatesAndWrapsErr(t *testing.T) {
 	expectedErr := "scany: query one result row: ERROR: column \"baz\" does not exist (SQLSTATE 42703)"
 
 	dst := &testModel{}
-	err := sqlscan.Get(ctx, testDB, dst, query)
+	err := api.Get(ctx, testDB, dst, query)
 
 	assert.EqualError(t, err, expectedErr)
 }
@@ -108,7 +110,7 @@ func TestScanAll(t *testing.T) {
 	require.NoError(t, err)
 
 	var got []*testModel
-	err = sqlscan.ScanAll(&got, rows)
+	err = api.ScanAll(&got, rows)
 	require.NoError(t, err)
 
 	assert.Equal(t, expected, got)
@@ -121,7 +123,7 @@ func TestScanOne(t *testing.T) {
 	require.NoError(t, err)
 
 	var got testModel
-	err = sqlscan.ScanOne(&got, rows)
+	err = api.ScanOne(&got, rows)
 	require.NoError(t, err)
 
 	assert.Equal(t, expected, got)
@@ -133,7 +135,7 @@ func TestScanOne_noRows_returnsNotFoundErr(t *testing.T) {
 	require.NoError(t, err)
 
 	var got testModel
-	err = sqlscan.ScanOne(&got, rows)
+	err = api.ScanOne(&got, rows)
 
 	assert.True(t, sqlscan.NotFound(err))
 	assert.True(t, errors.Is(err, sql.ErrNoRows))
@@ -145,7 +147,7 @@ func TestRowScanner_Scan(t *testing.T) {
 	rows, err := testDB.Query(singleRowsQuery)
 	require.NoError(t, err)
 	defer rows.Close() // nolint: errcheck
-	rs := sqlscan.NewRowScanner(rows)
+	rs := api.NewRowScanner(rows)
 	rows.Next()
 	expected := testModel{Foo: "foo val", Bar: "bar val"}
 
@@ -166,7 +168,7 @@ func TestScanRow(t *testing.T) {
 	expected := testModel{Foo: "foo val", Bar: "bar val"}
 
 	var got testModel
-	err = sqlscan.ScanRow(&got, rows)
+	err = api.ScanRow(&got, rows)
 	require.NoError(t, err)
 	requireNoRowsErrorsAndClose(t, rows)
 
@@ -181,7 +183,7 @@ func TestRowScanner_Scan_closedRows(t *testing.T) {
 	}
 	requireNoRowsErrorsAndClose(t, rows)
 
-	rs := sqlscan.NewRowScanner(rows)
+	rs := api.NewRowScanner(rows)
 	dst := &testModel{}
 	err = rs.Scan(dst)
 
@@ -230,7 +232,7 @@ func TestRowScanner_Scan_NULLableScannerType(t *testing.T) {
 			rows, err := testDB.Query(tc.query)
 			require.NoError(t, err)
 			defer rows.Close() // nolint: errcheck
-			rs := sqlscan.NewRowScanner(rows)
+			rs := api.NewRowScanner(rows)
 			rows.Next()
 
 			got := &Destination{}
@@ -247,6 +249,10 @@ func requireNoRowsErrorsAndClose(t *testing.T, rows *sql.Rows) {
 	t.Helper()
 	require.NoError(t, rows.Err())
 	require.NoError(t, rows.Close())
+}
+
+func getAPI() *sqlscan.API {
+	return sqlscan.NewAPI(dbscan.NewAPI())
 }
 
 func TestMain(m *testing.M) {
@@ -266,6 +272,7 @@ func TestMain(m *testing.M) {
 				panic(err)
 			}
 		}()
+		api = getAPI()
 		return m.Run()
 	}()
 	os.Exit(exitCode)

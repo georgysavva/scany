@@ -47,6 +47,7 @@ type RowScanner struct {
 func NewRowScanner(rows pgx.Rows) *RowScanner {
 	return DefaultAPI.NewRowScanner(rows)
 }
+
 func ScanRow(dst interface{}, rows pgx.Rows) error {
 	return DefaultAPI.ScanRow(dst, rows)
 }
