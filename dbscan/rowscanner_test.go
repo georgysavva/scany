@@ -912,5 +912,5 @@ func TestRowScanner_Scan_invalidDst_returnsErr(t *testing.T) {
 
 func TestRowScanner_Scan_startCalledExactlyOnce(t *testing.T) {
 	t.Parallel()
-	dbscan.DoTestRowScannerStartCalledExactlyOnce(t, queryRows)
+	dbscan.DoTestRowScannerStartCalledExactlyOnce(t, getAPI(), queryRows)
 }
