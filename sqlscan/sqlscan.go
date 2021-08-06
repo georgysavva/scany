@@ -108,13 +108,13 @@ func NotFound(err error) bool {
 
 // NewRowScanner returns a new RowScanner instance.
 func (api *API) NewRowScanner(rows *sql.Rows) *RowScanner {
-	return &RowScanner{RowScanner: dbscan.NewRowScanner(rows)}
+	return &RowScanner{RowScanner: api.dbscanAPI.NewRowScanner(rows)}
 }
 
 // ScanRow is a wrapper around the dbscan.ScanRow function.
 // See dbscan.ScanRow for details.
 func (api *API) ScanRow(dst interface{}, rows *sql.Rows) error {
-	err := dbscan.ScanRow(dst, rows)
+	err := api.dbscanAPI.ScanRow(dst, rows)
 	return errors.WithStack(err)
 }
 
