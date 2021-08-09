@@ -18,14 +18,19 @@ type Rows interface {
 	Scan(dest ...interface{}) error
 }
 
+// ScanAll is a package-level helper function that uses the DefaultAPI object.
+// See API.ScanAll for details.
 func ScanAll(dst interface{}, rows Rows) error {
 	return errors.WithStack(DefaultAPI.ScanAll(dst, rows))
 }
 
+// ScanOne is a package-level helper function that uses the DefaultAPI object.
+// See API.ScanOne for details.
 func ScanOne(dst interface{}, rows Rows) error {
 	return errors.WithStack(DefaultAPI.ScanOne(dst, rows))
 }
 
+// NameMapperFunc is a function type that maps a struct field name to the database column name.
 type NameMapperFunc func(string) string
 
 var (
@@ -33,20 +38,25 @@ var (
 	matchAllCapRe   = regexp.MustCompile("([a-z0-9])([A-Z])")
 )
 
+// SnakeCaseMapper is a NameMapperFunc that maps struct field to snake case.
 func SnakeCaseMapper(str string) string {
 	snake := matchFirstCapRe.ReplaceAllString(str, "${1}_${2}")
 	snake = matchAllCapRe.ReplaceAllString(snake, "${1}_${2}")
 	return strings.ToLower(snake)
 }
 
+// API is the main type in dbscan. It exposes all functionality available in the package.
+// API contains various settings and allows configuring the behavior of dbscan.
 type API struct {
 	structTagKey    string
 	columnSeparator string
 	fieldMapperFn   NameMapperFunc
 }
 
+// APIOption is a function type that changes API configuration.
 type APIOption func(api *API)
 
+// NewAPI creates a new API object with provided list of options.
 func NewAPI(opts ...APIOption) *API {
 	api := &API{
 		structTagKey:    "db",
@@ -59,18 +69,24 @@ func NewAPI(opts ...APIOption) *API {
 	return api
 }
 
+// WithStructTagKey allows to use a custom struct tag key.
+// The default tag key is `db`.
 func WithStructTagKey(tagKey string) APIOption {
 	return func(api *API) {
 		api.structTagKey = tagKey
 	}
 }
 
+// WithColumnSeparator allows to use a custom separator character for column name when combining nested structs.
+// The default separator is "."
 func WithColumnSeparator(separator string) APIOption {
 	return func(api *API) {
 		api.columnSeparator = separator
 	}
 }
 
+// WithFieldNameMapper allows to use a custom function to map field name to column names.
+// The default function is SnakeCaseMapper.
 func WithFieldNameMapper(mapperFn NameMapperFunc) APIOption {
 	return func(api *API) {
 		api.fieldMapperFn = mapperFn
@@ -226,6 +242,8 @@ func scanSliceElement(rs *RowScanner, sliceMeta *sliceDestinationMeta) error {
 	return nil
 }
 
+// ScanRow is a package-level helper function that uses the DefaultAPI object.
+// See API.ScanRow for details.
 func ScanRow(dst interface{}, rows Rows) error {
 	return errors.WithStack(DefaultAPI.ScanRow(dst, rows))
 }
@@ -256,4 +274,5 @@ func parseDestination(dst interface{}) (reflect.Value, error) {
 	return dstVal, nil
 }
 
+// DefaultAPI is the default instance of API with all configuration settings set to default.
 var DefaultAPI = NewAPI()

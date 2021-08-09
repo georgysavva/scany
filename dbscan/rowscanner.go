@@ -36,6 +36,8 @@ type RowScanner struct {
 	start              startScannerFunc
 }
 
+// NewRowScanner is a package-level helper function that uses the DefaultAPI object.
+// See API.NewRowScanner for details.
 func NewRowScanner(rows Rows) *RowScanner {
 	return DefaultAPI.NewRowScanner(rows)
 }
