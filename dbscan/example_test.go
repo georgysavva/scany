@@ -1,6 +1,8 @@
 package dbscan_test
 
 import (
+	"strings"
+
 	"github.com/georgysavva/scany/dbscan"
 )
 
@@ -82,4 +84,30 @@ func ExampleScanRow() {
 		}
 		// user variable now contains data from the current row.
 	}
+}
+
+func ExampleAPI() {
+	type User struct {
+		ID    string `database:"user_id"`
+		Name  string
+		Email string
+		Age   int
+	}
+
+	// Instantiate a custom API with overridden settings.
+	api := dbscan.NewAPI(
+		dbscan.WithFieldNameMapper(strings.ToLower),
+		dbscan.WithStructTagKey("database"),
+	)
+
+	// Query rows from the database that implement Rows interface.
+	// You should also take care of handling rows error after iteration and closing them.
+	var rows dbscan.Rows
+
+	var users []*User
+	// Use the custom API instance to access dbscan functionality.
+	if err := api.ScanAll(&users, rows); err != nil {
+		// Handle rows processing error
+	}
+	// users variable now contains data from all rows.
 }
