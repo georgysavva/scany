@@ -22,10 +22,14 @@ var (
 	_ Querier = pgx.Tx(nil)
 )
 
+// Select is a package-level helper function that uses the DefaultAPI object.
+// See API.Select for details.
 func Select(ctx context.Context, db Querier, dst interface{}, query string, args ...interface{}) error {
 	return errors.WithStack(DefaultAPI.Select(ctx, db, dst, query, args...))
 }
 
+// Get is a package-level helper function that uses the DefaultAPI object.
+// See API.Get for details.
 func Get(ctx context.Context, db Querier, dst interface{}, query string, args ...interface{}) error {
 	return errors.WithStack(DefaultAPI.Get(ctx, db, dst, query, args...))
 }
