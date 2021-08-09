@@ -46,7 +46,7 @@ func SnakeCaseMapper(str string) string {
 }
 
 // API is the core type in dbscan. It implements all the logic and exposes functionality available in the package.
-// Having API type users can create a custom API instance and override default settings hence configure dbscan.
+// With API type users can create a custom API instance and override default settings hence configure dbscan.
 type API struct {
 	structTagKey    string
 	columnSeparator string

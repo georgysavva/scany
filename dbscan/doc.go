@@ -213,7 +213,7 @@ see RowScanner for details.
 
 Overriding default settings
 
-dbscan has API type, which can used to set custom settings, see API for details.
+dbscan has API type, which you can use to set custom settings, see API for details.
 
 Implementing Rows interface
 
