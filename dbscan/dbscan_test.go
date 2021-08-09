@@ -16,8 +16,9 @@ import (
 )
 
 var (
-	testDB *pgxpool.Pool
-	ctx    = context.Background()
+	testDB  *pgxpool.Pool
+	ctx     = context.Background()
+	testAPI *dbscan.API
 )
 
 func TestScanAll(t *testing.T) {
@@ -148,7 +149,7 @@ func TestScanAll(t *testing.T) {
 			t.Parallel()
 			rows := queryRows(t, tc.query)
 			dst := allocateDestination(tc.expected)
-			err := dbscan.ScanAll(dst, rows)
+			err := testAPI.ScanAll(dst, rows)
 			require.NoError(t, err)
 			assertDestinationEqual(t, tc.expected, dst)
 		})
@@ -165,7 +166,7 @@ func TestScanAll_nonEmptySlice_resetsDestinationSlice(t *testing.T) {
 	}
 
 	got := []*testModel{{Foo: "foo junk val", Bar: "bar junk val"}}
-	err := dbscan.ScanAll(&got, rows)
+	err := testAPI.ScanAll(&got, rows)
 	require.NoError(t, err)
 
 	assert.Equal(t, expected, got)
@@ -177,7 +178,7 @@ func TestScanAll_nonSliceDestination_returnsErr(t *testing.T) {
 	dst := &testModel{}
 	expectedErr := "scany: destination must be a slice, got: dbscan_test.testModel"
 
-	err := dbscan.ScanAll(dst, rows)
+	err := testAPI.ScanAll(dst, rows)
 
 	assert.EqualError(t, err, expectedErr)
 }
@@ -188,7 +189,7 @@ func TestScanAll_sliceByPointerToPointerDestination_returnsErr(t *testing.T) {
 	dst := new(*[]testModel)
 	expectedErr := "scany: destination must be a slice, got: *[]dbscan_test.testModel"
 
-	err := dbscan.ScanAll(dst, rows)
+	err := testAPI.ScanAll(dst, rows)
 
 	assert.EqualError(t, err, expectedErr)
 }
@@ -201,7 +202,7 @@ func TestScanAll_closedRows(t *testing.T) {
 	requireNoRowsErrorsAndClose(t, rows)
 
 	var got []testModel
-	err := dbscan.ScanAll(&got, rows)
+	err := testAPI.ScanAll(&got, rows)
 	require.NoError(t, err)
 
 	assert.Len(t, got, 0)
@@ -213,7 +214,7 @@ func TestScanOne(t *testing.T) {
 	expected := testModel{Foo: "foo val", Bar: "bar val"}
 
 	got := testModel{}
-	err := dbscan.ScanOne(&got, rows)
+	err := testAPI.ScanOne(&got, rows)
 	require.NoError(t, err)
 
 	assert.Equal(t, expected, got)
@@ -227,7 +228,7 @@ func TestScanOne_zeroRows_returnsNotFoundErr(t *testing.T) {
 	rows := queryRows(t, query)
 
 	dst := &struct{ Foo string }{}
-	err := dbscan.ScanOne(dst, rows)
+	err := testAPI.ScanOne(dst, rows)
 	isNotFound := dbscan.NotFound(err)
 
 	assert.True(t, isNotFound)
@@ -239,7 +240,7 @@ func TestScanOne_multipleRows_returnsErr(t *testing.T) {
 	expectedErr := "scany: expected 1 row, got: 3"
 
 	dst := &testModel{}
-	err := dbscan.ScanOne(dst, rows)
+	err := testAPI.ScanOne(dst, rows)
 
 	assert.EqualError(t, err, expectedErr)
 }
@@ -252,7 +253,7 @@ func TestScanRow(t *testing.T) {
 	expected := testModel{Foo: "foo val", Bar: "bar val"}
 
 	var got testModel
-	err := dbscan.ScanRow(&got, rows)
+	err := testAPI.ScanRow(&got, rows)
 	require.NoError(t, err)
 	requireNoRowsErrorsAndClose(t, rows)
 
@@ -272,6 +273,7 @@ func TestMain(m *testing.M) {
 			panic(err)
 		}
 		defer testDB.Close()
+		testAPI = getAPI()
 		return m.Run()
 	}()
 	os.Exit(exitCode)

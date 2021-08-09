@@ -29,7 +29,8 @@ it doesn't know anything about relations between objects e.g: one to many, many 
 * Reusing structs via nesting or embedding 
 * NULLs and custom types support
 * Omitted struct fields
-* Apart from structs, support for maps and Go primitive types as the destination.
+* Apart from structs, support for maps and Go primitive types as the destination
+* Override default settings
 
 ## Install
 

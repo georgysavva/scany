@@ -1,24 +1,28 @@
 package pgxscan_test
 
 import (
+	"strings"
+
 	"github.com/jackc/pgx/v4/pgxpool"
+
+	"github.com/georgysavva/scany/dbscan"
 
 	"github.com/georgysavva/scany/pgxscan"
 )
 
 func ExampleSelect() {
 	type User struct {
-		ID    string `db:"user_id"`
-		Name  string
-		Email string
-		Age   int
+		ID       string `db:"user_id"`
+		FullName string
+		Email    string
+		Age      int
 	}
 
 	db, _ := pgxpool.Connect(ctx, "example-connection-url")
 
 	var users []*User
 	if err := pgxscan.Select(
-		ctx, db, &users, `SELECT user_id, name, email, age FROM users`,
+		ctx, db, &users, `SELECT user_id, full_name, email, age FROM users`,
 	); err != nil {
 		// Handle query or rows processing error.
 	}
@@ -27,17 +31,17 @@ func ExampleSelect() {
 
 func ExampleGet() {
 	type User struct {
-		ID    string `db:"user_id"`
-		Name  string
-		Email string
-		Age   int
+		ID       string `db:"user_id"`
+		FullName string
+		Email    string
+		Age      int
 	}
 
 	db, _ := pgxpool.Connect(ctx, "example-connection-url")
 
 	var user User
 	if err := pgxscan.Get(
-		ctx, db, &user, `SELECT user_id, name, email, age FROM users WHERE user_id='bob'`,
+		ctx, db, &user, `SELECT user_id, full_name, email, age FROM users WHERE user_id='bob'`,
 	); err != nil {
 		// Handle query or rows processing error.
 	}
@@ -46,15 +50,15 @@ func ExampleGet() {
 
 func ExampleScanAll() {
 	type User struct {
-		ID    string `db:"user_id"`
-		Name  string
-		Email string
-		Age   int
+		ID       string `db:"user_id"`
+		FullName string
+		Email    string
+		Age      int
 	}
 
 	// Query pgx.Rows from the database.
 	db, _ := pgxpool.Connect(ctx, "example-connection-url")
-	rows, _ := db.Query(ctx, `SELECT user_id, name, email, age FROM users`)
+	rows, _ := db.Query(ctx, `SELECT user_id, full_name, email, age FROM users`)
 
 	var users []*User
 	if err := pgxscan.ScanAll(&users, rows); err != nil {
@@ -65,15 +69,15 @@ func ExampleScanAll() {
 
 func ExampleScanOne() {
 	type User struct {
-		ID    string `db:"user_id"`
-		Name  string
-		Email string
-		Age   int
+		ID       string `db:"user_id"`
+		FullName string
+		Email    string
+		Age      int
 	}
 
 	// Query pgx.Rows from the database.
 	db, _ := pgxpool.Connect(ctx, "example-connection-url")
-	rows, _ := db.Query(ctx, `SELECT user_id, name, email, age FROM users WHERE user_id='bob'`)
+	rows, _ := db.Query(ctx, `SELECT user_id, full_name, email, age FROM users WHERE user_id='bob'`)
 
 	var user User
 	if err := pgxscan.ScanOne(&user, rows); err != nil {
@@ -84,15 +88,15 @@ func ExampleScanOne() {
 
 func ExampleRowScanner() {
 	type User struct {
-		ID    string `db:"user_id"`
-		Name  string
-		Email string
-		Age   int
+		ID       string `db:"user_id"`
+		FullName string
+		Email    string
+		Age      int
 	}
 
 	// Query pgx.Rows from the database.
 	db, _ := pgxpool.Connect(ctx, "example-connection-url")
-	rows, _ := db.Query(ctx, `SELECT user_id, name, email, age FROM users`)
+	rows, _ := db.Query(ctx, `SELECT user_id, full_name, email, age FROM users`)
 	defer rows.Close()
 
 	rs := pgxscan.NewRowScanner(rows)
@@ -111,15 +115,15 @@ func ExampleRowScanner() {
 
 func ExampleScanRow() {
 	type User struct {
-		ID    string `db:"user_id"`
-		Name  string
-		Email string
-		Age   int
+		ID       string `db:"user_id"`
+		FullName string
+		Email    string
+		Age      int
 	}
 
 	// Query pgx.Rows from the database.
 	db, _ := pgxpool.Connect(ctx, "example-connection-url")
-	rows, _ := db.Query(ctx, `SELECT user_id, name, email, age FROM users`)
+	rows, _ := db.Query(ctx, `SELECT user_id, full_name, email, age FROM users`)
 	defer rows.Close()
 	for rows.Next() {
 		var user User
@@ -131,4 +135,31 @@ func ExampleScanRow() {
 	if err := rows.Err(); err != nil {
 		// Handle rows final error.
 	}
+}
+
+// This example shows how to create and use a custom API instance to override default settings.
+func ExampleAPI() {
+	type User struct {
+		ID       string `database:"userid"`
+		FullName string
+		Email    string
+		Age      int
+	}
+
+	// Instantiate a custom API with overridden settings.
+	api := pgxscan.NewAPI(dbscan.NewAPI(
+		dbscan.WithFieldNameMapper(strings.ToLower),
+		dbscan.WithStructTagKey("database"),
+	))
+
+	db, _ := pgxpool.Connect(ctx, "example-connection-url")
+
+	var users []*User
+	// Use the custom API instance to access pgxscan functionality.
+	if err := api.Select(
+		ctx, db, &users, `SELECT userid, fullname, email, age FROM users`,
+	); err != nil {
+		// Handle query or rows processing error.
+	}
+	// users variable now contains data from all rows.
 }

@@ -211,6 +211,10 @@ Manual rows iteration
 It's possible to manually control rows iteration but still use all scanning features of dbscan,
 see RowScanner for details.
 
+Overriding default settings
+
+dbscan has API type, which you can use to set custom settings, see API for details.
+
 Implementing Rows interface
 
 dbscan can be used with any database library with a concept of rows and can implement dbscan Rows interface.

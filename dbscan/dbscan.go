@@ -2,6 +2,8 @@ package dbscan
 
 import (
 	"reflect"
+	"regexp"
+	"strings"
 
 	"github.com/pkg/errors"
 )
@@ -14,6 +16,81 @@ type Rows interface {
 	Next() bool
 	Columns() ([]string, error)
 	Scan(dest ...interface{}) error
+}
+
+// ScanAll is a package-level helper function that uses the DefaultAPI object.
+// See API.ScanAll for details.
+func ScanAll(dst interface{}, rows Rows) error {
+	return errors.WithStack(DefaultAPI.ScanAll(dst, rows))
+}
+
+// ScanOne is a package-level helper function that uses the DefaultAPI object.
+// See API.ScanOne for details.
+func ScanOne(dst interface{}, rows Rows) error {
+	return errors.WithStack(DefaultAPI.ScanOne(dst, rows))
+}
+
+// NameMapperFunc is a function type that maps a struct field name to the database column name.
+type NameMapperFunc func(string) string
+
+var (
+	matchFirstCapRe = regexp.MustCompile("(.)([A-Z][a-z]+)")
+	matchAllCapRe   = regexp.MustCompile("([a-z0-9])([A-Z])")
+)
+
+// SnakeCaseMapper is a NameMapperFunc that maps struct field to snake case.
+func SnakeCaseMapper(str string) string {
+	snake := matchFirstCapRe.ReplaceAllString(str, "${1}_${2}")
+	snake = matchAllCapRe.ReplaceAllString(snake, "${1}_${2}")
+	return strings.ToLower(snake)
+}
+
+// API is the core type in dbscan. It implements all the logic and exposes functionality available in the package.
+// With API type users can create a custom API instance and override default settings hence configure dbscan.
+type API struct {
+	structTagKey    string
+	columnSeparator string
+	fieldMapperFn   NameMapperFunc
+}
+
+// APIOption is a function type that changes API configuration.
+type APIOption func(api *API)
+
+// NewAPI creates a new API object with provided list of options.
+func NewAPI(opts ...APIOption) *API {
+	api := &API{
+		structTagKey:    "db",
+		columnSeparator: ".",
+		fieldMapperFn:   SnakeCaseMapper,
+	}
+	for _, o := range opts {
+		o(api)
+	}
+	return api
+}
+
+// WithStructTagKey allows to use a custom struct tag key.
+// The default tag key is `db`.
+func WithStructTagKey(tagKey string) APIOption {
+	return func(api *API) {
+		api.structTagKey = tagKey
+	}
+}
+
+// WithColumnSeparator allows to use a custom separator character for column name when combining nested structs.
+// The default separator is "." character.
+func WithColumnSeparator(separator string) APIOption {
+	return func(api *API) {
+		api.columnSeparator = separator
+	}
+}
+
+// WithFieldNameMapper allows to use a custom function to map field name to column names.
+// The default function is SnakeCaseMapper.
+func WithFieldNameMapper(mapperFn NameMapperFunc) APIOption {
+	return func(api *API) {
+		api.fieldMapperFn = mapperFn
+	}
 }
 
 // ScanAll iterates all rows to the end. After iterating it closes the rows,
@@ -36,8 +113,8 @@ type Rows interface {
 //
 // Before starting, ScanAll resets the destination slice,
 // so if it's not empty it will overwrite all existing elements.
-func ScanAll(dst interface{}, rows Rows) error {
-	err := processRows(dst, rows, true /* multipleRows */)
+func (api *API) ScanAll(dst interface{}, rows Rows) error {
+	err := api.processRows(dst, rows, true /* multipleRows */)
 	return errors.WithStack(err)
 }
 
@@ -46,8 +123,8 @@ func ScanAll(dst interface{}, rows Rows) error {
 // After iterating ScanOne closes the rows,
 // and propagates any errors that could pop up.
 // It scans data from that single row into the destination.
-func ScanOne(dst interface{}, rows Rows) error {
-	err := processRows(dst, rows, false /* multipleRows */)
+func (api *API) ScanOne(dst interface{}, rows Rows) error {
+	err := api.processRows(dst, rows, false /* multipleRows */)
 	return errors.WithStack(err)
 }
 
@@ -65,7 +142,7 @@ type sliceDestinationMeta struct {
 	elementByPtr    bool
 }
 
-func processRows(dst interface{}, rows Rows, multipleRows bool) error {
+func (api *API) processRows(dst interface{}, rows Rows, multipleRows bool) error {
 	defer rows.Close() // nolint: errcheck
 	var sliceMeta *sliceDestinationMeta
 	if multipleRows {
@@ -77,7 +154,7 @@ func processRows(dst interface{}, rows Rows, multipleRows bool) error {
 		// Make sure slice is empty.
 		sliceMeta.val.Set(sliceMeta.val.Slice(0, 0))
 	}
-	rs := NewRowScanner(rows)
+	rs := api.NewRowScanner(rows)
 	var rowsAffected int
 	for rows.Next() {
 		var err error
@@ -165,50 +242,10 @@ func scanSliceElement(rs *RowScanner, sliceMeta *sliceDestinationMeta) error {
 	return nil
 }
 
-type startScannerFunc func(rs *RowScanner, dstValue reflect.Value) error
-
-//go:generate mockery --name startScannerFunc --inpackage
-
-// RowScanner embraces Rows and exposes the Scan method
-// that allows scanning data from the current row into the destination.
-// The first time the Scan method is called
-// it parses the destination type via reflection and caches all required information for further scans.
-// Due to this caching mechanism, it's not allowed to call Scan for destinations of different types,
-// the behavior is unknown in that case.
-// RowScanner doesn't proceed to the next row nor close them, it should be done by the client code.
-//
-// The main benefit of using this type directly
-// is that you can instantiate a RowScanner and manually iterate over the rows
-// and control how data is scanned from each row.
-// This can be beneficial if the result set is large
-// and you don't want to allocate a slice for all rows at once
-// as it would be done in ScanAll.
-//
-// ScanOne and ScanAll both use RowScanner type internally.
-type RowScanner struct {
-	rows               Rows
-	columns            []string
-	columnToFieldIndex map[string][]int
-	mapElementType     reflect.Type
-	started            bool
-	start              startScannerFunc
-}
-
-// NewRowScanner returns a new instance of the RowScanner.
-func NewRowScanner(rows Rows) *RowScanner {
-	return &RowScanner{rows: rows, start: startScanner}
-}
-
-// Scan scans data from the current row into the destination.
-// On the first call it caches expensive reflection work and uses it the future calls.
-// See RowScanner for details.
-func (rs *RowScanner) Scan(dst interface{}) error {
-	dstVal, err := parseDestination(dst)
-	if err != nil {
-		return errors.WithStack(err)
-	}
-	err = rs.doScan(dstVal)
-	return errors.WithStack(err)
+// ScanRow is a package-level helper function that uses the DefaultAPI object.
+// See API.ScanRow for details.
+func ScanRow(dst interface{}, rows Rows) error {
+	return errors.WithStack(DefaultAPI.ScanRow(dst, rows))
 }
 
 // ScanRow creates a new RowScanner and calls RowScanner.Scan
@@ -217,8 +254,8 @@ func (rs *RowScanner) Scan(dst interface{}) error {
 // and don't want to instantiate a new RowScanner before iterating the rows,
 // so it could cache the reflection work between Scan calls.
 // See RowScanner for details.
-func ScanRow(dst interface{}, rows Rows) error {
-	rs := NewRowScanner(rows)
+func (api *API) ScanRow(dst interface{}, rows Rows) error {
+	rs := api.NewRowScanner(rows)
 	err := rs.Scan(dst)
 	return errors.WithStack(err)
 }
@@ -237,120 +274,5 @@ func parseDestination(dst interface{}) (reflect.Value, error) {
 	return dstVal, nil
 }
 
-func (rs *RowScanner) doScan(dstValue reflect.Value) error {
-	if !rs.started {
-		if err := rs.start(rs, dstValue); err != nil {
-			return errors.WithStack(err)
-		}
-		rs.started = true
-	}
-	var err error
-	switch dstValue.Kind() {
-	case reflect.Struct:
-		err = rs.scanStruct(dstValue)
-	case reflect.Map:
-		err = rs.scanMap(dstValue)
-	default:
-		err = rs.scanPrimitive(dstValue)
-	}
-	return errors.WithStack(err)
-}
-
-func startScanner(rs *RowScanner, dstValue reflect.Value) error {
-	var err error
-	rs.columns, err = rs.rows.Columns()
-	if err != nil {
-		return errors.Wrap(err, "scany: get rows columns")
-	}
-	if err := rs.ensureDistinctColumns(); err != nil {
-		return errors.WithStack(err)
-	}
-	if dstValue.Kind() == reflect.Struct {
-		rs.columnToFieldIndex = getColumnToFieldIndexMap(dstValue.Type())
-		return nil
-	}
-	if dstValue.Kind() == reflect.Map {
-		mapType := dstValue.Type()
-		if mapType.Key().Kind() != reflect.String {
-			return errors.Errorf(
-				"scany: invalid type %v: map must have string key, got: %v",
-				mapType, mapType.Key(),
-			)
-		}
-		rs.mapElementType = mapType.Elem()
-		return nil
-	}
-	// It's the primitive type case.
-	columnsNumber := len(rs.columns)
-	if columnsNumber != 1 {
-		return errors.Errorf(
-			"scany: to scan into a primitive type, columns number must be exactly 1, got: %d",
-			columnsNumber,
-		)
-	}
-	return nil
-}
-
-func (rs *RowScanner) scanStruct(structValue reflect.Value) error {
-	scans := make([]interface{}, len(rs.columns))
-	for i, column := range rs.columns {
-		fieldIndex, ok := rs.columnToFieldIndex[column]
-		if !ok {
-			return errors.Errorf(
-				"scany: column: '%s': no corresponding field found, or it's unexported in %v",
-				column, structValue.Type(),
-			)
-		}
-		// Struct may contain embedded structs by ptr that defaults to nil.
-		// In order to scan values into a nested field,
-		// we need to initialize all nil structs on its way.
-		initializeNested(structValue, fieldIndex)
-
-		fieldVal := structValue.FieldByIndex(fieldIndex)
-		scans[i] = fieldVal.Addr().Interface()
-	}
-	err := rs.rows.Scan(scans...)
-	return errors.Wrap(err, "scany: scan row into struct fields")
-}
-
-func (rs *RowScanner) scanMap(mapValue reflect.Value) error {
-	if mapValue.IsNil() {
-		mapValue.Set(reflect.MakeMap(mapValue.Type()))
-	}
-
-	scans := make([]interface{}, len(rs.columns))
-	values := make([]reflect.Value, len(rs.columns))
-	for i := range rs.columns {
-		valuePtr := reflect.New(rs.mapElementType)
-		scans[i] = valuePtr.Interface()
-		values[i] = valuePtr.Elem()
-	}
-	if err := rs.rows.Scan(scans...); err != nil {
-		return errors.Wrap(err, "scany: scan rows into map")
-	}
-	// We can't set reflect values into destination map before scanning them,
-	// because reflect will set a copy, just like regular map behaves,
-	// and scan won't modify the map element.
-	for i, column := range rs.columns {
-		key := reflect.ValueOf(column)
-		value := values[i]
-		mapValue.SetMapIndex(key, value)
-	}
-	return nil
-}
-
-func (rs *RowScanner) scanPrimitive(value reflect.Value) error {
-	err := rs.rows.Scan(value.Addr().Interface())
-	return errors.Wrap(err, "scany: scan row value into a primitive type")
-}
-
-func (rs *RowScanner) ensureDistinctColumns() error {
-	seen := make(map[string]struct{}, len(rs.columns))
-	for _, column := range rs.columns {
-		if _, ok := seen[column]; ok {
-			return errors.Errorf("scany: rows contain a duplicate column '%s'", column)
-		}
-		seen[column] = struct{}{}
-	}
-	return nil
-}
+// DefaultAPI is the default instance of API with all configuration settings set to default.
+var DefaultAPI = NewAPI()

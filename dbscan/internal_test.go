@@ -9,7 +9,7 @@ import (
 
 type queryRowsFunc func(t *testing.T, query string) Rows
 
-func DoTestRowScannerStartCalledExactlyOnce(t *testing.T, queryRows queryRowsFunc) {
+func DoTestRowScannerStartCalledExactlyOnce(t *testing.T, api *API, queryRows queryRowsFunc) {
 	query := `
 		SELECT *
 		FROM (
@@ -20,7 +20,8 @@ func DoTestRowScannerStartCalledExactlyOnce(t *testing.T, queryRows queryRowsFun
 	defer rows.Close() // nolint: errcheck
 
 	mockStart := &mockStartScannerFunc{}
-	rs := &RowScanner{rows: rows, start: mockStart.Execute}
+	rs := api.NewRowScanner(rows)
+	rs.start = mockStart.Execute
 	mockStart.On("Execute", rs, mock.AnythingOfType("reflect.Value")).Return(nil).Run(func(args mock.Arguments) {
 		rs := args.Get(0).(*RowScanner)
 		rs.columns = []string{"foo", "bar"}
