@@ -8,13 +8,14 @@ import (
 	"testing"
 
 	"github.com/cockroachdb/cockroach-go/v2/testserver"
-	"github.com/georgysavva/scany/dbscan"
 	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/georgysavva/scany/dbscan"
 
 	"github.com/georgysavva/scany/pgxscan"
 )

@@ -99,4 +99,3 @@ func initializeNested(structValue reflect.Value, fieldIndex []int) {
 		initializeNested(reflect.Indirect(field), fieldIndex[1:])
 	}
 }
-

@@ -9,11 +9,12 @@ import (
 	"testing"
 
 	"github.com/cockroachdb/cockroach-go/v2/testserver"
-	"github.com/georgysavva/scany/dbscan"
 	_ "github.com/jackc/pgx/v4/stdlib"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/georgysavva/scany/dbscan"
 
 	"github.com/georgysavva/scany/sqlscan"
 )

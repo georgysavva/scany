@@ -3,8 +3,9 @@ package pgxscan_test
 import (
 	"strings"
 
-	"github.com/georgysavva/scany/dbscan"
 	"github.com/jackc/pgx/v4/pgxpool"
+
+	"github.com/georgysavva/scany/dbscan"
 
 	"github.com/georgysavva/scany/pgxscan"
 )

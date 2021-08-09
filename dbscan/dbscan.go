@@ -78,7 +78,7 @@ func WithStructTagKey(tagKey string) APIOption {
 }
 
 // WithColumnSeparator allows to use a custom separator character for column name when combining nested structs.
-// The default separator is "."
+// The default separator is "." character.
 func WithColumnSeparator(separator string) APIOption {
 	return func(api *API) {
 		api.columnSeparator = separator
