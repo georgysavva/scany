@@ -20,9 +20,9 @@ import (
 )
 
 var (
-	testDB *pgxpool.Pool
-	ctx    = context.Background()
-	api    *pgxscan.API
+	testDB  *pgxpool.Pool
+	ctx     = context.Background()
+	testAPI *pgxscan.API
 )
 
 type testModel struct {
@@ -54,7 +54,7 @@ func TestSelect(t *testing.T) {
 	}
 
 	var got []*testModel
-	err := api.Select(ctx, testDB, &got, multipleRowsQuery)
+	err := testAPI.Select(ctx, testDB, &got, multipleRowsQuery)
 	require.NoError(t, err)
 
 	assert.Equal(t, expected, got)
@@ -71,7 +71,7 @@ func TestSelect_queryError_propagatesAndWrapsErr(t *testing.T) {
 	expectedErr := "scany: query multiple result rows: ERROR: column \"baz\" does not exist (SQLSTATE 42703)"
 
 	dst := &[]*testModel{}
-	err := api.Select(ctx, testDB, dst, query)
+	err := testAPI.Select(ctx, testDB, dst, query)
 
 	assert.EqualError(t, err, expectedErr)
 }
@@ -81,7 +81,7 @@ func TestGet(t *testing.T) {
 	expected := testModel{Foo: "foo val", Bar: "bar val"}
 
 	var got testModel
-	err := api.Get(ctx, testDB, &got, singleRowsQuery)
+	err := testAPI.Get(ctx, testDB, &got, singleRowsQuery)
 	require.NoError(t, err)
 
 	assert.Equal(t, expected, got)
@@ -95,7 +95,7 @@ func TestGet_queryError_propagatesAndWrapsErr(t *testing.T) {
 	expectedErr := "scany: query one result row: ERROR: column \"baz\" does not exist (SQLSTATE 42703)"
 
 	dst := &testModel{}
-	err := api.Get(ctx, testDB, dst, query)
+	err := testAPI.Get(ctx, testDB, dst, query)
 
 	assert.EqualError(t, err, expectedErr)
 }
@@ -111,7 +111,7 @@ func TestScanAll(t *testing.T) {
 	require.NoError(t, err)
 
 	var got []*testModel
-	err = api.ScanAll(&got, rows)
+	err = testAPI.ScanAll(&got, rows)
 	require.NoError(t, err)
 
 	assert.Equal(t, expected, got)
@@ -124,7 +124,7 @@ func TestScanOne(t *testing.T) {
 	require.NoError(t, err)
 
 	var got testModel
-	err = api.ScanOne(&got, rows)
+	err = testAPI.ScanOne(&got, rows)
 	require.NoError(t, err)
 
 	assert.Equal(t, expected, got)
@@ -136,7 +136,7 @@ func TestScanOne_noRows_returnsNotFoundErr(t *testing.T) {
 	require.NoError(t, err)
 
 	var got testModel
-	err = api.ScanOne(&got, rows)
+	err = testAPI.ScanOne(&got, rows)
 
 	assert.True(t, pgxscan.NotFound(err))
 	assert.True(t, errors.Is(err, pgx.ErrNoRows))
@@ -148,7 +148,7 @@ func TestRowScanner_Scan(t *testing.T) {
 	rows, err := testDB.Query(ctx, singleRowsQuery)
 	require.NoError(t, err)
 	defer rows.Close()
-	rs := api.NewRowScanner(rows)
+	rs := testAPI.NewRowScanner(rows)
 	rows.Next()
 	expected := testModel{Foo: "foo val", Bar: "bar val"}
 
@@ -187,7 +187,7 @@ func TestRowScanner_Scan_NULLableScannerType(t *testing.T) {
 			rows, err := testDB.Query(ctx, tc.query)
 			require.NoError(t, err)
 			defer rows.Close()
-			rs := api.NewRowScanner(rows)
+			rs := testAPI.NewRowScanner(rows)
 			rows.Next()
 
 			got := &Destination{}
@@ -209,7 +209,7 @@ func TestScanRow(t *testing.T) {
 	expected := testModel{Foo: "foo val", Bar: "bar val"}
 
 	var got testModel
-	err = api.ScanRow(&got, rows)
+	err = testAPI.ScanRow(&got, rows)
 	require.NoError(t, err)
 	require.NoError(t, rows.Err())
 
@@ -233,7 +233,7 @@ func TestMain(m *testing.M) {
 			panic(err)
 		}
 		defer testDB.Close()
-		api = getAPI()
+		testAPI = getAPI()
 		return m.Run()
 	}()
 	os.Exit(exitCode)
