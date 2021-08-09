@@ -1,6 +1,9 @@
 package pgxscan_test
 
 import (
+	"strings"
+
+	"github.com/georgysavva/scany/dbscan"
 	"github.com/jackc/pgx/v4/pgxpool"
 
 	"github.com/georgysavva/scany/pgxscan"
@@ -131,4 +134,31 @@ func ExampleScanRow() {
 	if err := rows.Err(); err != nil {
 		// Handle rows final error.
 	}
+}
+
+// ExampleAPI shows how to create and use a custom API instance with overridden settings.
+func ExampleAPI() {
+	type User struct {
+		ID    string `db:"user_id"`
+		Name  string
+		Email string
+		Age   int
+	}
+
+	// Instantiate a custom API with overridden settings.
+	api := pgxscan.NewAPI(dbscan.NewAPI(
+		dbscan.WithFieldNameMapper(strings.ToLower),
+		dbscan.WithStructTagKey("database"),
+	))
+
+	db, _ := pgxpool.Connect(ctx, "example-connection-url")
+
+	var users []*User
+	// Use the custom API instance to access pgxscan functionality.
+	if err := api.Select(
+		ctx, db, &users, `SELECT user_id, name, email, age FROM users`,
+	); err != nil {
+		// Handle query or rows processing error.
+	}
+	// users variable now contains data from all rows.
 }

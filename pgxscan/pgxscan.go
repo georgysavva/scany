@@ -30,10 +30,14 @@ func Get(ctx context.Context, db Querier, dst interface{}, query string, args ..
 	return errors.WithStack(DefaultAPI.Get(ctx, db, dst, query, args...))
 }
 
+// ScanAll is a package-level helper function that uses the DefaultAPI object.
+// See API.ScanAll for details.
 func ScanAll(dst interface{}, rows pgx.Rows) error {
 	return errors.WithStack(DefaultAPI.ScanAll(dst, rows))
 }
 
+// ScanOne is a package-level helper function that uses the DefaultAPI object.
+// See API.ScanOne for details.
 func ScanOne(dst interface{}, rows pgx.Rows) error {
 	return errors.WithStack(DefaultAPI.ScanOne(dst, rows))
 }
@@ -44,18 +48,25 @@ type RowScanner struct {
 	*dbscan.RowScanner
 }
 
+// NewRowScanner is a package-level helper function that uses the DefaultAPI object.
+// See API.NewRowScanner for details.
 func NewRowScanner(rows pgx.Rows) *RowScanner {
 	return DefaultAPI.NewRowScanner(rows)
 }
 
+// ScanRow is a package-level helper function that uses the DefaultAPI object.
+// See API.ScanRow for details.
 func ScanRow(dst interface{}, rows pgx.Rows) error {
 	return DefaultAPI.ScanRow(dst, rows)
 }
 
+// API is a wrapper around the dbscan.API type.
+// See dbscan.API for details.
 type API struct {
 	dbscanAPI *dbscan.API
 }
 
+// NewAPI creates new API instance from dbscan.API instance.
 func NewAPI(dbscanAPI *dbscan.API) *API {
 	api := &API{dbscanAPI: dbscanAPI}
 	return api
@@ -146,4 +157,5 @@ func (ra RowsAdapter) Close() error {
 	return nil
 }
 
+// DefaultAPI is the default instance of API that is wrapped around the dbscan.DefaultAPI instance.
 var DefaultAPI = NewAPI(dbscan.DefaultAPI)

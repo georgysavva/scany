@@ -86,6 +86,7 @@ func ExampleScanRow() {
 	}
 }
 
+// ExampleAPI shows how to create and use a custom API instance with overridden settings.
 func ExampleAPI() {
 	type User struct {
 		ID    string `database:"user_id"`
