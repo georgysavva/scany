@@ -45,8 +45,8 @@ func SnakeCaseMapper(str string) string {
 	return strings.ToLower(snake)
 }
 
-// API is the main type in dbscan. It exposes all functionality available in the package.
-// API contains various settings and allows configuring the behavior of dbscan.
+// API is the core type in dbscan. It implements all the logic and exposes functionality available in the package.
+// Having API type users can create a custom API instance and override default settings hence configure dbscan.
 type API struct {
 	structTagKey    string
 	columnSeparator string
