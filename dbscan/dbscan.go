@@ -4,6 +4,7 @@ import (
 	"reflect"
 	"regexp"
 	"strings"
+	"sync"
 
 	"github.com/pkg/errors"
 )
@@ -51,6 +52,8 @@ type API struct {
 	structTagKey    string
 	columnSeparator string
 	fieldMapperFn   NameMapperFunc
+	typesCache      *sync.Map
+	typesMutexes    *sync.Map
 }
 
 // APIOption is a function type that changes API configuration.
@@ -62,6 +65,8 @@ func NewAPI(opts ...APIOption) *API {
 		structTagKey:    "db",
 		columnSeparator: ".",
 		fieldMapperFn:   SnakeCaseMapper,
+		typesCache:      &sync.Map{},
+		typesMutexes:    &sync.Map{},
 	}
 	for _, o := range opts {
 		o(api)
@@ -272,6 +277,29 @@ func parseDestination(dst interface{}) (reflect.Value, error) {
 
 	dstVal = dstVal.Elem()
 	return dstVal, nil
+}
+
+func (api *API) cacheTypesMapping(structType reflect.Type) map[string][]int {
+	cacheValue, ok := api.typesCache.Load(structType)
+	if ok {
+		return cacheValue.(map[string][]int)
+	}
+
+	mutexValue, _ := api.typesMutexes.LoadOrStore(structType, &sync.Mutex{})
+	mutex := mutexValue.(*sync.Mutex)
+	mutex.Lock()
+	defer mutex.Unlock()
+
+	cacheValue, ok = api.typesCache.Load(structType)
+	if ok {
+		return cacheValue.(map[string][]int)
+	}
+
+	mapping := api.getColumnToFieldIndexMap(structType)
+
+	api.typesCache.Store(structType, mapping)
+
+	return mapping
 }
 
 // DefaultAPI is the default instance of API with all configuration settings set to default.
