@@ -1,0 +1,11 @@
+enabled: true
+
+pull-comment: >
+  Thank you for submitting this pull request. Maintainer of this repo is on vacation until November 1, 2021.
+  All issues and pull requested will be addressed after his return.
+
+issue-comment: >
+  Thank you for filing this issue. Maintainer of this repo is on vacation until November 1, 2021.
+  All issues and pull requested will be addressed after his return.
+
+period: 2021-10-14 - 2020-11-01
