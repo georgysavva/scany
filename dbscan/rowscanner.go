@@ -8,7 +8,7 @@ import (
 
 type startScannerFunc func(rs *RowScanner, dstValue reflect.Value) error
 
-//go:generate mockery --name startScannerFunc --inpackage
+//go:generate mockery --name startScannerFunc --filename mock_test.go --inpackage
 
 // RowScanner embraces Rows and exposes the Scan method
 // that allows scanning data from the current row into the destination.
