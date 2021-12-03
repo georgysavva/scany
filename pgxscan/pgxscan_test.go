@@ -15,6 +15,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/georgysavva/scany/dbscan"
 	"github.com/georgysavva/scany/pgxscan"
 )
 
@@ -216,7 +217,7 @@ func TestScanRow(t *testing.T) {
 }
 
 func getAPI() (*pgxscan.API, error) {
-	dbscanAPI, err := pgxscan.NewDBScanAPI()
+	dbscanAPI, err := pgxscan.NewDBScanAPI(dbscan.WithLexer(':', dbscan.SequentialDollarDelim))
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}

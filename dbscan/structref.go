@@ -3,6 +3,9 @@ package dbscan
 import (
 	"reflect"
 	"strings"
+	"sync"
+
+	"github.com/pkg/errors"
 )
 
 type toTraverse struct {
@@ -11,7 +14,46 @@ type toTraverse struct {
 	ColumnPrefix string
 }
 
+type structref struct {
+	fieldIndexes map[string][]int
+}
+
+//fieldByName tries to find the field from the struct with the name
+func (sr structref) fieldByName(e reflect.Value, name string) reflect.Value {
+	return e.FieldByIndex(sr.fieldIndexes[name])
+}
+
+//fieldValue is used for getting the fields value
+func (sr structref) fieldValue(e reflect.Value, name string) (interface{}, error) {
+	value := sr.fieldByName(e, name)
+
+	if value.IsValid() {
+		return value.Interface(), nil
+	}
+
+	return "", errors.New("field '" + name + "' not found")
+}
+
+func (api *API) getColumnToFieldIndexMapV2(structType reflect.Type) structref {
+	return structref{api.getColumnToFieldIndexMap(structType)}
+}
+
+var fieldIndexMapCache sync.Map
+
 func (api *API) getColumnToFieldIndexMap(structType reflect.Type) map[string][]int {
+	fieldIndexMap, found := fieldIndexMapCache.Load(structType)
+	if found {
+		return fieldIndexMap.(map[string][]int)
+	}
+
+	//When field index map is not found from the cache it computes it and stores it into the cache
+	newFieldIndexMap := api.makeColumnToFieldIndexMap(structType)
+	fieldIndexMapCache.Store(structType, newFieldIndexMap)
+	return newFieldIndexMap
+}
+
+//makeColumnToFieldIndexMap is a function that generates the map that is used to determine which database table column is mapped to which struct field
+func (api *API) makeColumnToFieldIndexMap(structType reflect.Type) map[string][]int {
 	result := make(map[string][]int, structType.NumField())
 	var queue []*toTraverse
 	queue = append(queue, &toTraverse{Type: structType, IndexPrefix: nil, ColumnPrefix: ""})

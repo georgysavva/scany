@@ -54,6 +54,7 @@ type API struct {
 	scannableTypesOption  []interface{}
 	scannableTypesReflect []reflect.Type
 	allowUnknownColumns   bool
+	lexer                 Lexer
 }
 
 // APIOption is a function type that changes API configuration.
@@ -66,6 +67,8 @@ func NewAPI(opts ...APIOption) (*API, error) {
 		columnSeparator:     ".",
 		fieldMapperFn:       SnakeCaseMapper,
 		allowUnknownColumns: false,
+		//Lexer now declared at sqlscan and pgxscan package level
+		//Incase user misconfigures a new api should we give the user an error message?
 	}
 	for _, o := range opts {
 		o(api)
@@ -87,6 +90,14 @@ func NewAPI(opts ...APIOption) (*API, error) {
 		api.scannableTypesReflect = append(api.scannableTypesReflect, st)
 	}
 	return api, nil
+}
+
+// WithLexer allows to use custom delimeters for both named queries and the compiled queries.
+// The default tag key is `db`.
+func WithLexer(delim rune, compileDelim DriverDelim) APIOption {
+	return func(api *API) {
+		api.lexer = newLexer(delim, compileDelim)
+	}
 }
 
 // WithStructTagKey allows to use a custom struct tag key.
@@ -172,6 +183,20 @@ func (api *API) ScanAll(dst interface{}, rows Rows) error {
 func (api *API) ScanOne(dst interface{}, rows Rows) error {
 	err := api.processRows(dst, rows, false /* multipleRows */)
 	return errors.WithStack(err)
+}
+
+func (api *API) NamedQueryParams(query string, arg interface{}) (string, []interface{}, error) {
+	compiledQuery, argNames, err := api.lexer.Compile(query)
+	if err != nil {
+		return "", nil, err
+	}
+
+	args, err := api.args(arg, argNames)
+	if err != nil {
+		return "", nil, err
+	}
+
+	return compiledQuery, args, nil
 }
 
 // NotFound returns true if err is a not found error.

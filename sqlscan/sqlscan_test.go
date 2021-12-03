@@ -14,6 +14,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/georgysavva/scany/dbscan"
 	"github.com/georgysavva/scany/sqlscan"
 )
 
@@ -251,7 +252,7 @@ func requireNoRowsErrorsAndClose(t *testing.T, rows *sql.Rows) {
 }
 
 func getAPI() (*sqlscan.API, error) {
-	dbscanAPI, err := sqlscan.NewDBScanAPI()
+	dbscanAPI, err := sqlscan.NewDBScanAPI(dbscan.WithLexer(':', dbscan.SequentialDollarDelim))
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}

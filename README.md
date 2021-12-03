@@ -104,6 +104,59 @@ func main() {
 Use [`pgxscan`](https://pkg.go.dev/github.com/georgysavva/scany/pgxscan) 
 package to work with `pgx` library native interface. 
 
+## How to use named queries with `pgx` or `database/sql` interface
+
+Named queries can be used with any interfaces supported by scany
+In the following example we are going to use pgxscan interface, but it works the same on any interface
+
+```go
+
+type User struct {
+	ID    string `db:"user_id"`
+	Name  string
+	Email string
+	Age   int
+}
+
+func getAPI() (*sqlscan.API, error) {
+	dbscanAPI, err := sqlscan.NewDBScanAPI(dbscan.WithLexer(':', dbscan.SequentialDollarDelim))
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+	api, err := sqlscan.NewAPI(dbscanAPI)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+	return api, nil
+}
+
+func GetUserWithId(user User) User {
+	ctx := context.Background()
+	db, _ := pgxpool.Connect(ctx, "example-connection-url")
+
+	api, _ := getAPI()
+
+	err := api.GetNamed(ctx, db, &user, `SELECT name, email, age FROM users WHERE id = :user_id`, &user)
+	if err != nil {
+		return nil
+	}
+}
+
+func GetUsersWithName(name string) User {
+	ctx := context.Background()
+	db, _ := pgxpool.Connect(ctx, "example-connection-url")
+
+	api, _ := getAPI()
+
+	var users []*User
+
+	err := api.SelectNamed(ctx, db, , `SELECT name, email, age FROM users WHERE name = :name`, &User{Name: name})
+	if err != nil {
+		return nil
+	}
+}
+```
+
 ## How to use with other database libraries
 
 Use [`dbscan`](https://pkg.go.dev/github.com/georgysavva/scany/dbscan) package that works with an abstract database, 

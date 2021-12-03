@@ -395,3 +395,34 @@ func TestMain(m *testing.M) {
 	}()
 	os.Exit(exitCode)
 }
+
+func TestNamedQueryParams(t *testing.T) {
+
+	type NamedQueryTest struct {
+		Named string
+		Test  int
+	}
+
+	tAPI, _ := getAPI()
+
+	val1 := "Query"
+	val2 := 5
+
+	compiledQuery, args, err := tAPI.NamedQueryParams(":Named query :Test", &NamedQueryTest{Named: val1, Test: val2})
+	if err != nil {
+		t.Error("NamedQueryParams errored: " + err.Error())
+	}
+
+	expected := "$1 query $2"
+	if compiledQuery != expected {
+		t.Error("expected: '" + expected + "' but got: '" + compiledQuery + "'.")
+	}
+
+	if args[0].(string) != val1 {
+		t.Error("val1 is wrong")
+	}
+
+	if args[1].(int) != val2 {
+		t.Error("val2 is wrong")
+	}
+}
