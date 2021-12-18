@@ -71,13 +71,20 @@ func (rs *RowScanner) doScan(dstValue reflect.Value) error {
 		rs.started = true
 	}
 	var err error
-	switch dstValue.Kind() {
-	case reflect.Struct:
-		err = rs.scanStruct(dstValue)
-	case reflect.Map:
+	isScannable := rs.api.isScannableType(dstValue)
+	dstKind := dstValue.Kind()
+	if dstKind == reflect.Struct {
+		if isScannable && len(rs.columns) == 1 {
+			err = rs.scanPrimitive(dstValue)
+		} else {
+			err = rs.scanStruct(dstValue)
+		}
+	} else if dstKind == reflect.Map {
 		err = rs.scanMap(dstValue)
-	default:
+	} else if len(rs.columns) == 1 {
 		err = rs.scanPrimitive(dstValue)
+	} else {
+		err = errors.Errorf("scany: don't know how to handle type %s, kind %s", dstValue.Type(), dstKind)
 	}
 	return errors.WithStack(err)
 }

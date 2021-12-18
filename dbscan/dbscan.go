@@ -51,6 +51,7 @@ type API struct {
 	structTagKey    string
 	columnSeparator string
 	fieldMapperFn   NameMapperFunc
+	scannableTypes  []interface{}
 }
 
 // APIOption is a function type that changes API configuration.
@@ -90,6 +91,12 @@ func WithColumnSeparator(separator string) APIOption {
 func WithFieldNameMapper(mapperFn NameMapperFunc) APIOption {
 	return func(api *API) {
 		api.fieldMapperFn = mapperFn
+	}
+}
+
+func WithScannableType(sType interface{}) APIOption {
+	return func(api *API) {
+		api.scannableTypes = append(api.scannableTypes, sType)
 	}
 }
 
@@ -258,6 +265,17 @@ func (api *API) ScanRow(dst interface{}, rows Rows) error {
 	rs := api.NewRowScanner(rows)
 	err := rs.Scan(dst)
 	return errors.WithStack(err)
+}
+
+func (api *API) isScannableType(dstValue reflect.Value) bool {
+	dstType := dstValue.Type()
+	for _, sti := range api.scannableTypes {
+		st := reflect.TypeOf(sti)
+		if dstType == st || dstType.Implements(st) {
+			return true
+		}
+	}
+	return false
 }
 
 func parseDestination(dst interface{}) (reflect.Value, error) {
