@@ -145,10 +145,14 @@ func ExampleAPI() {
 	}
 
 	// Instantiate a custom API with overridden settings.
-	api := sqlscan.NewAPI(dbscan.NewAPI(
+	dbscanAPI, err := dbscan.NewAPI(
 		dbscan.WithFieldNameMapper(strings.ToLower),
 		dbscan.WithStructTagKey("database"),
-	))
+	)
+	if err != nil {
+		// Handle dbscan API initialization error.
+	}
+	api := sqlscan.NewAPI(dbscanAPI)
 
 	db, _ := sql.Open("postgres", "example-connection-url")
 

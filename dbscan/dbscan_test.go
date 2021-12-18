@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/cockroachdb/cockroach-go/v2/testserver"
+	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v4/pgxpool"
 	_ "github.com/jackc/pgx/v4/stdlib"
 	"github.com/stretchr/testify/assert"
@@ -85,6 +86,20 @@ func TestScanAll(t *testing.T) {
 				) AS t (foo)
 			`,
 			expected: []string{"foo val", "foo val 2", "foo val 3"},
+		},
+		{
+			name: "slice of pgtype.Text",
+			query: `
+				SELECT *
+				FROM (
+					VALUES ('foo val'), ('foo val 2'), ('foo val 3')
+				) AS t (foo)
+			`,
+			expected: []pgtype.Text{
+				{String: "foo val", Status: pgtype.Present},
+				{String: "foo val 2", Status: pgtype.Present},
+				{String: "foo val 3", Status: pgtype.Present},
+			},
 		},
 		{
 			name: "slice of strings by ptr",
@@ -273,7 +288,10 @@ func TestMain(m *testing.M) {
 			panic(err)
 		}
 		defer testDB.Close()
-		testAPI = getAPI()
+		testAPI, err = getAPI()
+		if err != nil {
+			panic(err)
+		}
 		return m.Run()
 	}()
 	os.Exit(exitCode)

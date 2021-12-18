@@ -33,6 +33,7 @@ type RowScanner struct {
 	columnToFieldIndex map[string][]int
 	mapElementType     reflect.Type
 	started            bool
+	scanFn             func(dstVal reflect.Value) error
 	start              startScannerFunc
 }
 
@@ -70,22 +71,7 @@ func (rs *RowScanner) doScan(dstValue reflect.Value) error {
 		}
 		rs.started = true
 	}
-	var err error
-	isScannable := rs.api.isScannableType(dstValue)
-	dstKind := dstValue.Kind()
-	if dstKind == reflect.Struct {
-		if isScannable && len(rs.columns) == 1 {
-			err = rs.scanPrimitive(dstValue)
-		} else {
-			err = rs.scanStruct(dstValue)
-		}
-	} else if dstKind == reflect.Map {
-		err = rs.scanMap(dstValue)
-	} else if len(rs.columns) == 1 {
-		err = rs.scanPrimitive(dstValue)
-	} else {
-		err = errors.Errorf("scany: don't know how to handle type %s, kind %s", dstValue.Type(), dstKind)
-	}
+	err := rs.scanFn(dstValue)
 	return errors.WithStack(err)
 }
 
@@ -98,11 +84,21 @@ func startScanner(rs *RowScanner, dstValue reflect.Value) error {
 	if err := rs.ensureDistinctColumns(); err != nil {
 		return errors.WithStack(err)
 	}
-	if dstValue.Kind() == reflect.Struct {
-		rs.columnToFieldIndex = rs.api.getColumnToFieldIndexMap(dstValue.Type())
+	dstKind := dstValue.Kind()
+
+	isScannable := rs.api.isScannableType(dstValue)
+	if isScannable && len(rs.columns) == 1 {
+		rs.scanFn = rs.scanPrimitive
 		return nil
 	}
-	if dstValue.Kind() == reflect.Map {
+
+	if dstKind == reflect.Struct {
+		rs.columnToFieldIndex = rs.api.getColumnToFieldIndexMap(dstValue.Type())
+		rs.scanFn = rs.scanStruct
+		return nil
+	}
+
+	if dstKind == reflect.Map {
 		mapType := dstValue.Type()
 		if mapType.Key().Kind() != reflect.String {
 			return errors.Errorf(
@@ -111,17 +107,18 @@ func startScanner(rs *RowScanner, dstValue reflect.Value) error {
 			)
 		}
 		rs.mapElementType = mapType.Elem()
+		rs.scanFn = rs.scanMap
 		return nil
 	}
-	// It's the primitive type case.
-	columnsNumber := len(rs.columns)
-	if columnsNumber != 1 {
-		return errors.Errorf(
-			"scany: to scan into a primitive type, columns number must be exactly 1, got: %d",
-			columnsNumber,
-		)
+
+	if len(rs.columns) == 1 {
+		rs.scanFn = rs.scanPrimitive
+		return nil
 	}
-	return nil
+	return errors.Errorf(
+		"scany: to scan into a primitive type, columns number must be exactly 1, got: %d",
+		len(rs.columns),
+	)
 }
 
 func (rs *RowScanner) scanStruct(structValue reflect.Value) error {

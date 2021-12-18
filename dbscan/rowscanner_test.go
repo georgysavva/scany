@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/jackc/pgtype"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -830,6 +831,35 @@ func TestRowScanner_Scan_primitiveTypeDestinationRowsContainZeroColumns_returnsE
 	dst := new(string)
 	err := scan(t, dst, rows)
 	assert.EqualError(t, err, expectedErr)
+}
+
+func TestRowScanner_Scan_ScannableTypeDestination(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		name           string
+		scannableTypes []interface{}
+		query          string
+		expected       interface{}
+	}{
+		{
+			name: "pgtype.Text destination type and pgtype.TextDecoder scannable type",
+			query: `
+				SELECT 'foo val' AS foo 
+			`,
+			expected: pgtype.Text{String: "foo val", Status: pgtype.Present},
+		},
+	}
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			rows := queryRows(t, tc.query)
+			dst := allocateDestination(tc.expected)
+			err := scan(t, dst, rows)
+			require.NoError(t, err)
+			assertDestinationEqual(t, tc.expected, dst)
+		})
+	}
 }
 
 func TestRowScanner_Scan_rowsContainDuplicateColumns_returnsErr(t *testing.T) {

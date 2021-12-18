@@ -96,10 +96,13 @@ func ExampleAPI() {
 	}
 
 	// Instantiate a custom API with overridden settings.
-	api := dbscan.NewAPI(
+	api, err := dbscan.NewAPI(
 		dbscan.WithFieldNameMapper(strings.ToLower),
 		dbscan.WithStructTagKey("database"),
 	)
+	if err != nil {
+		// Handle API initialization error.
+	}
 
 	// Query rows from the database that implement Rows interface.
 	// You should also take care of handling rows error after iteration and closing them.

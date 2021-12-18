@@ -1,9 +1,11 @@
 package dbscan_test
 
 import (
+	"database/sql"
 	"reflect"
 	"testing"
 
+	"github.com/jackc/pgtype"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -38,8 +40,14 @@ func queryRows(t *testing.T, query string) dbscan.Rows {
 	return rows
 }
 
-func getAPI() *dbscan.API {
-	return dbscan.NewAPI()
+func getAPI() (*dbscan.API, error) {
+	return dbscan.NewAPI(
+		dbscan.WithScannableTypes(
+			(*sql.Scanner)(nil),
+			(*pgtype.TextDecoder)(nil),
+			(*pgtype.BinaryDecoder)(nil),
+		),
+	)
 }
 
 func scan(t *testing.T, dst interface{}, rows dbscan.Rows) error {

@@ -217,8 +217,12 @@ func TestScanRow(t *testing.T) {
 	assert.Equal(t, expected, got)
 }
 
-func getAPI() *pgxscan.API {
-	return pgxscan.NewAPI(dbscan.NewAPI())
+func getAPI() (*pgxscan.API, error) {
+	dbscanAPI, err := dbscan.NewAPI()
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+	return pgxscan.NewAPI(dbscanAPI), nil
 }
 
 func TestMain(m *testing.M) {
@@ -234,7 +238,10 @@ func TestMain(m *testing.M) {
 			panic(err)
 		}
 		defer testDB.Close()
-		testAPI = getAPI()
+		testAPI, err = getAPI()
+		if err != nil {
+			panic(err)
+		}
 		return m.Run()
 	}()
 	os.Exit(exitCode)

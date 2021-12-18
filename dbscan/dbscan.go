@@ -48,17 +48,18 @@ func SnakeCaseMapper(str string) string {
 // API is the core type in dbscan. It implements all the logic and exposes functionality available in the package.
 // With API type users can create a custom API instance and override default settings hence configure dbscan.
 type API struct {
-	structTagKey    string
-	columnSeparator string
-	fieldMapperFn   NameMapperFunc
-	scannableTypes  []interface{}
+	structTagKey          string
+	columnSeparator       string
+	fieldMapperFn         NameMapperFunc
+	scannableTypes        []interface{}
+	scannableTypesReflect []reflect.Type
 }
 
 // APIOption is a function type that changes API configuration.
 type APIOption func(api *API)
 
 // NewAPI creates a new API object with provided list of options.
-func NewAPI(opts ...APIOption) *API {
+func NewAPI(opts ...APIOption) (*API, error) {
 	api := &API{
 		structTagKey:    "db",
 		columnSeparator: ".",
@@ -67,7 +68,15 @@ func NewAPI(opts ...APIOption) *API {
 	for _, o := range opts {
 		o(api)
 	}
-	return api
+	for _, st := range api.scannableTypes {
+		stReflect := reflect.TypeOf(st).Elem()
+		if stReflect.Kind() != reflect.Interface {
+			return nil, errors.Errorf("scany: scannable types must be an interface, got %s: %s",
+				stReflect.String(), stReflect.Kind())
+		}
+		api.scannableTypesReflect = append(api.scannableTypesReflect, stReflect)
+	}
+	return api, nil
 }
 
 // WithStructTagKey allows to use a custom struct tag key.
@@ -94,9 +103,9 @@ func WithFieldNameMapper(mapperFn NameMapperFunc) APIOption {
 	}
 }
 
-func WithScannableType(sType interface{}) APIOption {
+func WithScannableTypes(scannableTypes ...interface{}) APIOption {
 	return func(api *API) {
-		api.scannableTypes = append(api.scannableTypes, sType)
+		api.scannableTypes = scannableTypes
 	}
 }
 
@@ -268,10 +277,9 @@ func (api *API) ScanRow(dst interface{}, rows Rows) error {
 }
 
 func (api *API) isScannableType(dstValue reflect.Value) bool {
-	dstType := dstValue.Type()
-	for _, sti := range api.scannableTypes {
-		st := reflect.TypeOf(sti)
-		if dstType == st || dstType.Implements(st) {
+	dstRefType := dstValue.Addr().Type()
+	for _, st := range api.scannableTypesReflect {
+		if dstRefType.Implements(st) {
 			return true
 		}
 	}
@@ -293,4 +301,4 @@ func parseDestination(dst interface{}) (reflect.Value, error) {
 }
 
 // DefaultAPI is the default instance of API with all configuration settings set to default.
-var DefaultAPI = NewAPI()
+var DefaultAPI, _ = NewAPI()

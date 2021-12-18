@@ -252,8 +252,12 @@ func requireNoRowsErrorsAndClose(t *testing.T, rows *sql.Rows) {
 	require.NoError(t, rows.Close())
 }
 
-func getAPI() *sqlscan.API {
-	return sqlscan.NewAPI(dbscan.NewAPI())
+func getAPI() (*sqlscan.API, error) {
+	dbscanAPI, err := dbscan.NewAPI()
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+	return sqlscan.NewAPI(dbscanAPI), nil
 }
 
 func TestMain(m *testing.M) {
@@ -273,7 +277,10 @@ func TestMain(m *testing.M) {
 				panic(err)
 			}
 		}()
-		testAPI = getAPI()
+		testAPI, err = getAPI()
+		if err != nil {
+			panic(err)
+		}
 		return m.Run()
 	}()
 	os.Exit(exitCode)

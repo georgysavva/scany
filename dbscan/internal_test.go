@@ -26,6 +26,7 @@ func DoTestRowScannerStartCalledExactlyOnce(t *testing.T, api *API, queryRows qu
 		rs := args.Get(0).(*RowScanner)
 		rs.columns = []string{"foo", "bar"}
 		rs.columnToFieldIndex = map[string][]int{"foo": {0}, "bar": {1}}
+		rs.scanFn = rs.scanStruct
 	})
 
 	for rows.Next() {
