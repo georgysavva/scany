@@ -51,7 +51,7 @@ type API struct {
 	structTagKey          string
 	columnSeparator       string
 	fieldMapperFn         NameMapperFunc
-	scannableTypes        []interface{}
+	scannableTypesOption  []interface{}
 	scannableTypesReflect []reflect.Type
 }
 
@@ -68,13 +68,18 @@ func NewAPI(opts ...APIOption) (*API, error) {
 	for _, o := range opts {
 		o(api)
 	}
-	for _, st := range api.scannableTypes {
-		stReflect := reflect.TypeOf(st).Elem()
-		if stReflect.Kind() != reflect.Interface {
-			return nil, errors.Errorf("scany: scannable types must be an interface, got %s: %s",
-				stReflect.String(), stReflect.Kind())
+	for _, stOpt := range api.scannableTypesOption {
+		st := reflect.TypeOf(stOpt)
+		if st.Kind() != reflect.Ptr {
+			return nil, errors.Errorf("scany: scannable type must be a pointer, got %s: %s",
+				st.String(), st.Kind())
 		}
-		api.scannableTypesReflect = append(api.scannableTypesReflect, stReflect)
+		st = st.Elem()
+		if st.Kind() != reflect.Interface {
+			return nil, errors.Errorf("scany: scannable type must be an interface, got %s: %s",
+				st.String(), st.Kind())
+		}
+		api.scannableTypesReflect = append(api.scannableTypesReflect, st)
 	}
 	return api, nil
 }
@@ -117,7 +122,7 @@ func WithFieldNameMapper(mapperFn NameMapperFunc) APIOption {
 // dbscan.WithScannableTypes((*Scanner)(nil))
 func WithScannableTypes(scannableTypes ...interface{}) APIOption {
 	return func(api *API) {
-		api.scannableTypes = scannableTypes
+		api.scannableTypesOption = scannableTypes
 	}
 }
 
