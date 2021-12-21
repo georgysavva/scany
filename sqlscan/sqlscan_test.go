@@ -257,7 +257,11 @@ func getAPI() (*sqlscan.API, error) {
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
-	return sqlscan.NewAPI(dbscanAPI), nil
+	api, err := sqlscan.NewAPI(dbscanAPI)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+	return api, nil
 }
 
 func TestMain(m *testing.M) {

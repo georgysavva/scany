@@ -222,7 +222,11 @@ func getAPI() (*pgxscan.API, error) {
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
-	return pgxscan.NewAPI(dbscanAPI), nil
+	api, err := pgxscan.NewAPI(dbscanAPI)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+	return api, nil
 }
 
 func TestMain(m *testing.M) {

@@ -300,5 +300,13 @@ func parseDestination(dst interface{}) (reflect.Value, error) {
 	return dstVal, nil
 }
 
+func mustNewAPI(opts ...APIOption) *API {
+	api, err := NewAPI(opts...)
+	if err != nil {
+		panic(err)
+	}
+	return api
+}
+
 // DefaultAPI is the default instance of API with all configuration settings set to default.
-var DefaultAPI, _ = NewAPI()
+var DefaultAPI = mustNewAPI()
