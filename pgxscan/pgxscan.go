@@ -66,6 +66,7 @@ func ScanRow(dst interface{}, rows pgx.Rows) error {
 	return DefaultAPI.ScanRow(dst, rows)
 }
 
+// NewDBScanAPI creates a new dbscan API object with default configuration settings for pgxscan.
 func NewDBScanAPI(opts ...dbscan.APIOption) (*dbscan.API, error) {
 	defaultOpts := []dbscan.APIOption{
 		dbscan.WithScannableTypes(
@@ -192,5 +193,5 @@ func mustNewAPI(dbscanAPI *dbscan.API) *API {
 	return api
 }
 
-// DefaultAPI is the default instance of API that is wrapped around the dbscan.DefaultAPI instance.
+// DefaultAPI is the default instance of API with all configuration settings set to default.
 var DefaultAPI = mustNewAPI(mustNewDBScanAPI())
