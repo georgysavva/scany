@@ -2,6 +2,7 @@ package dbscan_test
 
 import (
 	"context"
+	"database/sql"
 	"flag"
 	"os"
 	"testing"
@@ -273,6 +274,45 @@ func TestScanRow(t *testing.T) {
 	requireNoRowsErrorsAndClose(t, rows)
 
 	assert.Equal(t, expected, got)
+}
+
+func TestNewAPI_WithScannableTypes_InvalidInput(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		name        string
+		input       []interface{}
+		expectedErr string
+	}{
+		{
+			name:        "nil",
+			input:       []interface{}{nil},
+			expectedErr: "scany: scannable type must be a pointer, got <nil>",
+		},
+		{
+			name:        "nil interface",
+			input:       []interface{}{sql.Scanner(nil)},
+			expectedErr: "scany: scannable type must be a pointer, got <nil>",
+		},
+		{
+			name:        "not a pointer",
+			input:       []interface{}{pgtype.Text{}},
+			expectedErr: "scany: scannable type must be a pointer, got struct: pgtype.Text",
+		},
+		{
+			name:        "pointer but not an interface",
+			input:       []interface{}{(*pgtype.Text)(nil)},
+			expectedErr: "scany: scannable type must be a pointer to an interface, got struct: pgtype.Text",
+		},
+	}
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			api, err := dbscan.NewAPI(dbscan.WithScannableTypes(tc.input...))
+			assert.EqualError(t, err, tc.expectedErr)
+			assert.Nil(t, api)
+		})
+	}
 }
 
 func TestMain(m *testing.M) {

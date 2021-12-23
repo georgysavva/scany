@@ -70,14 +70,17 @@ func NewAPI(opts ...APIOption) (*API, error) {
 	}
 	for _, stOpt := range api.scannableTypesOption {
 		st := reflect.TypeOf(stOpt)
+		if st == nil {
+			return nil, errors.Errorf("scany: scannable type must be a pointer, got %T", st)
+		}
 		if st.Kind() != reflect.Ptr {
 			return nil, errors.Errorf("scany: scannable type must be a pointer, got %s: %s",
-				st.String(), st.Kind())
+				st.Kind(), st.String())
 		}
 		st = st.Elem()
 		if st.Kind() != reflect.Interface {
-			return nil, errors.Errorf("scany: scannable type must be an interface, got %s: %s",
-				st.String(), st.Kind())
+			return nil, errors.Errorf("scany: scannable type must be a pointer to an interface, got %s: %s",
+				st.Kind(), st.String())
 		}
 		api.scannableTypesReflect = append(api.scannableTypesReflect, st)
 	}
@@ -119,7 +122,7 @@ func WithFieldNameMapper(mapperFn NameMapperFunc) APIOption {
 //     Scan(...) error
 // }
 // You can pass it to dbscan this way:
-// dbscan.WithScannableTypes((*Scanner)(nil))
+// dbscan.WithScannableTypes((*Scanner)(nil)).
 func WithScannableTypes(scannableTypes ...interface{}) APIOption {
 	return func(api *API) {
 		api.scannableTypesOption = scannableTypes

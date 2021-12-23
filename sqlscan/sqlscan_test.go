@@ -275,8 +275,8 @@ func TestMain(m *testing.M) {
 			panic(err)
 		}
 		defer func() {
-			if err := testDB.Close(); err != nil {
-				panic(err)
+			if closeErr := testDB.Close(); closeErr != nil {
+				panic(closeErr)
 			}
 		}()
 		testAPI, err = getAPI()
