@@ -2,11 +2,13 @@ package dbscan_test
 
 import (
 	"context"
+	"database/sql"
 	"flag"
 	"os"
 	"testing"
 
 	"github.com/cockroachdb/cockroach-go/v2/testserver"
+	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v4/pgxpool"
 	_ "github.com/jackc/pgx/v4/stdlib"
 	"github.com/stretchr/testify/assert"
@@ -85,6 +87,20 @@ func TestScanAll(t *testing.T) {
 				) AS t (foo)
 			`,
 			expected: []string{"foo val", "foo val 2", "foo val 3"},
+		},
+		{
+			name: "slice of pgtype.Text",
+			query: `
+				SELECT *
+				FROM (
+					VALUES ('foo val'), ('foo val 2'), ('foo val 3')
+				) AS t (foo)
+			`,
+			expected: []pgtype.Text{
+				{String: "foo val", Status: pgtype.Present},
+				{String: "foo val 2", Status: pgtype.Present},
+				{String: "foo val 3", Status: pgtype.Present},
+			},
 		},
 		{
 			name: "slice of strings by ptr",
@@ -260,6 +276,45 @@ func TestScanRow(t *testing.T) {
 	assert.Equal(t, expected, got)
 }
 
+func TestNewAPI_WithScannableTypes_InvalidInput(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		name        string
+		input       []interface{}
+		expectedErr string
+	}{
+		{
+			name:        "nil",
+			input:       []interface{}{nil},
+			expectedErr: "scany: scannable type must be a pointer, got <nil>",
+		},
+		{
+			name:        "nil interface",
+			input:       []interface{}{sql.Scanner(nil)},
+			expectedErr: "scany: scannable type must be a pointer, got <nil>",
+		},
+		{
+			name:        "not a pointer",
+			input:       []interface{}{pgtype.Text{}},
+			expectedErr: "scany: scannable type must be a pointer, got struct: pgtype.Text",
+		},
+		{
+			name:        "pointer but not an interface",
+			input:       []interface{}{(*pgtype.Text)(nil)},
+			expectedErr: "scany: scannable type must be a pointer to an interface, got struct: pgtype.Text",
+		},
+	}
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			api, err := dbscan.NewAPI(dbscan.WithScannableTypes(tc.input...))
+			assert.EqualError(t, err, tc.expectedErr)
+			assert.Nil(t, api)
+		})
+	}
+}
+
 func TestMain(m *testing.M) {
 	exitCode := func() int {
 		flag.Parse()
@@ -273,7 +328,10 @@ func TestMain(m *testing.M) {
 			panic(err)
 		}
 		defer testDB.Close()
-		testAPI = getAPI()
+		testAPI, err = getAPI()
+		if err != nil {
+			panic(err)
+		}
 		return m.Run()
 	}()
 	os.Exit(exitCode)

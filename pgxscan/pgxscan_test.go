@@ -15,8 +15,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/georgysavva/scany/dbscan"
-
 	"github.com/georgysavva/scany/pgxscan"
 )
 
@@ -217,8 +215,16 @@ func TestScanRow(t *testing.T) {
 	assert.Equal(t, expected, got)
 }
 
-func getAPI() *pgxscan.API {
-	return pgxscan.NewAPI(dbscan.NewAPI())
+func getAPI() (*pgxscan.API, error) {
+	dbscanAPI, err := pgxscan.NewDBScanAPI()
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+	api, err := pgxscan.NewAPI(dbscanAPI)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+	return api, nil
 }
 
 func TestMain(m *testing.M) {
@@ -234,7 +240,10 @@ func TestMain(m *testing.M) {
 			panic(err)
 		}
 		defer testDB.Close()
-		testAPI = getAPI()
+		testAPI, err = getAPI()
+		if err != nil {
+			panic(err)
+		}
 		return m.Run()
 	}()
 	os.Exit(exitCode)

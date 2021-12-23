@@ -48,16 +48,18 @@ func SnakeCaseMapper(str string) string {
 // API is the core type in dbscan. It implements all the logic and exposes functionality available in the package.
 // With API type users can create a custom API instance and override default settings hence configure dbscan.
 type API struct {
-	structTagKey    string
-	columnSeparator string
-	fieldMapperFn   NameMapperFunc
+	structTagKey          string
+	columnSeparator       string
+	fieldMapperFn         NameMapperFunc
+	scannableTypesOption  []interface{}
+	scannableTypesReflect []reflect.Type
 }
 
 // APIOption is a function type that changes API configuration.
 type APIOption func(api *API)
 
 // NewAPI creates a new API object with provided list of options.
-func NewAPI(opts ...APIOption) *API {
+func NewAPI(opts ...APIOption) (*API, error) {
 	api := &API{
 		structTagKey:    "db",
 		columnSeparator: ".",
@@ -66,7 +68,23 @@ func NewAPI(opts ...APIOption) *API {
 	for _, o := range opts {
 		o(api)
 	}
-	return api
+	for _, stOpt := range api.scannableTypesOption {
+		st := reflect.TypeOf(stOpt)
+		if st == nil {
+			return nil, errors.Errorf("scany: scannable type must be a pointer, got %T", st)
+		}
+		if st.Kind() != reflect.Ptr {
+			return nil, errors.Errorf("scany: scannable type must be a pointer, got %s: %s",
+				st.Kind(), st.String())
+		}
+		st = st.Elem()
+		if st.Kind() != reflect.Interface {
+			return nil, errors.Errorf("scany: scannable type must be a pointer to an interface, got %s: %s",
+				st.Kind(), st.String())
+		}
+		api.scannableTypesReflect = append(api.scannableTypesReflect, st)
+	}
+	return api, nil
 }
 
 // WithStructTagKey allows to use a custom struct tag key.
@@ -90,6 +108,24 @@ func WithColumnSeparator(separator string) APIOption {
 func WithFieldNameMapper(mapperFn NameMapperFunc) APIOption {
 	return func(api *API) {
 		api.fieldMapperFn = mapperFn
+	}
+}
+
+// WithScannableTypes specifies a list of interfaces that underlying database library can scan into.
+// In case the destination type passed to dbscan implements one of those interfaces,
+// dbscan will handle it as primitive type case i.e. simply pass the destination to the database library.
+// Instead of attempting to map database columns to destination struct fields or map keys.
+// In order for reflection to capture the interface type, you must pass it by pointer.
+//
+// For example your database library defines a scanner interface like this:
+// type Scanner interface {
+//     Scan(...) error
+// }
+// You can pass it to dbscan this way:
+// dbscan.WithScannableTypes((*Scanner)(nil)).
+func WithScannableTypes(scannableTypes ...interface{}) APIOption {
+	return func(api *API) {
+		api.scannableTypesOption = scannableTypes
 	}
 }
 
@@ -260,6 +296,17 @@ func (api *API) ScanRow(dst interface{}, rows Rows) error {
 	return errors.WithStack(err)
 }
 
+func (api *API) isScannableType(dstValue reflect.Value) bool {
+	dstType := dstValue.Type()
+	dstRefType := dstValue.Addr().Type()
+	for _, st := range api.scannableTypesReflect {
+		if dstRefType.Implements(st) || dstType.Implements(st) {
+			return true
+		}
+	}
+	return false
+}
+
 func parseDestination(dst interface{}) (reflect.Value, error) {
 	dstVal := reflect.ValueOf(dst)
 
@@ -274,5 +321,13 @@ func parseDestination(dst interface{}) (reflect.Value, error) {
 	return dstVal, nil
 }
 
+func mustNewAPI(opts ...APIOption) *API {
+	api, err := NewAPI(opts...)
+	if err != nil {
+		panic(err)
+	}
+	return api
+}
+
 // DefaultAPI is the default instance of API with all configuration settings set to default.
-var DefaultAPI = NewAPI()
+var DefaultAPI = mustNewAPI()

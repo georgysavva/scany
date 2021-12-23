@@ -2,7 +2,9 @@ package pgxscan
 
 import (
 	"context"
+	"database/sql"
 
+	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/pkg/errors"
@@ -64,6 +66,20 @@ func ScanRow(dst interface{}, rows pgx.Rows) error {
 	return DefaultAPI.ScanRow(dst, rows)
 }
 
+// NewDBScanAPI creates a new dbscan API object with default configuration settings for pgxscan.
+func NewDBScanAPI(opts ...dbscan.APIOption) (*dbscan.API, error) {
+	defaultOpts := []dbscan.APIOption{
+		dbscan.WithScannableTypes(
+			(*sql.Scanner)(nil),
+			(*pgtype.BinaryDecoder)(nil),
+			(*pgtype.TextDecoder)(nil),
+		),
+	}
+	opts = append(defaultOpts, opts...)
+	api, err := dbscan.NewAPI(opts...)
+	return api, errors.WithStack(err)
+}
+
 // API is a wrapper around the dbscan.API type.
 // See dbscan.API for details.
 type API struct {
@@ -71,9 +87,9 @@ type API struct {
 }
 
 // NewAPI creates new API instance from dbscan.API instance.
-func NewAPI(dbscanAPI *dbscan.API) *API {
+func NewAPI(dbscanAPI *dbscan.API) (*API, error) {
 	api := &API{dbscanAPI: dbscanAPI}
-	return api
+	return api, nil
 }
 
 // Select is a high-level function that queries rows from Querier and calls the ScanAll function.
@@ -161,5 +177,21 @@ func (ra RowsAdapter) Close() error {
 	return nil
 }
 
-// DefaultAPI is the default instance of API that is wrapped around the dbscan.DefaultAPI instance.
-var DefaultAPI = NewAPI(dbscan.DefaultAPI)
+func mustNewDBScanAPI(opts ...dbscan.APIOption) *dbscan.API {
+	api, err := NewDBScanAPI(opts...)
+	if err != nil {
+		panic(err)
+	}
+	return api
+}
+
+func mustNewAPI(dbscanAPI *dbscan.API) *API {
+	api, err := NewAPI(dbscanAPI)
+	if err != nil {
+		panic(err)
+	}
+	return api
+}
+
+// DefaultAPI is the default instance of API with all configuration settings set to default.
+var DefaultAPI = mustNewAPI(mustNewDBScanAPI())

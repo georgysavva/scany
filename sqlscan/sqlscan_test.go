@@ -14,8 +14,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/georgysavva/scany/dbscan"
-
 	"github.com/georgysavva/scany/sqlscan"
 )
 
@@ -252,8 +250,16 @@ func requireNoRowsErrorsAndClose(t *testing.T, rows *sql.Rows) {
 	require.NoError(t, rows.Close())
 }
 
-func getAPI() *sqlscan.API {
-	return sqlscan.NewAPI(dbscan.NewAPI())
+func getAPI() (*sqlscan.API, error) {
+	dbscanAPI, err := sqlscan.NewDBScanAPI()
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+	api, err := sqlscan.NewAPI(dbscanAPI)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+	return api, nil
 }
 
 func TestMain(m *testing.M) {
@@ -269,11 +275,14 @@ func TestMain(m *testing.M) {
 			panic(err)
 		}
 		defer func() {
-			if err := testDB.Close(); err != nil {
-				panic(err)
+			if closeErr := testDB.Close(); closeErr != nil {
+				panic(closeErr)
 			}
 		}()
-		testAPI = getAPI()
+		testAPI, err = getAPI()
+		if err != nil {
+			panic(err)
+		}
 		return m.Run()
 	}()
 	os.Exit(exitCode)

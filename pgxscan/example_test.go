@@ -147,10 +147,17 @@ func ExampleAPI() {
 	}
 
 	// Instantiate a custom API with overridden settings.
-	api := pgxscan.NewAPI(dbscan.NewAPI(
+	dbscanAPI, err := pgxscan.NewDBScanAPI(
 		dbscan.WithFieldNameMapper(strings.ToLower),
 		dbscan.WithStructTagKey("database"),
-	))
+	)
+	if err != nil {
+		// Handle dbscan API initialization error.
+	}
+	api, err := pgxscan.NewAPI(dbscanAPI)
+	if err != nil {
+		// Handle pgxscan API initialization error.
+	}
 
 	db, _ := pgxpool.Connect(ctx, "example-connection-url")
 
