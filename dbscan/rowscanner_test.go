@@ -70,11 +70,9 @@ type CustomScannableType struct {
 func (cst *CustomScannableType) Scan(val interface{}) error {
 	switch v := val.(type) {
 	case []byte:
-		json.Unmarshal(v, cst)
-		return nil
+		return json.Unmarshal(v, cst)
 	case string:
-		json.Unmarshal([]byte(v), cst)
-		return nil
+		return json.Unmarshal([]byte(v), cst)
 	default:
 		return errors.New(fmt.Sprintf("Unsupported type: %T", v))
 	}

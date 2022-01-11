@@ -85,7 +85,7 @@ func startScanner(rs *RowScanner, dstValue reflect.Value) error {
 		return errors.WithStack(err)
 	}
 	dstKind := dstValue.Kind()
-	dstType:=dstValue.Type()
+	dstType := dstValue.Type()
 	isScannable := rs.api.isScannableType(dstType)
 	if isScannable && len(rs.columns) == 1 {
 		rs.scanFn = rs.scanPrimitive
