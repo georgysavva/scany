@@ -103,6 +103,48 @@ func TestScanAll(t *testing.T) {
 			},
 		},
 		{
+			name: "slice of CustomScannableType",
+			query: `
+				SELECT *
+				FROM (
+					VALUES ('{"key1": "foo val 1", "key2": "bar val 1"}'), 
+                           ('{"key1": "foo val 2", "key2": "bar val 2"}')
+				) AS t (foo)
+			`,
+			expected: []CustomScannableType{
+				{Key1: "foo val 1", Key2: "bar val 1"},
+				{Key1: "foo val 2", Key2: "bar val 2"},
+			},
+		},
+		{
+			name: "slice of *CustomScannableType",
+			query: `
+				SELECT *
+				FROM (
+					VALUES ('{"key1": "foo val 1", "key2": "bar val 1"}'::JSON), 
+                           ('{"key1": "foo val 2", "key2": "bar val 2"}'::JSON)
+				) AS t (foo)
+			`,
+			expected: []*CustomScannableType{
+				{Key1: "foo val 1", Key2: "bar val 1"},
+				{Key1: "foo val 2", Key2: "bar val 2"},
+			},
+		},
+		{
+			name: "slice of *CustomScannableType NULL",
+			query: `
+				SELECT *
+				FROM (
+					VALUES (NULL::JSON), 
+                           (NULL::JSON)
+				) AS t (foo)
+			`,
+			expected: []*CustomScannableType{
+				nil,
+				nil,
+			},
+		},
+		{
 			name: "slice of strings by ptr",
 			query: `
 				SELECT *
