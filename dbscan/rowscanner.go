@@ -85,28 +85,27 @@ func startScanner(rs *RowScanner, dstValue reflect.Value) error {
 		return errors.WithStack(err)
 	}
 	dstKind := dstValue.Kind()
-
-	isScannable := rs.api.isScannableType(dstValue)
+	dstType := dstValue.Type()
+	isScannable := rs.api.isScannableType(dstType)
 	if isScannable && len(rs.columns) == 1 {
 		rs.scanFn = rs.scanPrimitive
 		return nil
 	}
 
 	if dstKind == reflect.Struct {
-		rs.columnToFieldIndex = rs.api.getColumnToFieldIndexMap(dstValue.Type())
+		rs.columnToFieldIndex = rs.api.getColumnToFieldIndexMap(dstType)
 		rs.scanFn = rs.scanStruct
 		return nil
 	}
 
 	if dstKind == reflect.Map {
-		mapType := dstValue.Type()
-		if mapType.Key().Kind() != reflect.String {
+		if dstType.Key().Kind() != reflect.String {
 			return errors.Errorf(
 				"scany: invalid type %v: map must have string key, got: %v",
-				mapType, mapType.Key(),
+				dstType, dstType.Key(),
 			)
 		}
-		rs.mapElementType = mapType.Elem()
+		rs.mapElementType = dstType.Elem()
 		rs.scanFn = rs.scanMap
 		return nil
 	}

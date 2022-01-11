@@ -183,7 +183,7 @@ func (api *API) processRows(dst interface{}, rows Rows, multipleRows bool) error
 	var sliceMeta *sliceDestinationMeta
 	if multipleRows {
 		var err error
-		sliceMeta, err = parseSliceDestination(dst)
+		sliceMeta, err = api.parseSliceDestination(dst)
 		if err != nil {
 			return errors.WithStack(err)
 		}
@@ -224,7 +224,7 @@ func (api *API) processRows(dst interface{}, rows Rows, multipleRows bool) error
 	return nil
 }
 
-func parseSliceDestination(dst interface{}) (*sliceDestinationMeta, error) {
+func (api *API) parseSliceDestination(dst interface{}) (*sliceDestinationMeta, error) {
 	dstValue, err := parseDestination(dst)
 	if err != nil {
 		return nil, errors.WithStack(err)
@@ -248,7 +248,7 @@ func parseSliceDestination(dst interface{}) (*sliceDestinationMeta, error) {
 	// we must leave and pass elements as is to Rows.Scan().
 	if elementBaseType.Kind() == reflect.Ptr {
 		elementBaseTypeElem := elementBaseType.Elem()
-		if elementBaseTypeElem.Kind() == reflect.Struct {
+		if elementBaseTypeElem.Kind() == reflect.Struct && !api.isScannableType(elementBaseType) {
 			elementBaseType = elementBaseTypeElem
 			elementByPtr = true
 		}
@@ -296,9 +296,8 @@ func (api *API) ScanRow(dst interface{}, rows Rows) error {
 	return errors.WithStack(err)
 }
 
-func (api *API) isScannableType(dstValue reflect.Value) bool {
-	dstType := dstValue.Type()
-	dstRefType := dstValue.Addr().Type()
+func (api *API) isScannableType(dstType reflect.Type) bool {
+	dstRefType := reflect.PtrTo(dstType)
 	for _, st := range api.scannableTypesReflect {
 		if dstRefType.Implements(st) || dstType.Implements(st) {
 			return true

@@ -1,10 +1,13 @@
 package dbscan_test
 
 import (
+	"encoding/json"
+	"fmt"
 	"testing"
 	"time"
 
 	"github.com/jackc/pgtype"
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -57,6 +60,22 @@ type AmbiguousNested1 struct {
 
 type AmbiguousNested2 struct {
 	Foo string
+}
+
+type CustomScannableType struct {
+	Key1 string
+	Key2 string
+}
+
+func (cst *CustomScannableType) Scan(val interface{}) error {
+	switch v := val.(type) {
+	case []byte:
+		return json.Unmarshal(v, cst)
+	case string:
+		return json.Unmarshal([]byte(v), cst)
+	default:
+		return errors.New(fmt.Sprintf("Unsupported type: %T", v))
+	}
 }
 
 func TestRowScanner_Scan_structDestination(t *testing.T) {
@@ -748,6 +767,13 @@ func TestRowScanner_Scan_primitiveTypeDestination(t *testing.T) {
 			expected: makeStrPtr("foo val"),
 		},
 		{
+			name: "string by ptr NULL value",
+			query: `
+				SELECT NULL AS foo 
+			`,
+			expected: (*string)(nil),
+		},
+		{
 			name: "slice",
 			query: `
 				SELECT ARRAY('foo val', 'foo val 2', 'foo val 3') AS foo 
@@ -842,11 +868,32 @@ func TestRowScanner_Scan_ScannableTypeDestination(t *testing.T) {
 		expected       interface{}
 	}{
 		{
-			name: "pgtype.Text destination type and pgtype.TextDecoder scannable type",
+			name: "pgtype.Text destination type",
 			query: `
 				SELECT 'foo val' AS foo 
 			`,
 			expected: pgtype.Text{String: "foo val", Status: pgtype.Present},
+		},
+		{
+			name: "CustomScannableType destination type",
+			query: `
+				SELECT '{"key1": "foo val", "key2": "bar val"}'::JSON AS foo 
+			`,
+			expected: CustomScannableType{Key1: "foo val", Key2: "bar val"},
+		},
+		{
+			name: "*CustomScannableType destination type",
+			query: `
+				SELECT '{"key1": "foo val", "key2": "bar val"}'::JSON AS foo 
+			`,
+			expected: &CustomScannableType{Key1: "foo val", Key2: "bar val"},
+		},
+		{
+			name: "*CustomScannableType destination type NULL value",
+			query: `
+				SELECT NULL::JSON AS foo 
+			`,
+			expected: (*CustomScannableType)(nil),
 		},
 	}
 	for _, tc := range cases {
