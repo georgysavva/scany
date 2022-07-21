@@ -125,6 +125,11 @@ func (rs *RowScanner) scanStruct(structValue reflect.Value) error {
 	for i, column := range rs.columns {
 		fieldIndex, ok := rs.columnToFieldIndex[column]
 		if !ok {
+			if rs.api.allowUnknownColumns {
+				var tmp interface{}
+				scans[i] = &tmp
+				continue
+			}
 			return errors.Errorf(
 				"scany: column: '%s': no corresponding field found, or it's unexported in %v",
 				column, structValue.Type(),

@@ -1,4 +1,4 @@
-module github.com/talbse/scany
+module github.com/georgysavva/scany
 
 go 1.14
 
