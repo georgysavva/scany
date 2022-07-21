@@ -53,6 +53,7 @@ type API struct {
 	fieldMapperFn         NameMapperFunc
 	scannableTypesOption  []interface{}
 	scannableTypesReflect []reflect.Type
+	allowUnknownColumns   bool
 }
 
 // APIOption is a function type that changes API configuration.
@@ -126,6 +127,14 @@ func WithFieldNameMapper(mapperFn NameMapperFunc) APIOption {
 func WithScannableTypes(scannableTypes ...interface{}) APIOption {
 	return func(api *API) {
 		api.scannableTypesOption = scannableTypes
+	}
+}
+
+// WithAllowUnknownColumns allows the scanner to ignore db columns that doesn't exist at the destination.
+// The default function is to throw an error when a db column ain't found at the destination.
+func WithAllowUnknownColumns(allowUnknownColumns bool) APIOption {
+	return func(api *API) {
+		api.allowUnknownColumns = allowUnknownColumns
 	}
 }
 
