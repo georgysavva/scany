@@ -65,7 +65,7 @@ func NewAPI(opts ...APIOption) (*API, error) {
 		structTagKey:        "db",
 		columnSeparator:     ".",
 		fieldMapperFn:       SnakeCaseMapper,
-		allowUnknownColumns: true,
+		allowUnknownColumns: false,
 	}
 	for _, o := range opts {
 		o(api)
