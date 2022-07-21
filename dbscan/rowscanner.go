@@ -122,11 +122,12 @@ func startScanner(rs *RowScanner, dstValue reflect.Value) error {
 
 func (rs *RowScanner) scanStruct(structValue reflect.Value) error {
 	scans := make([]interface{}, len(rs.columns))
-	scansIndex := 0
-	for _, column := range rs.columns {
+	for i, column := range rs.columns {
 		fieldIndex, ok := rs.columnToFieldIndex[column]
 		if !ok {
 			if rs.api.allowUnknownColumns {
+				var tmp interface{}
+				scans[i] = &tmp
 				continue
 			}
 			return errors.Errorf(
@@ -140,8 +141,7 @@ func (rs *RowScanner) scanStruct(structValue reflect.Value) error {
 		initializeNested(structValue, fieldIndex)
 
 		fieldVal := structValue.FieldByIndex(fieldIndex)
-		scans[scansIndex] = fieldVal.Addr().Interface()
-		scansIndex++
+		scans[i] = fieldVal.Addr().Interface()
 	}
 	err := rs.rows.Scan(scans...)
 	return errors.Wrap(err, "scany: scan row into struct fields")

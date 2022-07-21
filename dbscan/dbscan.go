@@ -62,10 +62,10 @@ type APIOption func(api *API)
 // NewAPI creates a new API object with provided list of options.
 func NewAPI(opts ...APIOption) (*API, error) {
 	api := &API{
-		structTagKey:    "db",
-		columnSeparator: ".",
-		fieldMapperFn:   SnakeCaseMapper,
-		allowUnknownColumns: true
+		structTagKey:        "db",
+		columnSeparator:     ".",
+		fieldMapperFn:       SnakeCaseMapper,
+		allowUnknownColumns: true,
 	}
 	for _, o := range opts {
 		o(api)
