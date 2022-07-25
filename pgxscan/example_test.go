@@ -3,7 +3,7 @@ package pgxscan_test
 import (
 	"strings"
 
-	"github.com/jackc/pgx/v4/pgxpool"
+	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/georgysavva/scany/dbscan"
 
@@ -18,7 +18,7 @@ func ExampleSelect() {
 		Age      int
 	}
 
-	db, _ := pgxpool.Connect(ctx, "example-connection-url")
+	db, _ := pgxpool.New(ctx, "example-connection-url")
 
 	var users []*User
 	if err := pgxscan.Select(
@@ -37,7 +37,7 @@ func ExampleGet() {
 		Age      int
 	}
 
-	db, _ := pgxpool.Connect(ctx, "example-connection-url")
+	db, _ := pgxpool.New(ctx, "example-connection-url")
 
 	var user User
 	if err := pgxscan.Get(
@@ -57,7 +57,7 @@ func ExampleScanAll() {
 	}
 
 	// Query pgx.Rows from the database.
-	db, _ := pgxpool.Connect(ctx, "example-connection-url")
+	db, _ := pgxpool.New(ctx, "example-connection-url")
 	rows, _ := db.Query(ctx, `SELECT user_id, full_name, email, age FROM users`)
 
 	var users []*User
@@ -76,7 +76,7 @@ func ExampleScanOne() {
 	}
 
 	// Query pgx.Rows from the database.
-	db, _ := pgxpool.Connect(ctx, "example-connection-url")
+	db, _ := pgxpool.New(ctx, "example-connection-url")
 	rows, _ := db.Query(ctx, `SELECT user_id, full_name, email, age FROM users WHERE user_id='bob'`)
 
 	var user User
@@ -95,7 +95,7 @@ func ExampleRowScanner() {
 	}
 
 	// Query pgx.Rows from the database.
-	db, _ := pgxpool.Connect(ctx, "example-connection-url")
+	db, _ := pgxpool.New(ctx, "example-connection-url")
 	rows, _ := db.Query(ctx, `SELECT user_id, full_name, email, age FROM users`)
 	defer rows.Close()
 
@@ -122,7 +122,7 @@ func ExampleScanRow() {
 	}
 
 	// Query pgx.Rows from the database.
-	db, _ := pgxpool.Connect(ctx, "example-connection-url")
+	db, _ := pgxpool.New(ctx, "example-connection-url")
 	rows, _ := db.Query(ctx, `SELECT user_id, full_name, email, age FROM users`)
 	defer rows.Close()
 	for rows.Next() {
@@ -159,7 +159,7 @@ func ExampleAPI() {
 		// Handle pgxscan API initialization error.
 	}
 
-	db, _ := pgxpool.Connect(ctx, "example-connection-url")
+	db, _ := pgxpool.New(ctx, "example-connection-url")
 
 	var users []*User
 	// Use the custom API instance to access pgxscan functionality.
