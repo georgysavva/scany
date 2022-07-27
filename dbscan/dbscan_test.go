@@ -357,7 +357,7 @@ func TestNewAPI_WithScannableTypes_InvalidInput(t *testing.T) {
 	}
 }
 
-func TestScanRow_ignoreUnknownColumns_returnsRow(t *testing.T) {
+func TestScanRow_withAllowUnknownColumns_returnsRow(t *testing.T) {
 	t.Parallel()
 	rows := queryRows(t, singleRowsQuery)
 	defer rows.Close() // nolint: errcheck
