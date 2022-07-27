@@ -40,14 +40,16 @@ func queryRows(t *testing.T, query string) dbscan.Rows {
 	return rows
 }
 
-func getAPI() (*dbscan.API, error) {
-	return dbscan.NewAPI(
-		dbscan.WithScannableTypes(
-			(*sql.Scanner)(nil),
-			(*pgtype.TextDecoder)(nil),
-			(*pgtype.BinaryDecoder)(nil),
-		),
-	)
+func getAPI(opts ...dbscan.APIOption) (*dbscan.API, error) {
+	if len(opts) < 1 {
+		opts = []dbscan.APIOption{}
+	}
+	opts = append(opts, dbscan.WithScannableTypes(
+		(*sql.Scanner)(nil),
+		(*pgtype.TextDecoder)(nil),
+		(*pgtype.BinaryDecoder)(nil),
+	))
+	return dbscan.NewAPI(opts...)
 }
 
 func scan(t *testing.T, dst interface{}, rows dbscan.Rows) error {
