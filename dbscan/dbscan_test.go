@@ -357,6 +357,23 @@ func TestNewAPI_WithScannableTypes_InvalidInput(t *testing.T) {
 	}
 }
 
+func TestScanRow_withAllowUnknownColumns_returnsRow(t *testing.T) {
+	t.Parallel()
+	rows := queryRows(t, singleRowsQuery)
+	defer rows.Close() // nolint: errcheck
+	rows.Next()
+
+	got := &struct{ Foo string }{}
+	testAPIWithUnknownColumns, err := getAPI(dbscan.WithAllowUnknownColumns(true))
+	require.NoError(t, err)
+	err = testAPIWithUnknownColumns.ScanRow(got, rows)
+	require.NoError(t, err)
+	requireNoRowsErrorsAndClose(t, rows)
+
+	expected := struct{ Foo string }{Foo: "foo val"}
+	assert.Equal(t, expected, *got)
+}
+
 func TestMain(m *testing.M) {
 	exitCode := func() int {
 		flag.Parse()
