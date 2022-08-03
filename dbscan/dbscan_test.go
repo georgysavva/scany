@@ -234,7 +234,7 @@ func TestScanAll_nonSliceDestination_returnsErr(t *testing.T) {
 	t.Parallel()
 	rows := queryRows(t, multipleRowsQuery)
 	dst := &testModel{}
-	expectedErr := "scany: destination must be a slice, got: dbscan_test.testModel"
+	expectedErr := "parsing slice destination: scany: destination must be a slice, got: dbscan_test.testModel"
 
 	err := testAPI.ScanAll(dst, rows)
 
@@ -245,7 +245,7 @@ func TestScanAll_sliceByPointerToPointerDestination_returnsErr(t *testing.T) {
 	t.Parallel()
 	rows := queryRows(t, multipleRowsQuery)
 	dst := new(*[]testModel)
-	expectedErr := "scany: destination must be a slice, got: *[]dbscan_test.testModel"
+	expectedErr := "parsing slice destination: scany: destination must be a slice, got: *[]dbscan_test.testModel"
 
 	err := testAPI.ScanAll(dst, rows)
 
