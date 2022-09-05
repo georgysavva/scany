@@ -2,8 +2,9 @@ package pgxscan_test
 
 import (
 	"context"
-	stderrors "errors"
+	"errors"
 	"flag"
+	"fmt"
 	"os"
 	"testing"
 
@@ -11,7 +12,6 @@ import (
 	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
-	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -139,7 +139,6 @@ func TestScanOne_noRows_returnsNotFoundErr(t *testing.T) {
 
 	assert.True(t, pgxscan.NotFound(err))
 	assert.True(t, errors.Is(err, pgx.ErrNoRows))
-	assert.True(t, stderrors.Is(err, pgx.ErrNoRows))
 }
 
 func TestRowScanner_Scan(t *testing.T) {
@@ -218,11 +217,11 @@ func TestScanRow(t *testing.T) {
 func getAPI() (*pgxscan.API, error) {
 	dbscanAPI, err := pgxscan.NewDBScanAPI()
 	if err != nil {
-		return nil, errors.WithStack(err)
+		return nil, fmt.Errorf("new DB scan API: %w", err)
 	}
 	api, err := pgxscan.NewAPI(dbscanAPI)
 	if err != nil {
-		return nil, errors.WithStack(err)
+		return nil, fmt.Errorf("new API: %w", err)
 	}
 	return api, nil
 }

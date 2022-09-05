@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/jackc/pgtype"
-	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -74,7 +73,7 @@ func (cst *CustomScannableType) Scan(val interface{}) error {
 	case string:
 		return json.Unmarshal([]byte(v), cst)
 	default:
-		return errors.New(fmt.Sprintf("Unsupported type: %T", v))
+		return fmt.Errorf("Unsupported type: %T", v)
 	}
 }
 
@@ -511,7 +510,7 @@ func TestRowScanner_Scan_invalidStructDestination_returnsErr(t *testing.T) {
 			dst: &struct {
 				Bar string
 			}{},
-			expectedErr: "scany: column: 'foo': no corresponding field found, or it's unexported in " +
+			expectedErr: "doing scan: scanFn: scany: column: 'foo': no corresponding field found, or it's unexported in " +
 				"struct { Bar string }",
 		},
 		{
@@ -523,7 +522,7 @@ func TestRowScanner_Scan_invalidStructDestination_returnsErr(t *testing.T) {
 				foo string
 				Bar string
 			}{},
-			expectedErr: "scany: column: 'foo': no corresponding field found, or it's unexported in " +
+			expectedErr: "doing scan: scanFn: scany: column: 'foo': no corresponding field found, or it's unexported in " +
 				"struct { foo string; Bar string }",
 		},
 		{
@@ -534,7 +533,7 @@ func TestRowScanner_Scan_invalidStructDestination_returnsErr(t *testing.T) {
 			dst: &struct {
 				Foo string `db:"-"`
 			}{},
-			expectedErr: "scany: column: 'foo': no corresponding field found, or it's unexported in " +
+			expectedErr: "doing scan: scanFn: scany: column: 'foo': no corresponding field found, or it's unexported in " +
 				"struct { Foo string \"db:\\\"-\\\"\" }",
 		},
 		{
@@ -548,7 +547,7 @@ func TestRowScanner_Scan_invalidStructDestination_returnsErr(t *testing.T) {
 				Foo       string
 				Bar       string
 			}{},
-			expectedErr: "scany: column: 'foo_nested.foo_nested': no corresponding field found, or it's unexported in " +
+			expectedErr: "doing scan: scanFn: scany: column: 'foo_nested.foo_nested': no corresponding field found, or it's unexported in " +
 				"struct { fooNested dbscan_test.FooNested; Foo string; Bar string }",
 		},
 		{
@@ -559,7 +558,7 @@ func TestRowScanner_Scan_invalidStructDestination_returnsErr(t *testing.T) {
 			dst: &struct {
 				FooNested `db:"-"`
 			}{},
-			expectedErr: "scany: column: 'foo_nested': no corresponding field found, or it's unexported in " +
+			expectedErr: "doing scan: scanFn: scany: column: 'foo_nested': no corresponding field found, or it's unexported in " +
 				"struct { dbscan_test.FooNested \"db:\\\"-\\\"\" }",
 		},
 		{
@@ -570,7 +569,7 @@ func TestRowScanner_Scan_invalidStructDestination_returnsErr(t *testing.T) {
 			dst: &struct {
 				FooNested FooNested `db:"-"`
 			}{},
-			expectedErr: "scany: column: 'foo_nested.foo_nested': no corresponding field found, or it's unexported in " +
+			expectedErr: "doing scan: scanFn: scany: column: 'foo_nested.foo_nested': no corresponding field found, or it's unexported in " +
 				"struct { FooNested dbscan_test.FooNested \"db:\\\"-\\\"\" }",
 		},
 		{
@@ -582,7 +581,7 @@ func TestRowScanner_Scan_invalidStructDestination_returnsErr(t *testing.T) {
 				Foo int
 				Bar string
 			}{},
-			expectedErr: "scany: scan row into struct fields: can't scan into dest[0]: unable to assign to *int",
+			expectedErr: "doing scan: scanFn: scany: scan row into struct fields: can't scan into dest[0]: unable to assign to *int",
 		},
 		{
 			name: "non struct embedded field",
@@ -593,7 +592,7 @@ func TestRowScanner_Scan_invalidStructDestination_returnsErr(t *testing.T) {
 				string `db:"string"`
 				Foo    string
 			}{},
-			expectedErr: "scany: column: 'string': no corresponding field found, " +
+			expectedErr: "doing scan: scanFn: scany: column: 'string': no corresponding field found, " +
 				"or it's unexported in struct { string \"db:\\\"string\\\"\"; Foo string }",
 		},
 		{
@@ -605,7 +604,7 @@ func TestRowScanner_Scan_invalidStructDestination_returnsErr(t *testing.T) {
 				JSONObj `db:"foo_json"`
 				Foo     string
 			}{},
-			expectedErr: "scany: column: 'foo_json': no corresponding field found, " +
+			expectedErr: "doing scan: scanFn: scany: column: 'foo_json': no corresponding field found, " +
 				"or it's unexported in struct { dbscan_test.JSONObj \"db:\\\"foo_json\\\"\"; Foo string }",
 		},
 	}
@@ -723,7 +722,7 @@ func TestRowScanner_Scan_invalidMapDestination_returnsErr(t *testing.T) {
 			name:        "non string key",
 			query:       singleRowsQuery,
 			dst:         &map[int]interface{}{},
-			expectedErr: "scany: invalid type map[int]interface {}: map must have string key, got: int",
+			expectedErr: "doing scan: starting: scany: invalid type map[int]interface {}: map must have string key, got: int",
 		},
 		{
 			name: "value type does not match with column type",
@@ -731,7 +730,7 @@ func TestRowScanner_Scan_invalidMapDestination_returnsErr(t *testing.T) {
 				SELECT 'foo val' AS foo
 			`,
 			dst:         &map[string]int{},
-			expectedErr: "scany: scan rows into map: can't scan into dest[0]: unable to assign to *int",
+			expectedErr: "doing scan: scanFn: scany: scan rows into map: can't scan into dest[0]: unable to assign to *int",
 		},
 	}
 	for _, tc := range cases {
@@ -822,7 +821,7 @@ func TestRowScanner_Scan_primitiveTypeDestinationDoesNotMatchWithColumnType_retu
 		SELECT 'foo val' AS foo
 	`
 	rows := queryRows(t, query)
-	expectedErr := "scany: scan row value into a primitive type: can't scan into dest[0]: unable to assign to *int"
+	expectedErr := "doing scan: scanFn: scany: scan row value into a primitive type: can't scan into dest[0]: unable to assign to *int"
 	dst := new(int)
 	err := scan(t, dst, rows)
 	assert.EqualError(t, err, expectedErr)
@@ -834,7 +833,7 @@ func TestRowScanner_Scan_primitiveTypeDestinationRowsContainMoreThanOneColumn_re
 		SELECT '1 val' AS column1, '2 val' AS column2
 	`
 	rows := queryRows(t, query)
-	expectedErr := "scany: to scan into a primitive type, columns number must be exactly 1, got: 2"
+	expectedErr := "doing scan: starting: scany: to scan into a primitive type, columns number must be exactly 1, got: 2"
 	dst := new(string)
 	err := scan(t, dst, rows)
 	assert.EqualError(t, err, expectedErr)
@@ -853,7 +852,7 @@ func (er emptyRow) Err() error                  { return nil }
 func TestRowScanner_Scan_primitiveTypeDestinationRowsContainZeroColumns_returnsErr(t *testing.T) {
 	t.Parallel()
 	rows := emptyRow{}
-	expectedErr := "scany: to scan into a primitive type, columns number must be exactly 1, got: 0"
+	expectedErr := "doing scan: starting: scany: to scan into a primitive type, columns number must be exactly 1, got: 0"
 	dst := new(string)
 	err := scan(t, dst, rows)
 	assert.EqualError(t, err, expectedErr)
@@ -934,7 +933,7 @@ func TestRowScanner_Scan_rowsContainDuplicateColumns_returnsErr(t *testing.T) {
 				SELECT 'foo val' AS foo, 'foo val' AS foo
 			`
 			rows := queryRows(t, query)
-			expectedErr := "scany: rows contain a duplicate column 'foo'"
+			expectedErr := "doing scan: starting: duplicate columns: scany: rows contain a duplicate column 'foo'"
 			err := scan(t, tc.dst, rows)
 			assert.EqualError(t, err, expectedErr)
 		})
@@ -953,27 +952,27 @@ func TestRowScanner_Scan_invalidDst_returnsErr(t *testing.T) {
 			dst: struct {
 				Foo string
 			}{},
-			expectedErr: "scany: destination must be a pointer, got: struct { Foo string }",
+			expectedErr: "parsing destination: scany: destination must be a pointer, got: struct { Foo string }",
 		},
 		{
 			name:        "map",
 			dst:         map[string]interface{}{},
-			expectedErr: "scany: destination must be a pointer, got: map[string]interface {}",
+			expectedErr: "parsing destination: scany: destination must be a pointer, got: map[string]interface {}",
 		},
 		{
 			name:        "slice",
 			dst:         []struct{ Foo string }{},
-			expectedErr: "scany: destination must be a pointer, got: []struct { Foo string }",
+			expectedErr: "parsing destination: scany: destination must be a pointer, got: []struct { Foo string }",
 		},
 		{
 			name:        "nil",
 			dst:         nil,
-			expectedErr: "scany: destination must be a non nil pointer",
+			expectedErr: "parsing destination: scany: destination must be a non nil pointer",
 		},
 		{
 			name:        "(*int)(nil)",
 			dst:         (*int)(nil),
-			expectedErr: "scany: destination must be a non nil pointer",
+			expectedErr: "parsing destination: scany: destination must be a non nil pointer",
 		},
 	}
 	for _, tc := range cases {

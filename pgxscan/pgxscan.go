@@ -3,11 +3,12 @@ package pgxscan
 import (
 	"context"
 	"database/sql"
+	"errors"
+	"fmt"
 
 	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
-	"github.com/pkg/errors"
 
 	"github.com/georgysavva/scany/dbscan"
 )
@@ -27,25 +28,25 @@ var (
 // Select is a package-level helper function that uses the DefaultAPI object.
 // See API.Select for details.
 func Select(ctx context.Context, db Querier, dst interface{}, query string, args ...interface{}) error {
-	return errors.WithStack(DefaultAPI.Select(ctx, db, dst, query, args...))
+	return DefaultAPI.Select(ctx, db, dst, query, args...)
 }
 
 // Get is a package-level helper function that uses the DefaultAPI object.
 // See API.Get for details.
 func Get(ctx context.Context, db Querier, dst interface{}, query string, args ...interface{}) error {
-	return errors.WithStack(DefaultAPI.Get(ctx, db, dst, query, args...))
+	return DefaultAPI.Get(ctx, db, dst, query, args...)
 }
 
 // ScanAll is a package-level helper function that uses the DefaultAPI object.
 // See API.ScanAll for details.
 func ScanAll(dst interface{}, rows pgx.Rows) error {
-	return errors.WithStack(DefaultAPI.ScanAll(dst, rows))
+	return DefaultAPI.ScanAll(dst, rows)
 }
 
 // ScanOne is a package-level helper function that uses the DefaultAPI object.
 // See API.ScanOne for details.
 func ScanOne(dst interface{}, rows pgx.Rows) error {
-	return errors.WithStack(DefaultAPI.ScanOne(dst, rows))
+	return DefaultAPI.ScanOne(dst, rows)
 }
 
 // RowScanner is a wrapper around the dbscan.RowScanner type.
@@ -77,7 +78,7 @@ func NewDBScanAPI(opts ...dbscan.APIOption) (*dbscan.API, error) {
 	}
 	opts = append(defaultOpts, opts...)
 	api, err := dbscan.NewAPI(opts...)
-	return api, errors.WithStack(err)
+	return api, err
 }
 
 // API is a wrapper around the dbscan.API type.
@@ -97,10 +98,12 @@ func NewAPI(dbscanAPI *dbscan.API) (*API, error) {
 func (api *API) Select(ctx context.Context, db Querier, dst interface{}, query string, args ...interface{}) error {
 	rows, err := db.Query(ctx, query, args...)
 	if err != nil {
-		return errors.Wrap(err, "scany: query multiple result rows")
+		return fmt.Errorf("scany: query multiple result rows: %w", err)
 	}
-	err = api.ScanAll(dst, rows)
-	return errors.WithStack(err)
+	if err := api.ScanAll(dst, rows); err != nil {
+		return fmt.Errorf("scanning all: %w", err)
+	}
+	return nil
 }
 
 // Get is a high-level function that queries rows from Querier and calls the ScanOne function.
@@ -108,28 +111,32 @@ func (api *API) Select(ctx context.Context, db Querier, dst interface{}, query s
 func (api *API) Get(ctx context.Context, db Querier, dst interface{}, query string, args ...interface{}) error {
 	rows, err := db.Query(ctx, query, args...)
 	if err != nil {
-		return errors.Wrap(err, "scany: query one result row")
+		return fmt.Errorf("scany: query one result row: %w", err)
 	}
-	err = api.ScanOne(dst, rows)
-	return errors.WithStack(err)
+	if err := api.ScanOne(dst, rows); err != nil {
+		return fmt.Errorf("scanning one: %w", err)
+	}
+	return nil
 }
 
 // ScanAll is a wrapper around the dbscan.ScanAll function.
 // See dbscan.ScanAll for details.
 func (api *API) ScanAll(dst interface{}, rows pgx.Rows) error {
-	err := api.dbscanAPI.ScanAll(dst, NewRowsAdapter(rows))
-	return errors.WithStack(err)
+	return api.dbscanAPI.ScanAll(dst, NewRowsAdapter(rows))
 }
 
 // ScanOne is a wrapper around the dbscan.ScanOne function.
 // See dbscan.ScanOne for details. If no rows are found it
 // returns a pgx.ErrNoRows error.
 func (api *API) ScanOne(dst interface{}, rows pgx.Rows) error {
-	err := api.dbscanAPI.ScanOne(dst, NewRowsAdapter(rows))
-	if dbscan.NotFound(err) {
-		return errors.WithStack(pgx.ErrNoRows)
+	switch err := api.dbscanAPI.ScanOne(dst, NewRowsAdapter(rows)); {
+	case dbscan.NotFound(err):
+		return fmt.Errorf("%w", pgx.ErrNoRows)
+	case err != nil:
+		return fmt.Errorf("%w", err)
+	default:
+		return nil
 	}
-	return errors.WithStack(err)
 }
 
 // NotFound is a helper function to check if an error
@@ -147,8 +154,7 @@ func (api *API) NewRowScanner(rows pgx.Rows) *RowScanner {
 // ScanRow is a wrapper around the dbscan.ScanRow function.
 // See dbscan.ScanRow for details.
 func (api *API) ScanRow(dst interface{}, rows pgx.Rows) error {
-	err := api.dbscanAPI.ScanRow(dst, NewRowsAdapter(rows))
-	return errors.WithStack(err)
+	return api.dbscanAPI.ScanRow(dst, NewRowsAdapter(rows))
 }
 
 // RowsAdapter makes pgx.Rows compliant with the dbscan.Rows interface.

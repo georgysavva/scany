@@ -1,11 +1,11 @@
 package dbscan
 
 import (
+	"errors"
+	"fmt"
 	"reflect"
 	"regexp"
 	"strings"
-
-	"github.com/pkg/errors"
 )
 
 // Rows is an abstract database rows that dbscan can iterate over and get the data from.
@@ -21,13 +21,13 @@ type Rows interface {
 // ScanAll is a package-level helper function that uses the DefaultAPI object.
 // See API.ScanAll for details.
 func ScanAll(dst interface{}, rows Rows) error {
-	return errors.WithStack(DefaultAPI.ScanAll(dst, rows))
+	return DefaultAPI.ScanAll(dst, rows)
 }
 
 // ScanOne is a package-level helper function that uses the DefaultAPI object.
 // See API.ScanOne for details.
 func ScanOne(dst interface{}, rows Rows) error {
-	return errors.WithStack(DefaultAPI.ScanOne(dst, rows))
+	return DefaultAPI.ScanOne(dst, rows)
 }
 
 // NameMapperFunc is a function type that maps a struct field name to the database column name.
@@ -73,15 +73,15 @@ func NewAPI(opts ...APIOption) (*API, error) {
 	for _, stOpt := range api.scannableTypesOption {
 		st := reflect.TypeOf(stOpt)
 		if st == nil {
-			return nil, errors.Errorf("scany: scannable type must be a pointer, got %T", st)
+			return nil, fmt.Errorf("scany: scannable type must be a pointer, got %T", st)
 		}
 		if st.Kind() != reflect.Ptr {
-			return nil, errors.Errorf("scany: scannable type must be a pointer, got %s: %s",
+			return nil, fmt.Errorf("scany: scannable type must be a pointer, got %s: %s",
 				st.Kind(), st.String())
 		}
 		st = st.Elem()
 		if st.Kind() != reflect.Interface {
-			return nil, errors.Errorf("scany: scannable type must be a pointer to an interface, got %s: %s",
+			return nil, fmt.Errorf("scany: scannable type must be a pointer to an interface, got %s: %s",
 				st.Kind(), st.String())
 		}
 		api.scannableTypesReflect = append(api.scannableTypesReflect, st)
@@ -120,9 +120,11 @@ func WithFieldNameMapper(mapperFn NameMapperFunc) APIOption {
 // In order for reflection to capture the interface type, you must pass it by pointer.
 //
 // For example your database library defines a scanner interface like this:
-// type Scanner interface {
-//     Scan(...) error
-// }
+//
+//	type Scanner interface {
+//	    Scan(...) error
+//	}
+//
 // You can pass it to dbscan this way:
 // dbscan.WithScannableTypes((*Scanner)(nil)).
 func WithScannableTypes(scannableTypes ...interface{}) APIOption {
@@ -145,23 +147,22 @@ func WithAllowUnknownColumns(allowUnknownColumns bool) APIOption {
 // ScanAll supports both types of slices: slice of structs by a pointer and slice of structs by value,
 // for example:
 //
-//     type User struct {
-//         ID    string
-//         Name  string
-//         Email string
-//         Age   int
-//     }
+//	type User struct {
+//	    ID    string
+//	    Name  string
+//	    Email string
+//	    Age   int
+//	}
 //
-//     var usersByPtr []*User
-//     var usersByValue []User
+//	var usersByPtr []*User
+//	var usersByValue []User
 //
 // Both usersByPtr and usersByValue are valid destinations for ScanAll function.
 //
 // Before starting, ScanAll resets the destination slice,
 // so if it's not empty it will overwrite all existing elements.
 func (api *API) ScanAll(dst interface{}, rows Rows) error {
-	err := api.processRows(dst, rows, true /* multipleRows */)
-	return errors.WithStack(err)
+	return api.processRows(dst, rows, true /* multipleRows */)
 }
 
 // ScanOne iterates all rows to the end and makes sure that there was exactly one row
@@ -170,17 +171,17 @@ func (api *API) ScanAll(dst interface{}, rows Rows) error {
 // and propagates any errors that could pop up.
 // It scans data from that single row into the destination.
 func (api *API) ScanOne(dst interface{}, rows Rows) error {
-	err := api.processRows(dst, rows, false /* multipleRows */)
-	return errors.WithStack(err)
+	return api.processRows(dst, rows, false /* multipleRows */)
 }
 
 // NotFound returns true if err is a not found error.
 // This error is returned by ScanOne if there were no rows.
 func NotFound(err error) bool {
-	return errors.Is(err, errNotFound)
+	return errors.Is(err, ErrNotFound)
 }
 
-var errNotFound = errors.New("scany: no row was found")
+// ErrNotFound is returned by ScanOne if there were no rows.
+var ErrNotFound = errors.New("scany: no row was found")
 
 type sliceDestinationMeta struct {
 	val             reflect.Value
@@ -195,7 +196,7 @@ func (api *API) processRows(dst interface{}, rows Rows, multipleRows bool) error
 		var err error
 		sliceMeta, err = api.parseSliceDestination(dst)
 		if err != nil {
-			return errors.WithStack(err)
+			return fmt.Errorf("parsing slice destination: %w", err)
 		}
 		// Make sure slice is empty.
 		sliceMeta.val.Set(sliceMeta.val.Slice(0, 0))
@@ -210,25 +211,25 @@ func (api *API) processRows(dst interface{}, rows Rows, multipleRows bool) error
 			err = rs.Scan(dst)
 		}
 		if err != nil {
-			return errors.WithStack(err)
+			return fmt.Errorf("scanning: %w", err)
 		}
 		rowsAffected++
 	}
 
 	if err := rows.Err(); err != nil {
-		return errors.Wrap(err, "scany: rows final error")
+		return fmt.Errorf("scany: rows final error: %w", err)
 	}
 
 	if err := rows.Close(); err != nil {
-		return errors.Wrap(err, "scany: close rows after processing")
+		return fmt.Errorf("scany: close rows after processing: %w", err)
 	}
 
 	exactlyOneRow := !multipleRows
 	if exactlyOneRow {
 		if rowsAffected == 0 {
-			return errors.WithStack(errNotFound)
+			return ErrNotFound
 		} else if rowsAffected > 1 {
-			return errors.Errorf("scany: expected 1 row, got: %d", rowsAffected)
+			return fmt.Errorf("scany: expected 1 row, got: %d", rowsAffected)
 		}
 	}
 	return nil
@@ -237,13 +238,13 @@ func (api *API) processRows(dst interface{}, rows Rows, multipleRows bool) error
 func (api *API) parseSliceDestination(dst interface{}) (*sliceDestinationMeta, error) {
 	dstValue, err := parseDestination(dst)
 	if err != nil {
-		return nil, errors.WithStack(err)
+		return nil, fmt.Errorf("scany: parsing destination: %w", err)
 	}
 
 	dstType := dstValue.Type()
 
 	if dstValue.Kind() != reflect.Slice {
-		return nil, errors.Errorf(
+		return nil, fmt.Errorf(
 			"scany: destination must be a slice, got: %v", dstType,
 		)
 	}
@@ -275,7 +276,7 @@ func (api *API) parseSliceDestination(dst interface{}) (*sliceDestinationMeta, e
 func scanSliceElement(rs *RowScanner, sliceMeta *sliceDestinationMeta) error {
 	dstValPtr := reflect.New(sliceMeta.elementBaseType)
 	if err := rs.Scan(dstValPtr.Interface()); err != nil {
-		return errors.WithStack(err)
+		return fmt.Errorf("scanning: %w", err)
 	}
 	var elemVal reflect.Value
 	if sliceMeta.elementByPtr {
@@ -291,7 +292,7 @@ func scanSliceElement(rs *RowScanner, sliceMeta *sliceDestinationMeta) error {
 // ScanRow is a package-level helper function that uses the DefaultAPI object.
 // See API.ScanRow for details.
 func ScanRow(dst interface{}, rows Rows) error {
-	return errors.WithStack(DefaultAPI.ScanRow(dst, rows))
+	return DefaultAPI.ScanRow(dst, rows)
 }
 
 // ScanRow creates a new RowScanner and calls RowScanner.Scan
@@ -302,8 +303,7 @@ func ScanRow(dst interface{}, rows Rows) error {
 // See RowScanner for details.
 func (api *API) ScanRow(dst interface{}, rows Rows) error {
 	rs := api.NewRowScanner(rows)
-	err := rs.Scan(dst)
-	return errors.WithStack(err)
+	return rs.Scan(dst)
 }
 
 func (api *API) isScannableType(dstType reflect.Type) bool {
@@ -320,10 +320,10 @@ func parseDestination(dst interface{}) (reflect.Value, error) {
 	dstVal := reflect.ValueOf(dst)
 
 	if !dstVal.IsValid() || (dstVal.Kind() == reflect.Ptr && dstVal.IsNil()) {
-		return reflect.Value{}, errors.Errorf("scany: destination must be a non nil pointer")
+		return reflect.Value{}, fmt.Errorf("scany: destination must be a non nil pointer")
 	}
 	if dstVal.Kind() != reflect.Ptr {
-		return reflect.Value{}, errors.Errorf("scany: destination must be a pointer, got: %v", dstVal.Type())
+		return reflect.Value{}, fmt.Errorf("scany: destination must be a pointer, got: %v", dstVal.Type())
 	}
 
 	dstVal = dstVal.Elem()

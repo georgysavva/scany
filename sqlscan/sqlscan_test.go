@@ -3,14 +3,14 @@ package sqlscan_test
 import (
 	"context"
 	"database/sql"
-	stderrors "errors"
+	"errors"
 	"flag"
+	"fmt"
 	"os"
 	"testing"
 
 	"github.com/cockroachdb/cockroach-go/v2/testserver"
 	_ "github.com/jackc/pgx/v4/stdlib"
-	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -138,7 +138,6 @@ func TestScanOne_noRows_returnsNotFoundErr(t *testing.T) {
 
 	assert.True(t, sqlscan.NotFound(err))
 	assert.True(t, errors.Is(err, sql.ErrNoRows))
-	assert.True(t, stderrors.Is(err, sql.ErrNoRows))
 }
 
 func TestRowScanner_Scan(t *testing.T) {
@@ -186,7 +185,7 @@ func TestRowScanner_Scan_closedRows(t *testing.T) {
 	dst := &testModel{}
 	err = rs.Scan(dst)
 
-	assert.EqualError(t, err, "scany: get rows columns: sql: Rows are closed")
+	assert.EqualError(t, err, "doing scan: starting: scany: get rows columns: sql: Rows are closed")
 }
 
 type ScannableString struct {
@@ -253,11 +252,11 @@ func requireNoRowsErrorsAndClose(t *testing.T, rows *sql.Rows) {
 func getAPI() (*sqlscan.API, error) {
 	dbscanAPI, err := sqlscan.NewDBScanAPI()
 	if err != nil {
-		return nil, errors.WithStack(err)
+		return nil, fmt.Errorf("new DB scan API: %w", err)
 	}
 	api, err := sqlscan.NewAPI(dbscanAPI)
 	if err != nil {
-		return nil, errors.WithStack(err)
+		return nil, fmt.Errorf("new API: %w", err)
 	}
 	return api, nil
 }
