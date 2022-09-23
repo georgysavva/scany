@@ -581,7 +581,7 @@ func TestRowScanner_Scan_invalidStructDestination_returnsErr(t *testing.T) {
 				Foo int
 				Bar string
 			}{},
-			expectedErr: "doing scan: scanFn: scany: scan row into struct fields: can't scan into dest[0]: unable to assign to *int",
+			expectedErr: "doing scan: scanFn: scany: scan row into struct fields: can't scan into dest[0]: cannot scan text (OID 25) in text format into *int",
 		},
 		{
 			name: "non struct embedded field",
@@ -669,7 +669,7 @@ func TestRowScanner_Scan_mapDestination(t *testing.T) {
 		{
 			name: "map[string]*struct{}",
 			query: `
-				SELECT '{"key": "key val"}'::JSON AS foo_json, NULL AS bar_json
+        SELECT '{"key": "key val"}'::JSON AS foo_json, NULL::JSON AS bar_json
 			`,
 			expected: map[string]*JSONObj{
 				"foo_json": {Key: "key val"},
@@ -689,7 +689,7 @@ func TestRowScanner_Scan_mapDestination(t *testing.T) {
 		{
 			name: "map[string]*map[string]interface{}",
 			query: `
-				SELECT '{"key": "key val"}'::JSON AS foo_json, NULL AS bar_json
+        SELECT '{"key": "key val"}'::JSON AS foo_json, NULL::JSON AS bar_json
 			`,
 			expected: map[string]*map[string]interface{}{
 				"foo_json": {"key": "key val"},
@@ -730,7 +730,7 @@ func TestRowScanner_Scan_invalidMapDestination_returnsErr(t *testing.T) {
 				SELECT 'foo val' AS foo
 			`,
 			dst:         &map[string]int{},
-			expectedErr: "doing scan: scanFn: scany: scan rows into map: can't scan into dest[0]: unable to assign to *int",
+			expectedErr: "doing scan: scanFn: scany: scan rows into map: can't scan into dest[0]: cannot scan text (OID 25) in text format into *int",
 		},
 	}
 	for _, tc := range cases {
@@ -821,7 +821,7 @@ func TestRowScanner_Scan_primitiveTypeDestinationDoesNotMatchWithColumnType_retu
 		SELECT 'foo val' AS foo
 	`
 	rows := queryRows(t, query)
-	expectedErr := "doing scan: scanFn: scany: scan row value into a primitive type: can't scan into dest[0]: unable to assign to *int"
+	expectedErr := "doing scan: scanFn: scany: scan row value into a primitive type: can't scan into dest[0]: cannot scan text (OID 25) in text format into *int"
 	dst := new(int)
 	err := scan(t, dst, rows)
 	assert.EqualError(t, err, expectedErr)
