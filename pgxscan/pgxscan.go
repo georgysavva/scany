@@ -7,10 +7,10 @@ import (
 	"fmt"
 
 	"github.com/jackc/pgtype"
-	"github.com/jackc/pgx/v4"
-	"github.com/jackc/pgx/v4/pgxpool"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/georgysavva/scany/dbscan"
+	"github.com/georgysavva/scany/v2/dbscan"
 )
 
 // Querier is something that pgxscan can query and get the pgx.Rows from.

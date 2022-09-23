@@ -9,12 +9,12 @@ import (
 
 	"github.com/cockroachdb/cockroach-go/v2/testserver"
 	"github.com/jackc/pgtype"
-	"github.com/jackc/pgx/v4/pgxpool"
-	_ "github.com/jackc/pgx/v4/stdlib"
+	"github.com/jackc/pgx/v5/pgxpool"
+	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/georgysavva/scany/dbscan"
+	"github.com/georgysavva/scany/v2/dbscan"
 )
 
 var (
@@ -382,7 +382,7 @@ func TestMain(m *testing.M) {
 			panic(err)
 		}
 		defer ts.Stop()
-		testDB, err = pgxpool.Connect(ctx, ts.PGURL().String())
+		testDB, err = pgxpool.New(ctx, ts.PGURL().String())
 		if err != nil {
 			panic(err)
 		}
