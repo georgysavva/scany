@@ -35,7 +35,7 @@ it doesn't know anything about relations between objects e.g: one to many, many 
 ## Install
 
 ```
-go get github.com/georgysavva/scany
+go get github.com/georgysavva/scany/v2
 ```
 
 ## How to use with `database/sql`
@@ -47,7 +47,7 @@ import (
 	"context"
 	"database/sql"
 
-	"github.com/georgysavva/scany/sqlscan"
+	"github.com/georgysavva/scany/v2/sqlscan"
 )
 
 type User struct {
@@ -67,7 +67,7 @@ func main() {
 }
 ```
 
-Use [`sqlscan`](https://pkg.go.dev/github.com/georgysavva/scany/sqlscan) 
+Use [`sqlscan`](https://pkg.go.dev/github.com/georgysavva/scany/v2/sqlscan) 
 package to work with `database/sql` standard library. 
 
 
@@ -79,9 +79,9 @@ package main
 import (
 	"context"
 
-	"github.com/jackc/pgx/v4/pgxpool"
+	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/georgysavva/scany/pgxscan"
+	"github.com/georgysavva/scany/v2/pgxscan"
 )
 
 type User struct {
@@ -93,7 +93,7 @@ type User struct {
 
 func main() {
 	ctx := context.Background()
-	db, _ := pgxpool.Connect(ctx, "example-connection-url")
+	db, _ := pgxpool.New(ctx, "example-connection-url")
 
 	var users []*User
 	pgxscan.Select(ctx, db, &users, `SELECT id, name, email, age FROM users`)
@@ -101,12 +101,12 @@ func main() {
 }
 ```
 
-Use [`pgxscan`](https://pkg.go.dev/github.com/georgysavva/scany/pgxscan) 
+Use [`pgxscan`](https://pkg.go.dev/github.com/georgysavva/scany/v2/pgxscan) 
 package to work with `pgx` library native interface. 
 
 ## How to use with other database libraries
 
-Use [`dbscan`](https://pkg.go.dev/github.com/georgysavva/scany/dbscan) package that works with an abstract database, 
+Use [`dbscan`](https://pkg.go.dev/github.com/georgysavva/scany/v2/dbscan) package that works with an abstract database, 
 and can be integrated with any library that has a concept of rows. This particular package implements core scany
 features and contains all the logic. Both `sqlscan` and `pgxscan` use `dbscan` internally.
 
