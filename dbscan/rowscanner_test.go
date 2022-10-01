@@ -73,7 +73,7 @@ func (cst *CustomScannableType) Scan(val interface{}) error {
 	case string:
 		return json.Unmarshal([]byte(v), cst)
 	default:
-		return fmt.Errorf("Unsupported type: %T", v)
+		return fmt.Errorf("unsupported type: %T", v)
 	}
 }
 
