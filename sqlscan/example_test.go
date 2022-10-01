@@ -60,7 +60,7 @@ func ExampleScanAll() {
 
 	var users []*User
 	if err := sqlscan.ScanAll(&users, rows); err != nil {
-		// Handle rows processing error
+		// Handle rows processing error.
 	}
 	// users variable now contains data from all rows.
 }
