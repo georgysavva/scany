@@ -17,7 +17,7 @@ func DoTestRowScannerStartCalledExactlyOnce(t *testing.T, api *API, queryRows qu
 		) AS t (foo, bar)
 	`
 	rows := queryRows(t, query)
-	defer rows.Close() // nolint: errcheck
+	defer rows.Close() //nolint: errcheck
 
 	mockStart := &mockStartScannerFunc{}
 	rs := api.NewRowScanner(rows)

@@ -144,7 +144,7 @@ func TestRowScanner_Scan(t *testing.T) {
 	t.Parallel()
 	rows, err := testDB.Query(singleRowsQuery)
 	require.NoError(t, err)
-	defer rows.Close() // nolint: errcheck
+	defer rows.Close() //nolint: errcheck
 	rs := testAPI.NewRowScanner(rows)
 	rows.Next()
 	expected := testModel{Foo: "foo val", Bar: "bar val"}
@@ -161,7 +161,7 @@ func TestScanRow(t *testing.T) {
 	t.Parallel()
 	rows, err := testDB.Query(singleRowsQuery)
 	require.NoError(t, err)
-	defer rows.Close() // nolint: errcheck
+	defer rows.Close() //nolint: errcheck
 	rows.Next()
 	expected := testModel{Foo: "foo val", Bar: "bar val"}
 
@@ -229,7 +229,7 @@ func TestRowScanner_Scan_NULLableScannerType(t *testing.T) {
 			t.Parallel()
 			rows, err := testDB.Query(tc.query)
 			require.NoError(t, err)
-			defer rows.Close() // nolint: errcheck
+			defer rows.Close() //nolint: errcheck
 			rs := testAPI.NewRowScanner(rows)
 			rows.Next()
 

@@ -19,7 +19,7 @@ func ExampleScanAll() {
 
 	var users []*User
 	if err := dbscan.ScanAll(&users, rows); err != nil {
-		// Handle rows processing error
+		// Handle rows processing error.
 	}
 	// users variable now contains data from all rows.
 }
@@ -111,7 +111,7 @@ func ExampleAPI() {
 	var users []*User
 	// Use the custom API instance to access dbscan functionality.
 	if err := api.ScanAll(&users, rows); err != nil {
-		// Handle rows processing error
+		// Handle rows processing error.
 	}
 	// users variable now contains data from all rows.
 }

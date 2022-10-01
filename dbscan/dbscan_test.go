@@ -306,7 +306,7 @@ func TestScanOne_multipleRows_returnsErr(t *testing.T) {
 func TestScanRow(t *testing.T) {
 	t.Parallel()
 	rows := queryRows(t, singleRowsQuery)
-	defer rows.Close() // nolint: errcheck
+	defer rows.Close() //nolint: errcheck
 	rows.Next()
 	expected := testModel{Foo: "foo val", Bar: "bar val"}
 
@@ -360,7 +360,7 @@ func TestNewAPI_WithScannableTypes_InvalidInput(t *testing.T) {
 func TestScanRow_withAllowUnknownColumns_returnsRow(t *testing.T) {
 	t.Parallel()
 	rows := queryRows(t, singleRowsQuery)
-	defer rows.Close() // nolint: errcheck
+	defer rows.Close() //nolint: errcheck
 	rows.Next()
 
 	got := &struct{ Foo string }{}

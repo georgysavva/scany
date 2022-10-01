@@ -162,7 +162,7 @@ func WithAllowUnknownColumns(allowUnknownColumns bool) APIOption {
 // Before starting, ScanAll resets the destination slice,
 // so if it's not empty it will overwrite all existing elements.
 func (api *API) ScanAll(dst interface{}, rows Rows) error {
-	return api.processRows(dst, rows, true /* multipleRows */)
+	return api.processRows(dst, rows, true /* multipleRows. */)
 }
 
 // ScanOne iterates all rows to the end and makes sure that there was exactly one row
@@ -171,7 +171,7 @@ func (api *API) ScanAll(dst interface{}, rows Rows) error {
 // and propagates any errors that could pop up.
 // It scans data from that single row into the destination.
 func (api *API) ScanOne(dst interface{}, rows Rows) error {
-	return api.processRows(dst, rows, false /* multipleRows */)
+	return api.processRows(dst, rows, false /* multipleRows. */)
 }
 
 // NotFound returns true if err is a not found error.
@@ -190,7 +190,7 @@ type sliceDestinationMeta struct {
 }
 
 func (api *API) processRows(dst interface{}, rows Rows, multipleRows bool) error {
-	defer rows.Close() // nolint: errcheck
+	defer rows.Close() //nolint: errcheck
 	var sliceMeta *sliceDestinationMeta
 	if multipleRows {
 		var err error
