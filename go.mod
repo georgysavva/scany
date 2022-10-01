@@ -4,7 +4,6 @@ go 1.18
 
 require (
 	github.com/cockroachdb/cockroach-go/v2 v2.2.0
-	github.com/georgysavva/scany v1.2.0
 	github.com/jackc/pgtype v1.6.2
 	github.com/jackc/pgx/v5 v5.0.0
 	github.com/stretchr/testify v1.8.0
