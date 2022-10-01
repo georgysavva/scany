@@ -172,7 +172,7 @@ func NewRowsAdapter(rows pgx.Rows) *RowsAdapter {
 func (ra RowsAdapter) Columns() ([]string, error) {
 	columns := make([]string, len(ra.Rows.FieldDescriptions()))
 	for i, fd := range ra.Rows.FieldDescriptions() {
-		columns[i] = string(fd.Name)
+		columns[i] = fd.Name
 	}
 	return columns, nil
 }
