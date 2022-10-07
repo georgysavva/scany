@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
@@ -72,8 +71,6 @@ func NewDBScanAPI(opts ...dbscan.APIOption) (*dbscan.API, error) {
 	defaultOpts := []dbscan.APIOption{
 		dbscan.WithScannableTypes(
 			(*sql.Scanner)(nil),
-			(*pgtype.BinaryDecoder)(nil),
-			(*pgtype.TextDecoder)(nil),
 		),
 	}
 	opts = append(defaultOpts, opts...)

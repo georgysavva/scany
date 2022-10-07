@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/cockroachdb/cockroach-go/v2/testserver"
-	"github.com/jackc/pgtype"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/stretchr/testify/assert"
@@ -97,9 +97,9 @@ func TestScanAll(t *testing.T) {
 				) AS t (foo)
 			`,
 			expected: []pgtype.Text{
-				{String: "foo val", Status: pgtype.Present},
-				{String: "foo val 2", Status: pgtype.Present},
-				{String: "foo val 3", Status: pgtype.Present},
+				{String: "foo val", Valid: true},
+				{String: "foo val 2", Valid: true},
+				{String: "foo val 3", Valid: true},
 			},
 		},
 		{

@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jackc/pgtype"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -871,7 +871,7 @@ func TestRowScanner_Scan_ScannableTypeDestination(t *testing.T) {
 			query: `
 				SELECT 'foo val' AS foo 
 			`,
-			expected: pgtype.Text{String: "foo val", Status: pgtype.Present},
+			expected: pgtype.Text{String: "foo val", Valid: true},
 		},
 		{
 			name: "CustomScannableType destination type",

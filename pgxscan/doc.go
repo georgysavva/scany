@@ -2,7 +2,7 @@
 // when working with pgx library native interface.
 /*
 Essentially, pgxscan is a wrapper around github.com/georgysavva/scany/v2/dbscan package.
-pgxscan connects github.com/jackc/pgx/v4 native interface with dbscan functionality.
+pgxscan connects github.com/jackc/pgx/v5 native interface with dbscan functionality.
 It contains adapters that are meant to work with pgx.Rows and proxy all calls to dbscan.
 pgxscan provides all capabilities available in dbscan.
 It's encouraged to read dbscan docs first to get familiar with all concepts and features:
@@ -34,6 +34,6 @@ pgx can't handle **pgtype.Text, since only *pgtype.Text implements pgx custom ty
 
 Supported pgx version
 
-pgxscan only works with pgx v4. So the import path of your pgx must be: "github.com/jackc/pgx/v4".
+pgxscan v2 only works with pgx v5. So the import path of your pgx must be: "github.com/jackc/pgx/v5".
 */
 package pgxscan
