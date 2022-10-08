@@ -17,9 +17,8 @@ This means that they can be used with *pgxpool.Pool, *pgx.Conn or pgx.Tx.
 
 Note about pgx custom types
 
-pgx has a concept of custom types: https://pkg.go.dev/github.com/jackc/pgx/v4?tab=doc#hdr-Custom_Type_Support.
-
-In order to use them with pgxscan you must specify your custom types by value, not by a pointer.
+pgx has a concept of Postgres specific types pgtype: https://pkg.go.dev/github.com/jackc/pgx/v5/pgtype
+In order to use them with pgxscan you must specify your pgtype types by value, not by a pointer.
 Let's take the pgx custom type pgtype.Text as an example:
 
 	type User struct {
