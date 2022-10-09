@@ -5,7 +5,6 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/jackc/pgtype"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -46,8 +45,6 @@ func getAPI(opts ...dbscan.APIOption) (*dbscan.API, error) {
 	}
 	opts = append(opts, dbscan.WithScannableTypes(
 		(*sql.Scanner)(nil),
-		(*pgtype.TextDecoder)(nil),
-		(*pgtype.BinaryDecoder)(nil),
 	))
 	return dbscan.NewAPI(opts...)
 }

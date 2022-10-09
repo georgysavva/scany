@@ -9,8 +9,8 @@ import (
 	"testing"
 
 	"github.com/cockroachdb/cockroach-go/v2/testserver"
-	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -171,12 +171,12 @@ func TestRowScanner_Scan_NULLableScannerType(t *testing.T) {
 		{
 			name:     "NULL value",
 			query:    `SELECT NULL as foo`,
-			expected: &Destination{Foo: pgtype.Text{Status: pgtype.Null}},
+			expected: &Destination{Foo: pgtype.Text{Valid: true}},
 		},
 		{
 			name:     "non NULL value",
 			query:    `SELECT 'foo value' as foo`,
-			expected: &Destination{Foo: pgtype.Text{String: "foo value", Status: pgtype.Present}},
+			expected: &Destination{Foo: pgtype.Text{String: "foo value", Valid: true}},
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
