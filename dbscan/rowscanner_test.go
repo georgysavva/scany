@@ -848,6 +848,7 @@ func (er emptyRow) Next() bool                  { return true }
 func (er emptyRow) Columns() ([]string, error)  { return []string{}, nil }
 func (er emptyRow) Close() error                { return nil }
 func (er emptyRow) Err() error                  { return nil }
+func (er emptyRow) NextResultSet() bool         { return false }
 
 func TestRowScanner_Scan_primitiveTypeDestinationRowsContainZeroColumns_returnsErr(t *testing.T) {
 	t.Parallel()

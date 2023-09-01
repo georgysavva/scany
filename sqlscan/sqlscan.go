@@ -45,6 +45,12 @@ func ScanOne(dst interface{}, rows *sql.Rows) error {
 	return DefaultAPI.ScanOne(dst, rows)
 }
 
+// ScanAllSets is a package-level helper function that uses the DefaultAPI object.
+// See API.ScanAllSets for details.
+func ScanAllSets(dsts []interface{}, rows *sql.Rows) error {
+	return DefaultAPI.ScanAllSets(dsts, rows)
+}
+
 // RowScanner is a wrapper around the dbscan.RowScanner type.
 // See dbscan.RowScanner for details.
 type RowScanner struct {
@@ -131,6 +137,12 @@ func (api *API) ScanOne(dst interface{}, rows *sql.Rows) error {
 	default:
 		return nil
 	}
+}
+
+// ScanAllSets is a wrapper around the dbscan.ScanAllSets function.
+// See dbscan.ScanAllSets for details.
+func (api *API) ScanAllSets(dsts []interface{}, rows *sql.Rows) error {
+	return api.dbscanAPI.ScanAllSets(dsts, rows)
 }
 
 // NotFound is a helper function to check if an error
