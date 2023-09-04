@@ -178,7 +178,7 @@ func (api *API) ScanAll(dst interface{}, rows Rows) error {
 // and propagates any errors that could pop up.
 // It scans data from that single row into the destination.
 func (api *API) ScanOne(dst interface{}, rows Rows) error {
-	return api.processRows(dst, rows, false /* multipleRows. */, false /* close. */)
+	return api.processRows(dst, rows, false /* multipleRows. */, true /* close. */)
 }
 
 // ScanAllSets iterates all rows to the end and scans data into each destination.
