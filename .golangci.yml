@@ -82,8 +82,6 @@ linters-settings:
       - whyNoLint
   gocyclo:
     min-complexity: 15
-  godot:
-    check-all: true
   goimports:
     local-prefixes: github.com/georgysavva/scany
   gomnd:
