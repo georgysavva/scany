@@ -180,6 +180,12 @@ func (ra RowsAdapter) Close() error {
 	return nil
 }
 
+// NextResultSet is currently always returning false.
+func (ra RowsAdapter) NextResultSet() bool {
+	// TODO: when pgx issue #308 and #1512 and  is fixed mabye we can do something here.
+	return false
+}
+
 func mustNewDBScanAPI(opts ...dbscan.APIOption) *dbscan.API {
 	api, err := NewDBScanAPI(opts...)
 	if err != nil {

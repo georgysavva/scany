@@ -16,6 +16,14 @@ jobs:
     env:
       GO: ${{ matrix.go-version }}
     runs-on: ubuntu-latest
+    services:
+      mssql:
+        image: mcr.microsoft.com/mssql/server:2019-latest
+        env:
+          SA_PASSWORD: p@sSword
+          ACCEPT_EULA: "Y"
+        ports:
+          - 1433:1433
     steps:
       - name: Download CockroachDB Binary
         run: |
@@ -45,7 +53,7 @@ jobs:
           key: ${{ runner.os }}-go-mod-${{ hashFiles('**/go.sum') }}
 
       - name: Test
-        run: go test -v -race  -coverprofile=coverage.txt -covermode=atomic ./... --cockroach-binary cockroach
+        run: go test --tags with_mssql -v -race  -coverprofile=coverage.txt -covermode=atomic ./... --cockroach-binary cockroach
 
       - name: Upload Codecov
         uses: codecov/codecov-action@v3

@@ -140,6 +140,34 @@ func TestScanOne_noRows_returnsNotFoundErr(t *testing.T) {
 	assert.True(t, errors.Is(err, sql.ErrNoRows))
 }
 
+func TestScanAllSets(t *testing.T) {
+	t.Parallel()
+
+	type testModel2 struct {
+		Egg   string
+		Bacon string
+	}
+
+	expected1 := []*testModel{
+		{Foo: "foo val", Bar: "bar val"},
+		{Foo: "foo val 2", Bar: "bar val 2"},
+		{Foo: "foo val 3", Bar: "bar val 3"},
+	}
+
+	rows, err := testDB.Query(multipleRowsQuery)
+	require.NoError(t, err)
+
+	var got1 []*testModel
+	var got2 []*testModel2
+
+	err = testAPI.ScanAllSets([]any{&got1, &got2}, rows)
+	require.NoError(t, err)
+
+	assert.Equal(t, expected1, got1)
+	// PG does not support multiple result sets. Only the first result set is returned.
+	assert.Nil(t, got2)
+}
+
 func TestRowScanner_Scan(t *testing.T) {
 	t.Parallel()
 	rows, err := testDB.Query(singleRowsQuery)

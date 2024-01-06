@@ -16,6 +16,7 @@ type Rows interface {
 	Next() bool
 	Columns() ([]string, error)
 	Scan(dest ...interface{}) error
+	NextResultSet() bool
 }
 
 // ScanAll is a package-level helper function that uses the DefaultAPI object.
@@ -28,6 +29,12 @@ func ScanAll(dst interface{}, rows Rows) error {
 // See API.ScanOne for details.
 func ScanOne(dst interface{}, rows Rows) error {
 	return DefaultAPI.ScanOne(dst, rows)
+}
+
+// ScanAllSets is a package-level helper function that uses the DefaultAPI object.
+// See API.ScanAllSets for details.
+func ScanAllSets(dsts []interface{}, rows Rows) error {
+	return DefaultAPI.ScanAllSets(dsts, rows)
 }
 
 // NameMapperFunc is a function type that maps a struct field name to the database column name.
@@ -162,7 +169,7 @@ func WithAllowUnknownColumns(allowUnknownColumns bool) APIOption {
 // Before starting, ScanAll resets the destination slice,
 // so if it's not empty it will overwrite all existing elements.
 func (api *API) ScanAll(dst interface{}, rows Rows) error {
-	return api.processRows(dst, rows, true /* multipleRows. */)
+	return api.processRows(dst, rows, true /* multipleRows. */, true /* closeRows. */)
 }
 
 // ScanOne iterates all rows to the end and makes sure that there was exactly one row
@@ -171,7 +178,22 @@ func (api *API) ScanAll(dst interface{}, rows Rows) error {
 // and propagates any errors that could pop up.
 // It scans data from that single row into the destination.
 func (api *API) ScanOne(dst interface{}, rows Rows) error {
-	return api.processRows(dst, rows, false /* multipleRows. */)
+	return api.processRows(dst, rows, false /* multipleRows. */, true /* closeRows. */)
+}
+
+// ScanAllSets iterates all rows to the end and scans data into each destination.
+// Multiple destinations is supported by multiple result sets.
+func (api *API) ScanAllSets(dsts []interface{}, rows Rows) error {
+	defer rows.Close() //nolint: errcheck
+	for i, dst := range dsts {
+		if err := api.processRows(dst, rows, true, false /* closeRows */); err != nil {
+			return fmt.Errorf("error processing destination %d: %w", i, err)
+		}
+		if !rows.NextResultSet() {
+			break
+		}
+	}
+	return nil
 }
 
 // NotFound returns true if err is a not found error.
@@ -189,8 +211,10 @@ type sliceDestinationMeta struct {
 	elementByPtr    bool
 }
 
-func (api *API) processRows(dst interface{}, rows Rows, multipleRows bool) error {
-	defer rows.Close() //nolint: errcheck
+func (api *API) processRows(dst interface{}, rows Rows, multipleRows, closeRows bool) error {
+	if closeRows {
+		defer rows.Close() //nolint: errcheck
+	}
 	var sliceMeta *sliceDestinationMeta
 	if multipleRows {
 		var err error
@@ -219,9 +243,10 @@ func (api *API) processRows(dst interface{}, rows Rows, multipleRows bool) error
 	if err := rows.Err(); err != nil {
 		return fmt.Errorf("scany: rows final error: %w", err)
 	}
-
-	if err := rows.Close(); err != nil {
-		return fmt.Errorf("scany: close rows after processing: %w", err)
+	if closeRows {
+		if err := rows.Close(); err != nil {
+			return fmt.Errorf("scany: close rows after processing: %w", err)
+		}
 	}
 
 	exactlyOneRow := !multipleRows
