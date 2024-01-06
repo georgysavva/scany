@@ -39,17 +39,17 @@ func getEnv(key string, defaultValue string) string {
 }
 func TestMSScanAllSets(t *testing.T) {
 	t.Parallel()
-	testSqliteDB, err := sql.Open("sqlserver", getEnv("MSSQL_URL", "sqlserver://sa:sa@localhost"))
+	testSqliteDB, err := sql.Open("sqlserver", getEnv("MSSQL_URL", "sqlserver://sa:p@sSword@localhost:1433?database=master"))
 	if err != nil {
-		panic(err)
+		require.NoError(t, err)
 	}
 	dbscanAPI, err := sqlscan.NewDBScanAPI()
 	if err != nil {
-		panic(fmt.Errorf("new DB scan API: %w", err))
+		require.NoError(t, fmt.Errorf("new DB scan API: %w", err))
 	}
 	api, err := sqlscan.NewAPI(dbscanAPI)
 	if err != nil {
-		panic(fmt.Errorf("new API: %w", err))
+		require.NoError(t, fmt.Errorf("new API: %w", err))
 	}
 	type testModel2 struct {
 		Egg   string
