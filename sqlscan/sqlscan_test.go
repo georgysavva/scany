@@ -164,8 +164,7 @@ func TestScanAllSets(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Equal(t, expected1, got1)
-	// pg does not support multiple result sets
-	// only the first result set is returned
+	// PG does not support multiple result sets. Only the first result set is returned.
 	assert.Nil(t, got2)
 }
 

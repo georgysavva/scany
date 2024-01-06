@@ -169,7 +169,7 @@ func WithAllowUnknownColumns(allowUnknownColumns bool) APIOption {
 // Before starting, ScanAll resets the destination slice,
 // so if it's not empty it will overwrite all existing elements.
 func (api *API) ScanAll(dst interface{}, rows Rows) error {
-	return api.processRows(dst, rows, true /* multipleRows. */, true /* close. */)
+	return api.processRows(dst, rows, true /* multipleRows. */, true /* closeRows. */)
 }
 
 // ScanOne iterates all rows to the end and makes sure that there was exactly one row
@@ -178,7 +178,7 @@ func (api *API) ScanAll(dst interface{}, rows Rows) error {
 // and propagates any errors that could pop up.
 // It scans data from that single row into the destination.
 func (api *API) ScanOne(dst interface{}, rows Rows) error {
-	return api.processRows(dst, rows, false /* multipleRows. */, true /* close. */)
+	return api.processRows(dst, rows, false /* multipleRows. */, true /* closeRows. */)
 }
 
 // ScanAllSets iterates all rows to the end and scans data into each destination.
@@ -186,7 +186,7 @@ func (api *API) ScanOne(dst interface{}, rows Rows) error {
 func (api *API) ScanAllSets(dsts []interface{}, rows Rows) error {
 	defer rows.Close() //nolint: errcheck
 	for i, dst := range dsts {
-		if err := api.processRows(dst, rows, true, false); err != nil {
+		if err := api.processRows(dst, rows, true, false /* closeRows */); err != nil {
 			return fmt.Errorf("error processing destination %d: %w", i, err)
 		}
 		if !rows.NextResultSet() {
@@ -211,8 +211,8 @@ type sliceDestinationMeta struct {
 	elementByPtr    bool
 }
 
-func (api *API) processRows(dst interface{}, rows Rows, multipleRows, close bool) error {
-	if close {
+func (api *API) processRows(dst interface{}, rows Rows, multipleRows, closeRows bool) error {
+	if closeRows {
 		defer rows.Close() //nolint: errcheck
 	}
 	var sliceMeta *sliceDestinationMeta
@@ -243,7 +243,7 @@ func (api *API) processRows(dst interface{}, rows Rows, multipleRows, close bool
 	if err := rows.Err(); err != nil {
 		return fmt.Errorf("scany: rows final error: %w", err)
 	}
-	if close {
+	if closeRows {
 		if err := rows.Close(); err != nil {
 			return fmt.Errorf("scany: close rows after processing: %w", err)
 		}
