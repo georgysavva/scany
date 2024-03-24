@@ -34,6 +34,7 @@ type RowScanner struct {
 	started            bool
 	scanFn             func(dstVal reflect.Value) error
 	start              startScannerFunc
+	scans              []any
 }
 
 // NewRowScanner is a package-level helper function that uses the DefaultAPI object.
@@ -124,13 +125,15 @@ func startScanner(rs *RowScanner, dstValue reflect.Value) error {
 }
 
 func (rs *RowScanner) scanStruct(structValue reflect.Value) error {
-	scans := make([]interface{}, len(rs.columns))
+	if rs.scans == nil {
+		rs.scans = make([]interface{}, len(rs.columns))
+	}
 	for i, column := range rs.columns {
 		fieldIndex, ok := rs.columnToFieldIndex[column]
 		if !ok {
 			if rs.api.allowUnknownColumns {
 				var tmp interface{}
-				scans[i] = &tmp
+				rs.scans[i] = &tmp
 				continue
 			}
 			return fmt.Errorf(
@@ -144,9 +147,9 @@ func (rs *RowScanner) scanStruct(structValue reflect.Value) error {
 		initializeNested(structValue, fieldIndex)
 
 		fieldVal := structValue.FieldByIndex(fieldIndex)
-		scans[i] = fieldVal.Addr().Interface()
+		rs.scans[i] = fieldVal.Addr().Interface()
 	}
-	if err := rs.rows.Scan(scans...); err != nil {
+	if err := rs.rows.Scan(rs.scans...); err != nil {
 		return fmt.Errorf("scany: scan row into struct fields: %w", err)
 	}
 	return nil
@@ -157,14 +160,16 @@ func (rs *RowScanner) scanMap(mapValue reflect.Value) error {
 		mapValue.Set(reflect.MakeMap(mapValue.Type()))
 	}
 
-	scans := make([]interface{}, len(rs.columns))
+	if rs.scans == nil {
+		rs.scans = make([]interface{}, len(rs.columns))
+	}
 	values := make([]reflect.Value, len(rs.columns))
 	for i := range rs.columns {
 		valuePtr := reflect.New(rs.mapElementType)
-		scans[i] = valuePtr.Interface()
+		rs.scans[i] = valuePtr.Interface()
 		values[i] = valuePtr.Elem()
 	}
-	if err := rs.rows.Scan(scans...); err != nil {
+	if err := rs.rows.Scan(rs.scans...); err != nil {
 		return fmt.Errorf("scany: scan rows into map: %w", err)
 	}
 	// We can't set reflect values into destination map before scanning them,
@@ -179,7 +184,11 @@ func (rs *RowScanner) scanMap(mapValue reflect.Value) error {
 }
 
 func (rs *RowScanner) scanPrimitive(value reflect.Value) error {
-	if err := rs.rows.Scan(value.Addr().Interface()); err != nil {
+	if rs.scans == nil {
+		rs.scans = make([]interface{}, 1)
+	}
+	rs.scans[0] = value.Addr().Interface()
+	if err := rs.rows.Scan(rs.scans...); err != nil {
 		return fmt.Errorf("scany: scan row value into a primitive type: %w", err)
 	}
 	return nil

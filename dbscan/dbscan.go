@@ -299,19 +299,37 @@ func (api *API) parseSliceDestination(dst interface{}) (*sliceDestinationMeta, e
 }
 
 func scanSliceElement(rs *RowScanner, sliceMeta *sliceDestinationMeta) error {
-	dstValPtr := reflect.New(sliceMeta.elementBaseType)
+	s := sliceMeta.val
+	l := s.Len()
+	growSliceByOne(s)
+	var dstValPtr reflect.Value
+	if sliceMeta.elementByPtr {
+		dstValPtr = reflect.New(sliceMeta.elementBaseType)
+		s.Index(l).Set(dstValPtr)
+	} else {
+		dstValPtr = s.Index(l).Addr()
+	}
 	if err := rs.Scan(dstValPtr.Interface()); err != nil {
+		// Undo growing the slice. Zero the value to ensure it doesn't retain garbage.
+		s.Index(l).Set(reflect.Zero(s.Type().Elem()))
+		s.SetLen(l)
 		return fmt.Errorf("scanning: %w", err)
 	}
-	var elemVal reflect.Value
-	if sliceMeta.elementByPtr {
-		elemVal = dstValPtr
-	} else {
-		elemVal = dstValPtr.Elem()
+	return nil
+}
+
+func growSliceByOne(s reflect.Value) {
+	// In go 1.20 and above, this could be made simpler (and possibly more efficient)
+	// by using Value.Grow.
+	l := s.Len()
+	c := s.Cap()
+	if l < c {
+		s.SetLen(l + 1)
+		return
 	}
 
-	sliceMeta.val.Set(reflect.Append(sliceMeta.val, elemVal))
-	return nil
+	t := s.Type().Elem()
+	s.Set(reflect.Append(s, reflect.Zero(t)))
 }
 
 // ScanRow is a package-level helper function that uses the DefaultAPI object.
