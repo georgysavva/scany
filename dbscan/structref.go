@@ -12,6 +12,18 @@ type toTraverse struct {
 }
 
 func (api *API) getColumnToFieldIndexMap(structType reflect.Type) map[string][]int {
+	resultIface, ok := api.columnToIndexFieldMapCache.Load(structType)
+	if ok {
+		return resultIface.(map[string][]int)
+	}
+
+	result := api.buildColumnToFieldIndexMap(structType)
+	resultIface, _ = api.columnToIndexFieldMapCache.LoadOrStore(structType, result)
+	result = resultIface.(map[string][]int)
+	return result
+}
+
+func (api *API) buildColumnToFieldIndexMap(structType reflect.Type) map[string][]int {
 	result := make(map[string][]int, structType.NumField())
 	var queue []*toTraverse
 	queue = append(queue, &toTraverse{Type: structType, IndexPrefix: nil, ColumnPrefix: ""})
