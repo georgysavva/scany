@@ -1,7 +1,6 @@
 package dbscan
 
 import (
-	"database/sql/driver"
 	"fmt"
 	"reflect"
 )
@@ -128,10 +127,6 @@ type noOpScanType struct{}
 
 func (*noOpScanType) Scan(value interface{}) error {
 	return nil
-}
-
-func (noOpScanType) Value() (driver.Value, error) {
-	return nil, nil
 }
 
 func (rs *RowScanner) scanStruct(structValue reflect.Value) error {
