@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"regexp"
 	"strings"
+	"sync"
 )
 
 // Rows is an abstract database rows that dbscan can iterate over and get the data from.
@@ -54,6 +55,7 @@ func SnakeCaseMapper(str string) string {
 
 // API is the core type in dbscan. It implements all the logic and exposes functionality available in the package.
 // With API type users can create a custom API instance and override default settings hence configure dbscan.
+// API should not be copied after first use.
 type API struct {
 	structTagKey          string
 	columnSeparator       string
@@ -61,6 +63,8 @@ type API struct {
 	scannableTypesOption  []interface{}
 	scannableTypesReflect []reflect.Type
 	allowUnknownColumns   bool
+	// columnToIndexFieldMapCache stores a map of reflect.Type -> map[string][]int
+	columnToIndexFieldMapCache sync.Map
 }
 
 // APIOption is a function type that changes API configuration.
