@@ -374,6 +374,25 @@ func TestScanRow_withAllowUnknownColumns_returnsRow(t *testing.T) {
 	assert.Equal(t, expected, *got)
 }
 
+func TestScanRow_withAllowUnknownColumns_unknownColumnType(t *testing.T) {
+	t.Parallel()
+	rows := queryRows(t, `
+		SELECT 'foo val' AS foo, 'test_val_1'::test_enum_type AS bar
+	`)
+	defer rows.Close() //nolint: errcheck
+	rows.Next()
+
+	got := &struct{ Foo string }{}
+	testAPIWithUnknownColumns, err := getAPI(dbscan.WithAllowUnknownColumns(true))
+	require.NoError(t, err)
+	err = testAPIWithUnknownColumns.ScanRow(got, rows)
+	require.NoError(t, err)
+	requireNoRowsErrorsAndClose(t, rows)
+
+	expected := struct{ Foo string }{Foo: "foo val"}
+	assert.Equal(t, expected, *got)
+}
+
 func TestMain(m *testing.M) {
 	exitCode := func() int {
 		flag.Parse()
@@ -387,6 +406,7 @@ func TestMain(m *testing.M) {
 			panic(err)
 		}
 		defer testDB.Close()
+		prepareTestDB(testDB)
 		testAPI, err = getAPI()
 		if err != nil {
 			panic(err)
@@ -394,4 +414,12 @@ func TestMain(m *testing.M) {
 		return m.Run()
 	}()
 	os.Exit(exitCode)
+}
+
+func prepareTestDB(testDB *pgxpool.Pool) (err error) {
+	_, err = testDB.Query(ctx, `
+		CREATE TYPE test_enum_type AS ENUM ('test_val_1', 'test_val_2');
+	`)
+
+	return
 }
