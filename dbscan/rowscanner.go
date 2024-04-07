@@ -124,6 +124,12 @@ func startScanner(rs *RowScanner, dstValue reflect.Value) error {
 	)
 }
 
+type noOpScanType struct{}
+
+func (*noOpScanType) Scan(value interface{}) error {
+	return nil
+}
+
 func (rs *RowScanner) scanStruct(structValue reflect.Value) error {
 	if rs.scans == nil {
 		rs.scans = make([]interface{}, len(rs.columns))
@@ -132,7 +138,7 @@ func (rs *RowScanner) scanStruct(structValue reflect.Value) error {
 		fieldIndex, ok := rs.columnToFieldIndex[column]
 		if !ok {
 			if rs.api.allowUnknownColumns {
-				var tmp interface{}
+				var tmp noOpScanType
 				rs.scans[i] = &tmp
 				continue
 			}
