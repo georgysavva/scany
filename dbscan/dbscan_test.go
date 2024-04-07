@@ -406,7 +406,10 @@ func TestMain(m *testing.M) {
 			panic(err)
 		}
 		defer testDB.Close()
-		prepareTestDB(testDB)
+		err = prepareTestDB(testDB)
+		if err != nil {
+			panic(err)
+		}
 		testAPI, err = getAPI()
 		if err != nil {
 			panic(err)
@@ -417,9 +420,9 @@ func TestMain(m *testing.M) {
 }
 
 func prepareTestDB(testDB *pgxpool.Pool) (err error) {
-	_, err = testDB.Query(ctx, `
+	_, err = testDB.Exec(ctx, `
 		CREATE TYPE test_enum_type AS ENUM ('test_val_1', 'test_val_2');
 	`)
 
-	return
+	return err
 }
