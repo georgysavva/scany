@@ -16,7 +16,7 @@ func TestRowScannerType(t *testing.T) {
 	}
 
 	query := `
-		SELECT 'foo val' AS foo_column, 'bar val' AS bar_column
+	SELECT 'foo val' AS foo_column, 'bar val' AS bar_column
 `
 
 	expected := stype{

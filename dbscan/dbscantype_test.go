@@ -15,11 +15,11 @@ func TestScanAllType(t *testing.T) {
 	}
 
 	query := `
-				SELECT *
-				FROM (
-					VALUES ('foo val', 'bar val'), ('foo val 2', 'bar val 2'), ('foo val 3', 'bar val 3')
-				) AS t (foo, bar)
-			`
+	SELECT *
+	FROM (
+		VALUES ('foo val', 'bar val'), ('foo val 2', 'bar val 2'), ('foo val 3', 'bar val 3')
+	) AS t (foo, bar)
+`
 
 	expected := []stype{
 		{Foo: "foo val", Bar: "bar val"},
