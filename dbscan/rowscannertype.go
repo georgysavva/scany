@@ -12,8 +12,8 @@ func NewRowScannerTypeFromScanner[T any](rs *RowScanner) *RowScannerType[T] {
 	return &RowScannerType[T]{rs: rs}
 }
 
-func (rs *RowScannerType[T]) Scan() (*T, error) {
+func (rs *RowScannerType[T]) Scan() (T, error) {
 	var result T
 	err := rs.rs.Scan(&result)
-	return &result, err
+	return result, err
 }

@@ -20,7 +20,6 @@ func TestRowScannerType(t *testing.T) {
 `
 
 	expected := stype{
-
 		FooColumn: "foo val",
 		BarColumn: "bar val",
 	}
@@ -31,5 +30,5 @@ func TestRowScannerType(t *testing.T) {
 	dst, err := rs.Scan()
 	require.NoError(t, err)
 	requireNoRowsErrorsAndClose(t, rows)
-	assertDestinationEqual(t, expected, dst)
+	require.Equal(t, expected, dst)
 }
