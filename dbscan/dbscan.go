@@ -152,6 +152,22 @@ func WithAllowUnknownColumns(allowUnknownColumns bool) APIOption {
 	}
 }
 
+// StructTagKey returns the struct tag key used by the API.
+func (api *API) StructTagKey() string {
+	return api.structTagKey
+}
+
+// ColumnSeparator returns the column separator used by the API.
+func (api *API) ColumnSeparator() string {
+	return api.columnSeparator
+}
+
+// AllowUnknownColumns returns whether the scanner is allowed to ignore
+// db columns that doesn't exist at the destination.
+func (api *API) AllowUnknownColumns() bool {
+	return api.allowUnknownColumns
+}
+
 // ScanAll iterates all rows to the end. After iterating it closes the rows,
 // and propagates any errors that could pop up.
 // It expects that destination should be a slice. For each row it scans data and appends it to the destination slice.
